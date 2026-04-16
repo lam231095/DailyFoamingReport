@@ -9,11 +9,11 @@ export interface User {
 
 export interface SKU {
   id: string;
-  sku_code: string;
-  sku_name: string;
+  product_type: string;
   target_per_hour: number;
   unit: string;
   is_active: boolean;
+  updated_at: string;
 }
 
 export interface ProductionReport {

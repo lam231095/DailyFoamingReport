@@ -108,7 +108,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
 
   const fetchSkus = useCallback(async () => {
     setLoadingSkus(true)
-    const { data } = await supabase.from('skus').select('*').eq('is_active', true).order('sku_code')
+    const { data } = await supabase.from('skus').select('*').eq('is_active', true).order('product_type')
     setSkus(data ?? [])
     setLoadingSkus(false)
   }, [])
@@ -184,7 +184,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
           >
             {[
               { icon: BarChart3, label: 'Lượt ghi', value: String(reports.length), color: '#0052CC' },
-              { icon: Package, label: 'Tổng SP', value: todayTotal.toLocaleString('vi-VN'), color: '#8b5cf6' },
+              { icon: Package, label: 'Tổng Tấm', value: todayTotal.toLocaleString('vi-VN'), color: '#8b5cf6' },
               { icon: Trophy, label: 'KPI TB', value: `${avgPoints.toFixed(1)}/15`, color: avgPoints >= 10 ? '#22c55e' : '#f59e0b' },
             ].map((stat) => (
               <div key={stat.label}
@@ -219,7 +219,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
 
             {/* SKU Dropdown */}
             <div>
-              <label className="label" htmlFor="sku-select">Mã Hàng (SKU)</label>
+              <label className="label" htmlFor="sku-select">Loại Sản Phẩm</label>
               <div className="relative">
                 <button
                   id="sku-select"
@@ -229,7 +229,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
                   disabled={loadingSkus}
                 >
                   <span className={currentSku ? 'text-[var(--text-1)]' : 'text-[var(--text-3)]'}>
-                    {loadingSkus ? 'Đang tải...' : currentSku ? `${currentSku.sku_code} — ${currentSku.sku_name}` : 'Chọn mã hàng...'}
+                    {loadingSkus ? 'Đang tải...' : currentSku ? currentSku.product_type : 'Chọn loại sản phẩm...'}
                   </span>
                   <ChevronDown size={15} className={`text-[var(--text-3)] transition-transform duration-200 ${skuOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -255,10 +255,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
                             className="w-full flex items-center justify-between px-4 py-3
                               hover:bg-brand-500/8 transition-colors duration-100 text-left"
                           >
-                            <div>
-                              <p className="text-sm font-semibold text-[var(--text-1)]">{sku.sku_code}</p>
-                              <p className="text-xs text-[var(--text-3)]">{sku.sku_name}</p>
-                            </div>
+                            <p className="text-sm font-semibold text-[var(--text-1)]">{sku.product_type}</p>
                             <span className="text-xs text-[var(--text-3)] shrink-0">
                               {sku.target_per_hour} {sku.unit}/h
                             </span>
@@ -307,7 +304,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
               <div>
                 <label className="label" htmlFor="qty-input">
                   <Package size={11} className="inline mr-1" />
-                  Sản Lượng Thực
+                  Số Tấm Thực Tế
                 </label>
                 <input
                   id="qty-input"
@@ -406,7 +403,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
               <table className="w-full text-xs min-w-[400px]">
                 <thead>
                   <tr className="border-b border-[var(--border)]">
-                    {['SKU', 'Giờ', 'Thực tế', 'KPI', 'Giờ ghi'].map((h) => (
+                    {['Loại SP', 'Giờ làm', 'Số tấm', 'KPI', 'Giờ ghi'].map((h) => (
                       <th key={h} className="pb-2 text-left font-medium text-[var(--text-3)] px-1">{h}</th>
                     ))}
                   </tr>
@@ -423,8 +420,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
                         className="group"
                       >
                         <td className="py-2.5 px-1">
-                          <p className="font-semibold text-[var(--text-1)]">{r.skus?.sku_code}</p>
-                          <p className="text-[10px] text-[var(--text-3)] truncate max-w-[90px]">{r.skus?.sku_name}</p>
+                          <p className="font-semibold text-[var(--text-1)]">{r.skus?.product_type}</p>
                         </td>
                         <td className="py-2.5 px-1 text-[var(--text-2)]">{r.working_hours}h</td>
                         <td className="py-2.5 px-1 font-medium text-[var(--text-1)]">

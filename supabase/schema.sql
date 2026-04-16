@@ -14,15 +14,14 @@ create table if not exists users (
   created_at  timestamptz default now()
 );
 
--- 2. Bảng SKU (mã hàng)
+-- 2. Bảng Loại Sản Phẩm (Thay thế SKU)
 create table if not exists skus (
   id              uuid primary key default gen_random_uuid(),
-  sku_code        text unique not null,
-  sku_name        text not null,
-  target_per_hour numeric not null default 100,
-  unit            text default 'đôi',
+  product_type    text not null,              -- Loại sản phẩm
+  target_per_hour numeric not null default 0, -- Target tấm/giờ
+  unit            text default 'tấm',         -- Đơn vị
   is_active       boolean default true,
-  created_at      timestamptz default now()
+  updated_at      timestamptz default now()   -- Ngày cập nhật
 );
 
 -- 3. Bảng báo cáo sản lượng hàng ngày
@@ -95,13 +94,11 @@ insert into users (msnv, full_name, department) values
 on conflict (msnv) do nothing;
 
 -- =============================================
--- Dữ liệu mẫu - SKU
+-- Dữ liệu mẫu - Loại sản phẩm
 -- =============================================
-insert into skus (sku_code, sku_name, target_per_hour, unit) values
-  ('SKU-A001', 'Giày Thể Thao Nam Size 40-44',   80,  'đôi'),
-  ('SKU-A002', 'Giày Thể Thao Nữ Size 35-39',    90,  'đôi'),
-  ('SKU-B001', 'Giày Chạy Bộ Cao Cấp',           60,  'đôi'),
-  ('SKU-B002', 'Dép Cao Su Đúc',                 150, 'đôi'),
-  ('SKU-C001', 'Giày Bảo Hộ Lao Động',           50,  'đôi'),
-  ('SKU-C002', 'Giày Vải Canvas',                100, 'đôi')
-on conflict (sku_code) do nothing;
+insert into skus (product_type, target_per_hour, unit) values
+  ('Bọt Xốp Loại A', 100, 'tấm'),
+  ('Bọt Xốp Loại B', 80,  'tấm'),
+  ('Tấm Lót Ortholite', 200, 'tấm'),
+  ('Vật Liệu Tổng Hợp', 150, 'tấm')
+on conflict do nothing;
