@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Factory, Loader2, AlertCircle, IdCard, ChevronRight, Cpu, Shield } from 'lucide-react'
+import { Factory, Loader2, AlertCircle, Contact, ChevronRight, Cpu, Shield } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { setSession } from '@/lib/session'
 
@@ -191,7 +191,7 @@ export default function LoginPage() {
               </label>
               <div className="relative">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30">
-                  <IdCard size={18} />
+                  <Contact size={18} />
                 </div>
                 <input
                   id="msnv-input"
