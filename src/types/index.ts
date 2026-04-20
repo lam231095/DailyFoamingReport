@@ -49,3 +49,26 @@ export interface SessionUser {
   department: string | null;
   role: string;
 }
+
+export interface ResidualMaterial {
+  id: string;
+  user_id: string;
+  stage: 'Foaming Đổ' | 'Foaming Tách';
+  material_name: string;
+  initial_quantity: number;
+  current_quantity: number;
+  unit: 'tấm' | 'bun';
+  entry_date: string;
+  created_at: string;
+  users?: { full_name: string };
+}
+
+export interface ResidualMaterialUsage {
+  id: string;
+  material_id: string;
+  user_id: string;
+  used_quantity: number;
+  used_at: string;
+  residual_materials?: ResidualMaterial;
+  users?: { full_name: string };
+}

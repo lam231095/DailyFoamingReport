@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BarChart3, AlertOctagon, Calendar } from 'lucide-react'
+import { BarChart3, AlertOctagon, Calendar, Package } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
@@ -11,6 +11,7 @@ import ProductionTab from '@/components/tabs/ProductionTab'
 import Changelog4MTab from '@/components/tabs/Changelog4MTab'
 import MonthlyStatsTab from '@/components/tabs/MonthlyStatsTab'
 import IssueAnalysisTab from '@/components/tabs/IssueAnalysisTab'
+import ResidualMaterialTab from '@/components/tabs/ResidualMaterialTab'
 
 const TABS = [
   {
@@ -40,6 +41,13 @@ const TABS = [
     shortLabel: 'Phân Tích',
     icon: AlertOctagon,
     color: '#ef4444',
+  },
+  {
+    id: 'residual',
+    label: 'Quản Lý Liệu Tồn',
+    shortLabel: 'Liệu Tồn',
+    icon: Package,
+    color: '#10b981',
   },
 ]
 
@@ -164,6 +172,7 @@ export default function DashboardPage() {
             {activeTab === 'changelog'  && <Changelog4MTab user={user} />}
             {activeTab === 'monthly'    && <MonthlyStatsTab user={user} />}
             {activeTab === 'issues'     && <IssueAnalysisTab user={user} />}
+            {activeTab === 'residual'   && <ResidualMaterialTab user={user} />}
           </motion.div>
         </AnimatePresence>
       </div>
