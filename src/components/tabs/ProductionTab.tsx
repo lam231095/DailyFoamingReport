@@ -184,7 +184,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
           >
             {[
               { icon: BarChart3, label: 'Lượt ghi', value: String(reports.length), color: '#0052CC' },
-              { icon: Package, label: 'Tổng Tấm', value: todayTotal.toLocaleString('vi-VN'), color: '#8b5cf6' },
+              { icon: Package, label: 'Tổng Đôi', value: todayTotal.toLocaleString('vi-VN'), color: '#8b5cf6' },
               { icon: Trophy, label: 'KPI TB', value: `${avgPoints.toFixed(1)}/15`, color: avgPoints >= 10 ? '#22c55e' : '#f59e0b' },
             ].map((stat) => (
               <div key={stat.label}
@@ -304,7 +304,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
               <div>
                 <label className="label" htmlFor="qty-input">
                   <Package size={11} className="inline mr-1" />
-                  Số Tấm Thực Tế
+                  Số Đôi Thực Tế
                 </label>
                 <input
                   id="qty-input"
@@ -403,7 +403,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
               <table className="w-full text-xs min-w-[400px]">
                 <thead>
                   <tr className="border-b border-[var(--border)]">
-                    {['Loại SP', 'Giờ làm', 'Số tấm', 'KPI', 'Giờ ghi'].map((h) => (
+                    {['Loại SP', 'Giờ làm', 'Số đôi', 'KPI', 'Giờ ghi'].map((h) => (
                       <th key={h} className="pb-2 text-left font-medium text-[var(--text-3)] px-1">{h}</th>
                     ))}
                   </tr>
