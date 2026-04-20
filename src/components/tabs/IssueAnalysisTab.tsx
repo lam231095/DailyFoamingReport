@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   AlertOctagon, Calendar, ChevronLeft, ChevronRight, 
   Activity, ShieldAlert, BarChart3, RefreshCw,
-  Cpu, Zap, AlertTriangle, Layers
+  Cpu, Zap, AlertTriangle, Layers, Download
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, ChangeLog } from '@/types'
@@ -72,6 +72,41 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
     setCurrentDate(next)
   }
 
+  const handleDownloadCSV = () => {
+    if (logs.length === 0) return
+
+    // CSV header with BOM for UTF-8 compatibility with Excel
+    let csvContent = '\uFEFF'
+    csvContent += 'Ngày ghi,Mã máy,Phân loại,Mức độ,Ảnh hưởng CL,Mô tả,Người báo cáo\n'
+
+    logs.forEach(l => {
+      const row = [
+        new Date(l.logged_at).toLocaleString('vi-VN'),
+        l.machine_id,
+        l.category,
+        l.severity,
+        l.affects_quality ? 'Có' : 'Không',
+        `"${(l.description || '').replace(/"/g, '""')}"`,
+        l.users?.full_name || ''
+      ]
+      csvContent += row.join(',') + '\n'
+    })
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const filename = `Bao_cao_bien_dong_4M_${month}_${year}.csv`
+    
+    if ((navigator as any).msSaveBlob) {
+      (navigator as any).msSaveBlob(blob, filename)
+    } else {
+      link.href = URL.createObjectURL(blob)
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+  }
+
   // ── Aggregation Logic ────────────────────────────────────
   const stats = useMemo(() => {
     if (logs.length === 0) return null
@@ -136,9 +171,20 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
           <Calendar size={16} className="text-brand-500" />
           <span className="text-sm font-bold">Phân Tích Tháng {month < 10 ? `0${month}` : month} / {year}</span>
         </div>
-        <button onClick={() => changeMonth(1)} className="btn-ghost p-2 rounded-full">
-          <ChevronRight size={18} />
-        </button>
+        <div className="flex items-center gap-1">
+          {logs.length > 0 && (
+            <button 
+              onClick={handleDownloadCSV}
+              className="btn-ghost p-2 rounded-full text-brand-500 hover:bg-brand-500/10"
+              title="Tải báo cáo CSV"
+            >
+              <Download size={18} />
+            </button>
+          )}
+          <button onClick={() => changeMonth(1)} className="btn-ghost p-2 rounded-full">
+            <ChevronRight size={18} />
+          </button>
+        </div>
       </div>
 
       {loading ? (
