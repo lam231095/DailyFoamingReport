@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Plus, History, Package, ChevronRight, 
   Trash2, AlertCircle, CheckCircle2, Loader2,
-  Layers, Filter, ArrowDownToLine, User
+  Layers, Filter, ArrowDownToLine, User, Download
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, ResidualMaterial, ResidualMaterialUsage } from '@/types'
@@ -111,31 +111,71 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
     setSubmitting(false)
   }
 
+  const handleDownloadCSV = () => {
+    if (materials.length === 0) return
+
+    // CSV header with BOM
+    let csvContent = '\uFEFF'
+    csvContent += 'Ngày nhập,MSNV,Người nhập,Công đoạn,Tên liệu,Số lượng ban đầu,Còn lại,Đơn vị\n'
+
+    materials.forEach(m => {
+      const row = [
+        m.entry_date,
+        (m as any).users?.msnv || '',
+        `"${((m as any).users?.full_name || '').replace(/"/g, '""')}"`,
+        m.stage,
+        `"${m.material_name.replace(/"/g, '""')}"`,
+        m.initial_quantity,
+        m.current_quantity,
+        m.unit
+      ]
+      csvContent += row.join(',') + '\n'
+    })
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.body.appendChild(document.createElement('a'))
+    link.href = URL.createObjectURL(blob)
+    link.download = `Bao_cao_lieu_ton_${new Date().toLocaleDateString('vi-VN').replace(/\//g, '_')}.csv`
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const categories = ['Foaming Đổ', 'Foaming Tách']
 
   return (
     <div className="space-y-4">
       {/* ── Sub-Tabs ──────────────────────────────── */}
-      <div className="flex bg-[var(--bg-card)] p-1 rounded-xl border border-[var(--border)] overflow-x-auto scrollbar-hide">
-        {[
-          { id: 'stock', label: 'Tồn Kho', icon: Package },
-          { id: 'add', label: 'Nhập Tồn', icon: Plus },
-          { id: 'use', label: 'Sử Dụng', icon: ArrowDownToLine },
-          { id: 'history', label: 'Lịch Sử', icon: History },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => { setActiveTab(t.id as TabType); setStatus(null); }}
-            className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap shrink-0 ${
-              activeTab === t.id 
-                ? 'bg-brand-500 text-white shadow-lg' 
-                : 'text-[var(--text-3)] hover:bg-brand-500/10'
-            }`}
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 bg-[var(--bg-card)] p-1 rounded-xl border border-[var(--border)] overflow-x-auto scrollbar-hide">
+          {[
+            { id: 'stock', label: 'Tồn Kho', icon: Package },
+            { id: 'add', label: 'Nhập Tồn', icon: Plus },
+            { id: 'use', label: 'Sử Dụng', icon: ArrowDownToLine },
+            { id: 'history', label: 'Lịch Sử', icon: History },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => { setActiveTab(t.id as TabType); setStatus(null); }}
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg transition-all whitespace-nowrap shrink-0 ${
+                activeTab === t.id 
+                  ? 'bg-brand-500 text-white shadow-lg' 
+                  : 'text-[var(--text-3)] hover:bg-brand-500/10'
+              }`}
+            >
+              <t.icon size={14} />
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {materials.length > 0 && (
+          <button 
+            onClick={handleDownloadCSV}
+            className="p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] text-brand-500 hover:bg-brand-500/10 transition-all"
+            title="Tải báo cáo CSV"
           >
-            <t.icon size={14} />
-            {t.label}
+            <Download size={18} />
           </button>
-        ))}
+        )}
       </div>
 
       <AnimatePresence mode="wait">

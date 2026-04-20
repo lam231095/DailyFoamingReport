@@ -139,7 +139,7 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
 
     let query = supabase
       .from('production_reports')
-      .select('*, skus(*)')
+      .select('*, skus(*), users(msnv, full_name)')
       .gte('report_date', startDate)
       .lte('report_date', endDate)
 
@@ -174,11 +174,15 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
 
     // CSV header with BOM for UTF-8 compatibility with Excel
     let csvContent = '\uFEFF'
-    csvContent += 'Ngày,Mã SP,Tên SP,Giờ làm,Số lượng,Đơn vị,KPI,Ghi chú\n'
+    csvContent += 'Ngày,Giờ báo cáo,MSNV,Người báo cáo,Mã SP,Tên SP,Giờ làm,Số lượng,Đơn vị,KPI,Ghi chú\n'
 
     reports.forEach(r => {
+      const logTime = new Date(r.created_at).toLocaleTimeString('vi-VN')
       const row = [
         r.report_date,
+        logTime,
+        r.users?.msnv || '',
+        `"${(r.users?.full_name || '').replace(/"/g, '""')}"`,
         r.skus?.id || '',
         r.skus?.product_type || '',
         r.working_hours,

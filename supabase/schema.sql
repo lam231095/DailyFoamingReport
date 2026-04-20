@@ -90,8 +90,8 @@ insert into users (msnv, full_name, department) values
   ('NV003', 'Lê Văn Cường',    'Chuyền 3'),
   ('NV004', 'Phạm Thị Dung',   'QC'),
   ('NV005', 'Hoàng Văn Em',    'Chuyền 1'),
-  ('QL001', 'Lâm Supervisor',  'Giám Sát')
-on conflict (msnv) do nothing;
+  ('QL001', 'Lâm Supervisor',  'Giám Sát', 'supervisor')
+on conflict (msnv) do update set role = excluded.role;
 
 -- =============================================
 -- Dữ liệu mẫu - Loại sản phẩm

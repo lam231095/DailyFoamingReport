@@ -43,7 +43,7 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
 
     let query = supabase
       .from('change_logs')
-      .select('*, users(full_name)')
+      .select('*, users(msnv, full_name)')
       .gte('logged_at', startDate)
       .lte('logged_at', endDate)
 
@@ -77,17 +77,20 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
 
     // CSV header with BOM for UTF-8 compatibility with Excel
     let csvContent = '\uFEFF'
-    csvContent += 'Ngày ghi,Mã máy,Phân loại,Mức độ,Ảnh hưởng CL,Mô tả,Người báo cáo\n'
+    csvContent += 'Ngày ghi,Giờ,MSNV,Người báo cáo,Mã máy,Phân loại,Mức độ,Ảnh hưởng CL,Mô tả\n'
 
     logs.forEach(l => {
+      const dt = new Date(l.logged_at)
       const row = [
-        new Date(l.logged_at).toLocaleString('vi-VN'),
+        dt.toLocaleDateString('vi-VN'),
+        dt.toLocaleTimeString('vi-VN'),
+        l.users?.msnv || '',
+        `"${(l.users?.full_name || '').replace(/"/g, '""')}"`,
         l.machine_id,
         l.category,
         l.severity,
         l.affects_quality ? 'Có' : 'Không',
-        `"${(l.description || '').replace(/"/g, '""')}"`,
-        l.users?.full_name || ''
+        `"${(l.description || '').replace(/"/g, '""')}"`
       ]
       csvContent += row.join(',') + '\n'
     })
