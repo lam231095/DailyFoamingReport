@@ -27,7 +27,7 @@ export default function LoginPage() {
     try {
       const { data, error: dbError } = await supabase
         .from('users')
-        .select('id, msnv, full_name, department, is_active')
+        .select('id, msnv, full_name, department, role, is_active')
         .eq('msnv', msnv.trim().toUpperCase())
         .single()
 
@@ -45,6 +45,7 @@ export default function LoginPage() {
         msnv: data.msnv,
         full_name: data.full_name,
         department: data.department,
+        role: data.role,
       })
       router.push('/dashboard')
     } catch {

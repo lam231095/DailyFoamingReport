@@ -47,4 +47,5 @@ export interface SessionUser {
   msnv: string;
   full_name: string;
   department: string | null;
+  role: string;
 }
