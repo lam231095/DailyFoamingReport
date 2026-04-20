@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BarChart3, AlertOctagon } from 'lucide-react'
+import { BarChart3, AlertOctagon, Calendar } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
