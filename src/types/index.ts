@@ -27,6 +27,7 @@ export interface ProductionReport {
   note: string | null;
   created_at: string;
   skus?: SKU;
+  users?: { msnv: string; full_name: string };
 }
 
 export interface ChangeLog {
@@ -38,6 +39,7 @@ export interface ChangeLog {
   affects_quality: boolean;
   severity: 'low' | 'medium' | 'high';
   logged_at: string;
+  users?: { msnv: string; full_name: string };
 }
 
 export type FourMCategory = 'Man' | 'Machine' | 'Material' | 'Method';
@@ -60,7 +62,7 @@ export interface ResidualMaterial {
   unit: 'tấm' | 'bun';
   entry_date: string;
   created_at: string;
-  users?: { full_name: string };
+  users?: { msnv: string; full_name: string };
 }
 
 export interface ResidualMaterialUsage {
@@ -70,5 +72,5 @@ export interface ResidualMaterialUsage {
   used_quantity: number;
   used_at: string;
   residual_materials?: ResidualMaterial;
-  users?: { full_name: string };
+  users?: { msnv: string; full_name: string };
 }

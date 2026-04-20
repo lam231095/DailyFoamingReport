@@ -45,8 +45,8 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
       supabase.from('residual_material_usage').select('*, users(full_name), residual_materials(*)').order('used_at', { ascending: false }).limit(20)
     ])
     
-    if (mRes.data) setMaterials(mRes.data)
-    if (uRes.data) setUsageLogs(uRes.data as any)
+    if (mRes.data) setMaterials(mRes.data as ResidualMaterial[])
+    if (uRes.data) setUsageLogs(uRes.data as ResidualMaterialUsage[])
     setLoading(false)
   }, [])
 
@@ -121,8 +121,8 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
     materials.forEach(m => {
       const row = [
         m.entry_date,
-        (m as any).users?.msnv || '',
-        `"${((m as any).users?.full_name || '').replace(/"/g, '""')}"`,
+        m.users?.msnv || '',
+        `"${(m.users?.full_name || '').replace(/"/g, '""')}"`,
         m.stage,
         `"${m.material_name.replace(/"/g, '""')}"`,
         m.initial_quantity,

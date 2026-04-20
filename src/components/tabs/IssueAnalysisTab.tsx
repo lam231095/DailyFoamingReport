@@ -57,7 +57,7 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
     if (error) {
       console.error('Error fetching logs:', error)
     } else {
-      setLogs((data as any) ?? [])
+      setLogs((data as (ChangeLog & { users: { msnv: string; full_name: string } })[]) ?? [])
     }
     setLoading(false)
   }, [month, year, daysInMonth, user.id, user.role])
