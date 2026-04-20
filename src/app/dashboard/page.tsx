@@ -10,6 +10,7 @@ import Header from '@/components/layout/Header'
 import ProductionTab from '@/components/tabs/ProductionTab'
 import Changelog4MTab from '@/components/tabs/Changelog4MTab'
 import MonthlyStatsTab from '@/components/tabs/MonthlyStatsTab'
+import IssueAnalysisTab from '@/components/tabs/IssueAnalysisTab'
 
 const TABS = [
   {
@@ -32,6 +33,13 @@ const TABS = [
     shortLabel: 'Thống Kê',
     icon: Calendar,
     color: '#f59e0b',
+  },
+  {
+    id: 'issues',
+    label: 'Phân Tích 4M',
+    shortLabel: 'Phân Tích',
+    icon: AlertOctagon,
+    color: '#ef4444',
   },
 ]
 
@@ -155,6 +163,7 @@ export default function DashboardPage() {
             {activeTab === 'production' && <ProductionTab user={user} />}
             {activeTab === 'changelog'  && <Changelog4MTab user={user} />}
             {activeTab === 'monthly'    && <MonthlyStatsTab user={user} />}
+            {activeTab === 'issues'     && <IssueAnalysisTab user={user} />}
           </motion.div>
         </AnimatePresence>
       </div>
