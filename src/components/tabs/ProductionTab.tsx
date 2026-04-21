@@ -116,13 +116,19 @@ export default function ProductionTab({ user }: ProductionTabProps) {
   const fetchReports = useCallback(async () => {
     setLoadingReports(true)
     const today = new Date().toISOString().split('T')[0]
-    const { data } = await supabase
+    let query = supabase
       .from('production_reports')
-      .select('*, skus(*)')
-      .eq('user_id', user.id)
+      .select('*, skus(*), users(full_name)')
       .eq('report_date', today)
+
+    if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'manager') {
+       query = query.eq('user_id', user.id)
+    }
+
+    const { data } = await query
       .order('created_at', { ascending: false })
-      .limit(10)
+      .limit(user.role === 'worker' ? 10 : 30)
+
     setReports((data as (ProductionReport & { skus: SKU })[]) ?? [])
     setLoadingReports(false)
   }, [user.id])
@@ -185,7 +191,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
             {[
               { icon: BarChart3, label: 'Lượt ghi', value: String(reports.length), color: '#0052CC' },
               { icon: Package, label: 'Tổng Đôi', value: todayTotal.toLocaleString('vi-VN'), color: '#8b5cf6' },
-              { icon: Trophy, label: 'KPI TB', value: `${avgPoints.toFixed(1)}/15`, color: avgPoints >= 10 ? '#22c55e' : '#f59e0b' },
+              { icon: Trophy, label: 'KPI TB', value: `${avgPoints.toFixed(1)}/15`, color: avgPoints >= 12 ? '#22c55e' : (avgPoints >= 8 ? '#f59e0b' : '#ef4444') },
             ].map((stat) => (
               <div key={stat.label}
                 className="card p-3 flex flex-col items-center gap-1 text-center"
@@ -403,9 +409,14 @@ export default function ProductionTab({ user }: ProductionTabProps) {
               <table className="w-full text-xs min-w-[400px]">
                 <thead>
                   <tr className="border-b border-[var(--border)]">
-                    {['Loại SP', 'Giờ làm', 'Số đôi', 'KPI', 'Giờ ghi'].map((h) => (
-                      <th key={h} className="pb-2 text-left font-medium text-[var(--text-3)] px-1">{h}</th>
-                    ))}
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Loại SP</th>
+                    {(user.role === 'supervisor' || user.role === 'admin' || user.role === 'manager') && (
+                      <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Người BC</th>
+                    )}
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Giờ làm</th>
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Số đôi</th>
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">KPI</th>
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Giờ ghi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
@@ -419,13 +430,18 @@ export default function ProductionTab({ user }: ProductionTabProps) {
                         animate={{ opacity: 1, x: 0 }}
                         className="group"
                       >
-                        <td className="py-2.5 px-1">
-                          <p className="font-semibold text-[var(--text-1)]">{r.skus?.product_type}</p>
-                        </td>
-                        <td className="py-2.5 px-1 text-[var(--text-2)]">{r.working_hours}h</td>
-                        <td className="py-2.5 px-1 font-medium text-[var(--text-1)]">
-                          {r.actual_quantity.toLocaleString('vi-VN')}
-                        </td>
+                          <td className="py-2.5 px-1">
+                            <p className="font-semibold text-[var(--text-1)]">{r.skus?.product_type}</p>
+                          </td>
+                          {(user.role === 'supervisor' || user.role === 'admin' || user.role === 'manager') && (
+                            <td className="py-2.5 px-1 text-[var(--text-2)] whitespace-nowrap">
+                              {r.users?.full_name?.split(' ').pop()}
+                            </td>
+                          )}
+                          <td className="py-2.5 px-1 text-[var(--text-2)]">{r.working_hours}h</td>
+                          <td className="py-2.5 px-1 font-medium text-[var(--text-1)]">
+                            {r.actual_quantity.toLocaleString('vi-VN')}
+                          </td>
                         <td className="py-2.5 px-1">
                           <span className="font-bold" style={{ color: ptColor }}>
                             {pts.toFixed(1)}

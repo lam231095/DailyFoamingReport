@@ -111,6 +111,28 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
     setSubmitting(false)
   }
 
+  const handleDeleteMaterial = async (id: string) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa liệu tồn này? Thao tác này cũng sẽ xóa toàn bộ lịch sử sử dụng liên quan.')) return
+    
+    const { error } = await supabase.from('residual_materials').delete().eq('id', id)
+    if (error) {
+      alert('Lỗi khi xóa: ' + error.message)
+    } else {
+      fetchData()
+    }
+  }
+
+  const handleDeleteUsage = async (id: string) => {
+    if (!confirm('Xóa bản ghi sử dụng này? Số lượng tồn kho sẽ được tự động hoàn lại.')) return
+    
+    const { error } = await supabase.from('residual_material_usage').delete().eq('id', id)
+    if (error) {
+      alert('Lỗi khi xóa: ' + error.message)
+    } else {
+      fetchData()
+    }
+  }
+
   const handleDownloadCSV = () => {
     if (materials.length === 0) return
 
@@ -211,9 +233,19 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
                             <p className="text-[10px] text-[var(--text-3)]">Ngày nhập: {new Date(m.entry_date).toLocaleDateString('vi-VN')}</p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-black text-brand-500">{m.current_quantity} <span className="text-[10px] font-medium uppercase">{m.unit}</span></p>
-                          <p className="text-[10px] text-[var(--text-3)]">Ban đầu: {m.initial_quantity}</p>
+                        <div className="flex items-center gap-1">
+                          <div className="text-right mr-2">
+                            <p className="text-lg font-black text-brand-500">{m.current_quantity} <span className="text-[10px] font-medium uppercase">{m.unit}</span></p>
+                            <p className="text-[10px] text-[var(--text-3)]">Ban đầu: {m.initial_quantity}</p>
+                          </div>
+                          {(user.role === 'supervisor' || user.role === 'admin' || m.user_id === user.id) && (
+                            <button 
+                              onClick={() => handleDeleteMaterial(m.id)}
+                              className="p-2 text-[var(--text-3)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -430,6 +462,14 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
                       <span className="text-[9px] text-[var(--text-3)] font-medium">Bởi: {log.users?.full_name}</span>
                     </div>
                   </div>
+                  {(user.role === 'supervisor' || user.role === 'admin' || log.user_id === user.id) && (
+                    <button 
+                      onClick={() => handleDeleteUsage(log.id)}
+                      className="p-1.5 text-[var(--text-3)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  )}
                 </div>
               ))
             )}
