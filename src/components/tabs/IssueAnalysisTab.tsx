@@ -29,26 +29,46 @@ type RepeatIssue = {
 
 export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [logs, setLogs] = useState<(ChangeLog & { users: { full_name: string } })[]>([])
-  const [loading, setLoading] = useState(true)
-
+  
+  // Advanced Filter States
+  const [useFilters, setUseFilters] = useState(false)
+  const [filterCategory, setFilterCategory] = useState<string>('All')
+  const [filterMsnv, setFilterMsnv] = useState('')
+  
   const month = currentDate.getMonth() + 1
   const year = currentDate.getFullYear()
   const daysInMonth = new Date(year, month, 0).getDate()
+  
+  const [startDate, setStartDate] = useState(`${year}-${String(month).padStart(2, '0')}-01`)
+  const [endDate, setEndDate] = useState(`${year}-${String(month).padStart(2, '0')}-${daysInMonth}`)
+
+  const [logs, setLogs] = useState<(ChangeLog & { users: { full_name: string; msnv: string } })[]>([])
+  const [loading, setLoading] = useState(true)
 
   const fetchMonthlyLogs = useCallback(async () => {
     setLoading(true)
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01T00:00:00Z`
-    const endDate = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}T23:59:59Z`
+    
+    let queryStartDate = `${year}-${String(month).padStart(2, '0')}-01T00:00:00Z`
+    let queryEndDate = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}T23:59:59Z`
+
+    if (useFilters) {
+      queryStartDate = `${startDate}T00:00:00Z`
+      queryEndDate = `${endDate}T23:59:59Z`
+    }
 
     let query = supabase
       .from('change_logs')
       .select('*, users(msnv, full_name)')
-      .gte('logged_at', startDate)
-      .lte('logged_at', endDate)
+      .gte('logged_at', queryStartDate)
+      .lte('logged_at', queryEndDate)
 
-    // Supervisor view vs Worker view
-    if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'manager') {
+    if (filterCategory !== 'All') {
+      query = query.eq('category', filterCategory)
+    }
+
+    if (filterMsnv.trim()) {
+      query = query.filter('users.msnv', 'ilike', `%${filterMsnv.trim()}%`)
+    } else if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'manager') {
       query = query.eq('user_id', user.id)
     }
 
@@ -60,7 +80,7 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
       setLogs((data as (ChangeLog & { users: { msnv: string; full_name: string } })[]) ?? [])
     }
     setLoading(false)
-  }, [month, year, daysInMonth, user.id, user.role])
+  }, [month, year, daysInMonth, user.id, user.role, useFilters, startDate, endDate, filterCategory, filterMsnv])
 
   useEffect(() => {
     fetchMonthlyLogs()
@@ -176,6 +196,12 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
           <span className="text-sm font-bold">Phân Tích Tháng {month < 10 ? `0${month}` : month} / {year}</span>
         </div>
         <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setUseFilters(!useFilters)}
+            className={`p-2 rounded-xl border transition-all text-xs font-bold flex items-center gap-1 ${useFilters ? 'bg-orange-500 text-white border-orange-500' : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-2)] hover:border-orange-500/50'}`}
+          >
+            {useFilters ? 'Đang lọc' : 'Lọc nâng cao'}
+          </button>
           {logs.length > 0 && (
             <button 
               onClick={handleDownloadCSV}
@@ -190,6 +216,66 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
           </button>
         </div>
       </div>
+
+      {/* ── Advanced Filters ───────────────────────── */}
+      <AnimatePresence>
+        {useFilters && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="card p-4 space-y-3 overflow-hidden border-orange-500/20"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Từ ngày</label>
+                <input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="input text-xs" 
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Đến ngày</label>
+                <input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="input text-xs" 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Phân loại M</label>
+                <select 
+                  value={filterCategory} 
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="input text-xs appearance-none"
+                >
+                  <option value="All">Tất cả</option>
+                  <option value="Man">Man (Người)</option>
+                  <option value="Machine">Machine (Máy)</option>
+                  <option value="Material">Material (Vật liệu)</option>
+                  <option value="Method">Method (Phương pháp)</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Mã nhân viên (MSNV)</label>
+                <input 
+                  type="text" 
+                  placeholder="Lọc theo MSNV..." 
+                  value={filterMsnv}
+                  onChange={(e) => setFilterMsnv(e.target.value)}
+                  className="input text-xs" 
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">

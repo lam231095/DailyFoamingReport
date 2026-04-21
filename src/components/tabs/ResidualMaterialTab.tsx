@@ -24,6 +24,12 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
   const [usageLogs, setUsageLogs] = useState<ResidualMaterialUsage[]>([])
   const [status, setStatus] = useState<{ type: 'success' | 'error', msg: string } | null>(null)
 
+  // Advanced Filter States
+  const [useFilters, setUseFilters] = useState(false)
+  const [filterStage, setFilterStage] = useState<string>('All')
+  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0])
+
   // Form states
   const [formData, setFormData] = useState({
     stage: 'Foaming Đổ' as 'Foaming Đổ' | 'Foaming Tách',
@@ -40,15 +46,38 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    
+    let mQuery = supabase.from('residual_materials').select('*, users(msnv, full_name)')
+    let uQuery = supabase.from('residual_material_usage').select('*, users(msnv, full_name), residual_materials(*)')
+
+    if (useFilters) {
+      mQuery = mQuery.gte('entry_date', startDate).lte('entry_date', endDate)
+      uQuery = uQuery.gte('used_at', `${startDate}T00:00:00Z`).lte('used_at', `${endDate}T23:59:59Z`)
+      
+      if (filterStage !== 'All') {
+        mQuery = mQuery.eq('stage', filterStage)
+        // For usage, we might need a join filter or just filter on the related material stage later
+        // But let's try to filter if possible or just handle it in memo
+      }
+    }
+
     const [mRes, uRes] = await Promise.all([
-      supabase.from('residual_materials').select('*, users(full_name)').order('created_at', { ascending: false }),
-      supabase.from('residual_material_usage').select('*, users(full_name), residual_materials(*)').order('used_at', { ascending: false }).limit(20)
+      mQuery.order('created_at', { ascending: false }),
+      uQuery.order('used_at', { ascending: false }).limit(50)
     ])
     
-    if (mRes.data) setMaterials(mRes.data as ResidualMaterial[])
-    if (uRes.data) setUsageLogs(uRes.data as ResidualMaterialUsage[])
+    if (mRes.data) {
+      setMaterials(mRes.data as ResidualMaterial[])
+    }
+    if (uRes.data) {
+      let filteredUsage = uRes.data as ResidualMaterialUsage[]
+      if (useFilters && filterStage !== 'All') {
+        filteredUsage = filteredUsage.filter(u => u.residual_materials?.stage === filterStage)
+      }
+      setUsageLogs(filteredUsage)
+    }
     setLoading(false)
-  }, [])
+  }, [useFilters, startDate, endDate, filterStage])
 
   useEffect(() => {
     fetchData()
@@ -189,6 +218,13 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
             </button>
           ))}
         </div>
+        <button 
+          onClick={() => setUseFilters(!useFilters)}
+          className={`p-2.5 rounded-xl border transition-all ${useFilters ? 'bg-brand-500 text-white border-brand-500' : 'bg-[var(--bg-card)] border-[var(--border)] text-brand-500 hover:bg-brand-500/10'}`}
+          title="Bộ lọc nâng cao"
+        >
+          <Filter size={18} />
+        </button>
         {materials.length > 0 && (
           <button 
             onClick={handleDownloadCSV}
@@ -199,6 +235,54 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
           </button>
         )}
       </div>
+
+      {/* ── Advanced Filters ───────────────────────── */}
+      <AnimatePresence>
+        {useFilters && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="card p-4 space-y-3 overflow-hidden border-brand-500/20"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Từ ngày</label>
+                <input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="input text-xs" 
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Đến ngày</label>
+                <input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="input text-xs" 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Công đoạn (Phân loại)</label>
+              <div className="flex gap-2">
+                {['All', 'Foaming Đổ', 'Foaming Tách'].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setFilterStage(s)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${filterStage === s ? 'bg-brand-500 text-white border-brand-500' : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-2)] hover:border-brand-500/50'}`}
+                  >
+                    {s === 'All' ? 'Tất cả' : s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {/* ── Tab: Stock ───────────────────────────── */}
