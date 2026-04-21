@@ -146,7 +146,7 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
         m.users?.msnv || '',
         `"${(m.users?.full_name || '').replace(/"/g, '""')}"`,
         m.stage,
-        `"${m.material_name.replace(/"/g, '""')}"`,
+        `"${(m.material_name || '').replace(/"/g, '""')}"`,
         m.initial_quantity,
         m.current_quantity,
         m.unit

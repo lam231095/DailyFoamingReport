@@ -95,7 +95,16 @@ export default function ProductionTab({ user }: ProductionTabProps) {
   const [workingHours, setWorkingHours] = useState('')
   const [actualQty, setActualQty] = useState('')
   const [note, setNote] = useState('')
+  const [shift, setShift] = useState('Ca 1')
   const [skuOpen, setSkuOpen] = useState(false)
+
+  // Auto-detect shift based on current time
+  useEffect(() => {
+    const hour = new Date().getHours()
+    if (hour >= 6 && hour < 14) setShift('Ca 1')
+    else if (hour >= 14 && hour < 22) setShift('Ca 2')
+    else setShift('Ca 3')
+  }, [])
 
   // Computed productivity
   const currentSku = skus.find((s) => s.id === selectedSku)
@@ -151,6 +160,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
         productivity_points: parseFloat(productivityPoints.toFixed(2)),
         note: note.trim() || null,
         report_date: new Date().toISOString().split('T')[0],
+        shift: shift,
       })
       if (error) throw error
       setShowSuccess(true)
@@ -358,6 +368,27 @@ export default function ProductionTab({ user }: ProductionTabProps) {
               />
             </div>
 
+            {/* Shift Selection */}
+            <div>
+              <label className="label">Ca Làm Việc</label>
+              <div className="grid grid-cols-3 gap-2">
+                {['Ca 1', 'Ca 2', 'Ca 3'].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setShift(s)}
+                    className={`py-2 rounded-lg text-xs font-bold border transition-all ${
+                      shift === s 
+                        ? 'bg-brand-500 border-brand-500 text-white shadow-md shadow-brand-500/20' 
+                        : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-3)] hover:border-brand-500/50'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Submit */}
             <motion.button
               type="submit"
@@ -413,6 +444,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
                     {(user.role === 'supervisor' || user.role === 'admin' || user.role === 'manager') && (
                       <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Người BC</th>
                     )}
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Ca</th>
                     <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Giờ làm</th>
                     <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Số đôi</th>
                     <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">KPI</th>
@@ -438,6 +470,11 @@ export default function ProductionTab({ user }: ProductionTabProps) {
                               {r.users?.full_name?.split(' ').pop()}
                             </td>
                           )}
+                          <td className="py-2.5 px-1 text-[var(--text-2)] whitespace-nowrap">
+                            <span className="px-1.5 py-0.5 rounded bg-[var(--bg-input)] text-[9px] font-bold">
+                              {r.shift || '—'}
+                            </span>
+                          </td>
                           <td className="py-2.5 px-1 text-[var(--text-2)]">{r.working_hours}h</td>
                           <td className="py-2.5 px-1 font-medium text-[var(--text-1)]">
                             {r.actual_quantity.toLocaleString('vi-VN')}

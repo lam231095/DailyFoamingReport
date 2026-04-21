@@ -77,12 +77,13 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
 
     // CSV header with BOM for UTF-8 compatibility with Excel
     let csvContent = '\uFEFF'
-    csvContent += 'Ngày ghi,Giờ,MSNV,Người báo cáo,Mã máy,Phân loại,Mức độ,Ảnh hưởng CL,Mô tả\n'
+    csvContent += 'Ngày ghi,Ca,Giờ,MSNV,Người báo cáo,Mã máy,Phân loại,Mức độ,Ảnh hưởng CL,Mô tả\n'
 
     logs.forEach(l => {
       const dt = new Date(l.logged_at)
       const row = [
         dt.toLocaleDateString('vi-VN'),
+        l.shift || '—',
         dt.toLocaleTimeString('vi-VN'),
         l.users?.msnv || '',
         `"${(l.users?.full_name || '').replace(/"/g, '""')}"`,

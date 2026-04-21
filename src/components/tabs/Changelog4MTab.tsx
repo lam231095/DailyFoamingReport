@@ -68,7 +68,17 @@ export default function Changelog4MTab({ user }: Changelog4MTabProps) {
   const [description, setDescription] = useState('')
   const [affectsQuality, setAffectsQuality] = useState(false)
   const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('low')
+  const [shift, setShift] = useState('Ca 1')
   const [submitting, setSubmitting] = useState(false)
+
+  // Auto-detect shift
+  useState(() => {
+    const hour = new Date().getHours()
+    let defaultShift = 'Ca 3'
+    if (hour >= 6 && hour < 14) defaultShift = 'Ca 1'
+    else if (hour >= 14 && hour < 22) defaultShift = 'Ca 2'
+    setShift(defaultShift)
+  })
   const [showSuccess, setShowSuccess] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -94,6 +104,7 @@ export default function Changelog4MTab({ user }: Changelog4MTabProps) {
         description: description.trim(),
         affects_quality: affectsQuality,
         severity,
+        shift,
       })
       if (error) throw error
       setShowSuccess(true)
@@ -260,6 +271,27 @@ export default function Changelog4MTab({ user }: Changelog4MTabProps) {
                 <span className={`text-[10px] ${description.length < 10 ? 'text-[var(--text-3)]' : 'text-green-500'}`}>
                   {description.length} ký tự
                 </span>
+              </div>
+            </div>
+
+            {/* Shift */}
+            <div>
+              <label className="label">Ca Làm Việc</label>
+              <div className="grid grid-cols-3 gap-2">
+                {['Ca 1', 'Ca 2', 'Ca 3'].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setShift(s)}
+                    className={`py-2 rounded-lg text-xs font-bold border transition-all ${
+                      shift === s 
+                        ? 'bg-purple-500 border-purple-500 text-white shadow-md shadow-purple-500/20' 
+                        : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-3)] hover:border-purple-500/50'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
               </div>
             </div>
 

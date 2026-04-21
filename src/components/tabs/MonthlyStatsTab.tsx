@@ -125,6 +125,13 @@ function MonthlyAreaChart({ data, daysInMonth }: { data: AggregatedDay[], daysIn
 // ── Main Component ─────────────────────────────────────────
 export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
+  
+  // New Filter States
+  const [useDateRange, setUseDateRange] = useState(false)
+  const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0])
+  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0])
+  const [searchMsnv, setSearchMsnv] = useState('')
+
   const [reports, setReports] = useState<(ProductionReport & { skus: SKU })[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -134,18 +141,26 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
 
   const fetchMonthlyData = useCallback(async () => {
     setLoading(true)
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-    const endDate = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}`
+    
+    let queryStartDate = `${year}-${String(month).padStart(2, '0')}-01`
+    let queryEndDate = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}`
+
+    if (useDateRange) {
+      queryStartDate = startDate
+      queryEndDate = endDate
+    }
 
     let query = supabase
       .from('production_reports')
       .select('*, skus(*), users(msnv, full_name)')
-      .gte('report_date', startDate)
-      .lte('report_date', endDate)
+      .gte('report_date', queryStartDate)
+      .lte('report_date', queryEndDate)
 
-    // Optional: Filter by user if not admin/supervisor
-    // For now, let's show all data to user "Lâm Sup" (supervisor role)
-    if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'manager') {
+    if (searchMsnv.trim()) {
+      // Find user id by msnv first or use join filter if possible
+      // For simplicity and since we have the users relation:
+      query = query.filter('users.msnv', 'ilike', `%${searchMsnv.trim()}%`)
+    } else if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'manager') {
        query = query.eq('user_id', user.id)
     }
 
@@ -157,7 +172,7 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
       setReports((data as (ProductionReport & { skus: SKU })[]) ?? [])
     }
     setLoading(false)
-  }, [month, year, daysInMonth, user.id, user.role])
+  }, [month, year, daysInMonth, user.id, user.role, useDateRange, startDate, endDate, searchMsnv])
 
   useEffect(() => {
     fetchMonthlyData()
@@ -174,17 +189,18 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
 
     // CSV header with BOM for UTF-8 compatibility with Excel
     let csvContent = '\uFEFF'
-    csvContent += 'Ngày,Giờ báo cáo,MSNV,Người báo cáo,Mã SP,Tên SP,Giờ làm,Số lượng,Đơn vị,KPI,Ghi chú\n'
+    csvContent += 'Ngày,Ca,Giờ ghi,MSNV,Người báo cáo,Mã SP,Tên SP,Giờ làm,Số lượng,Đơn vị,KPI,Ghi chú\n'
 
     reports.forEach(r => {
       const logTime = new Date(r.created_at).toLocaleTimeString('vi-VN')
       const row = [
         r.report_date,
+        r.shift || '—',
         logTime,
         r.users?.msnv || '',
         `"${(r.users?.full_name || '').replace(/"/g, '""')}"`,
         r.skus?.id || '',
-        r.skus?.product_type || '',
+        `"${(r.skus?.product_type || '').replace(/"/g, '""')}"`,
         r.working_hours,
         r.actual_quantity,
         r.skus?.unit || 'đôi',
@@ -278,6 +294,12 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
           <span className="text-sm font-bold">Tháng {month < 10 ? `0${month}` : month} / {year}</span>
         </div>
         <div className="flex items-center gap-1">
+          <button 
+            onClick={() => setUseDateRange(!useDateRange)}
+            className={`p-2 rounded-xl border transition-all text-xs font-bold flex items-center gap-1 ${useDateRange ? 'bg-brand-500 text-white border-brand-500' : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-2)] hover:border-brand-500/50'}`}
+          >
+            {useDateRange ? 'Đang lọc ngày' : 'Lọc theo ngày'}
+          </button>
           {reports.length > 0 && (
             <button 
               onClick={handleDownloadCSV}
@@ -293,6 +315,54 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
         </div>
       </div>
 
+      {/* ── Advanced Filters ───────────────────────── */}
+      <AnimatePresence>
+        {useDateRange && (
+          <motion.div 
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="card p-4 space-y-3 overflow-hidden"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Từ ngày</label>
+                <input 
+                  type="date" 
+                  value={startDate} 
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="input text-xs" 
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Đến ngày</label>
+                <input 
+                  type="date" 
+                  value={endDate} 
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="input text-xs" 
+                />
+              </div>
+            </div>
+            {(user.role === 'supervisor' || user.role === 'admin' || user.role === 'manager') && (
+              <div>
+                <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Mã nhân viên (MSNV)</label>
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    placeholder="Nhập MSNV để tìm kiếm..." 
+                    value={searchMsnv}
+                    onChange={(e) => setSearchMsnv(e.target.value)}
+                    className="input text-xs pl-8" 
+                  />
+                  <Users size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
@@ -301,8 +371,8 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
       ) : !stats ? (
         <div className="card p-10 flex flex-col items-center gap-3 text-center">
           <Activity size={40} className="text-[var(--text-3)]" />
-          <p className="text-sm text-[var(--text-2)] font-medium">Không có dữ liệu báo cáo trong tháng này</p>
-          <p className="text-xs text-[var(--text-3)]">Hãy ghi nhận sản lượng để xem thống kê</p>
+          <p className="text-sm text-[var(--text-2)] font-medium">Không tìm thấy dữ liệu báo cáo</p>
+          <p className="text-xs text-[var(--text-3)]">Hãy thay đổi điều kiện lọc hoặc ghi nhận sản lượng</p>
         </div>
       ) : (
         <>

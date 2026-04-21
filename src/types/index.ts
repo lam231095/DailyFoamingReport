@@ -26,6 +26,7 @@ export interface ProductionReport {
   report_date: string;
   note: string | null;
   created_at: string;
+  shift?: string | null;
   skus?: SKU;
   users?: { msnv: string; full_name: string };
 }
@@ -39,6 +40,7 @@ export interface ChangeLog {
   affects_quality: boolean;
   severity: 'low' | 'medium' | 'high';
   logged_at: string;
+  shift?: string | null;
   users?: { msnv: string; full_name: string };
 }
 
