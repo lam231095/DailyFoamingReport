@@ -154,7 +154,7 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
     if (error) {
       console.error('Error fetching monthly stats:', error)
     } else {
-      setReports((data as ProductionReport[]) ?? [])
+      setReports((data as (ProductionReport & { skus: SKU })[]) ?? [])
     }
     setLoading(false)
   }, [month, year, daysInMonth, user.id, user.role])
