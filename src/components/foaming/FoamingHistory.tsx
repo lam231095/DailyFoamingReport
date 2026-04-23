@@ -128,7 +128,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         row.users?.msnv
       ]
       
-      let specific = []
+      let specific: any[] = []
       if (activeStage === 'pour') specific = [row.shift, row.actual_bun_poured, row.lot_no]
       if (activeStage === 'separate') specific = [row.shift, row.actual_bun_separated, row.actual_sheet_received, row.lot_no, row.ng_qty, row.error_type]
       if (activeStage === 'warehouse') specific = [row.qty_delivered_sheet, row.delivery_date]
