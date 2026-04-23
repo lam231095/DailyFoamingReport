@@ -117,17 +117,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
   const exportCSV = () => {
     if (data.length === 0) return
     
-    let csvContent = "data:text/csv;charset=utf-8,"
-    
-    // Header dựa trên stage
-    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
-    if (activeStage === 'pour') headers.push("Ca", "SL Đổ (Bun)", "Lot No")
-    if (activeStage === 'separate') headers.push("Ca", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
-    if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao")
-    
-    csvContent += headers.join(",") + "\r\n"
-
-    data.forEach(row => {
+    const csvContentRaw = headers.join(",") + "\r\n" + data.map(row => {
       const dateTime = new Date(row.created_at).toLocaleString('vi-VN')
       const dateOnly = row.delivery_date || new Date(row.created_at).toLocaleDateString('vi-VN')
       const common = [
@@ -161,16 +151,20 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       }
       if (activeStage === 'warehouse') specific = [row.qty_delivered_sheet, row.delivery_date]
       
-      csvContent += [...common, ...specific].join(",") + "\r\n"
-    })
+      return [...common, ...specific].join(",")
+    }).join("\r\n")
 
-    const encodedUri = encodeURI(csvContent)
+    // Thêm BOM (Byte Order Mark) để Excel nhận diện đúng UTF-8 (Tiếng Việt)
+    const blob = new Blob(["\uFEFF" + csvContentRaw], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    
     const link = document.createElement("a")
-    link.setAttribute("href", encodedUri)
+    link.setAttribute("href", url)
     link.setAttribute("download", `baocao_foaming_${activeStage}_${filters.startDate}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(url)
   }
 
   return (
