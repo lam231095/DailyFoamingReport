@@ -16,6 +16,13 @@ import FoamingProcessTab from '@/components/tabs/FoamingProcessTab'
 
 const TABS = [
   {
+    id: 'foaming',
+    label: 'Quy trình Foaming',
+    shortLabel: 'Foaming',
+    icon: Factory,
+    color: '#f43f5e',
+  },
+  {
     id: 'production',
     label: 'Sản Lượng & KPI',
     shortLabel: 'Sản Lượng',
