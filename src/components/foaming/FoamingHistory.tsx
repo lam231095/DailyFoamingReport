@@ -390,14 +390,28 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                             <p className="text-sm font-bold text-purple-600">{row.actual_bun_separated}B / {row.actual_sheet_received}S</p>
                           </div>
                           <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Hiệu suất (%)</p>
+                            <p className={(() => {
+                              const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
+                              const std = standards.find(s => s.thickness_mm === thickness)
+                              const suggested = std ? Math.round(row.actual_bun_separated * std.optimal_sheets_per_bun) : 0
+                              const perf = suggested > 0 ? Math.round((row.actual_sheet_received / suggested) * 100) : 0
+                              return `text-sm font-bold ${perf >= 95 ? 'text-green-600' : perf >= 85 ? 'text-orange-500' : 'text-red-500'}`
+                            })()}>
+                              {(() => {
+                                const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
+                                const std = standards.find(s => s.thickness_mm === thickness)
+                                const suggested = std ? Math.round(row.actual_bun_separated * std.optimal_sheets_per_bun) : 0
+                                const perf = suggested > 0 ? Math.round((row.actual_sheet_received / suggested) * 100) : 0
+                                return std ? `${perf}% (${suggested} tấm tối ưu)` : 'N/A'
+                              })()}
+                            </p>
+                          </div>
+                          <div>
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Phế phẩm (NG)</p>
                             <p className={`text-sm font-bold ${row.ng_qty > 0 ? 'text-red-500' : 'text-[var(--text-1)]'}`}>
                               {row.ng_qty} {row.error_type ? `(${row.error_type})` : ''}
                             </p>
-                          </div>
-                          <div className="hidden sm:block">
-                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Lot No</p>
-                            <p className="text-sm font-bold text-[var(--text-1)]">{row.lot_no || '---'}</p>
                           </div>
                         </>
                       )}
