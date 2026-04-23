@@ -27,6 +27,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [standards, setStandards] = useState<any[]>([])
 
   // Filters
   const [filters, setFilters] = useState({
@@ -38,6 +39,15 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     msnv: '',
   })
   const [showFilters, setShowFilters] = useState(false)
+
+  // 1. Tải bảng tiêu chuẩn độ dày
+  useEffect(() => {
+    async function fetchStandards() {
+      const { data } = await supabase.from('thickness_standards').select('*')
+      setStandards(data || [])
+    }
+    fetchStandards()
+  }, [])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -109,18 +119,20 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     
     let csvContent = "data:text/csv;charset=utf-8,"
     
-    // Header based on stage
-    const headers = ["Ngày", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
-    if (activeStage === 'pour') headers.push("Ca", "SL Đổ", "Lot No")
-    if (activeStage === 'separate') headers.push("Ca", "SL Tách", "SL Sheet", "Lot No", "NG", "Lỗi")
-    if (activeStage === 'warehouse') headers.push("SL Giao", "Ngày Giao")
+    // Header dựa trên stage
+    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
+    if (activeStage === 'pour') headers.push("Ca", "SL Đổ (Bun)", "Lot No")
+    if (activeStage === 'separate') headers.push("Ca", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
+    if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao")
     
     csvContent += headers.join(",") + "\r\n"
 
     data.forEach(row => {
-      const date = row.delivery_date || new Date(row.created_at).toLocaleDateString()
+      const dateTime = new Date(row.created_at).toLocaleString('vi-VN')
+      const dateOnly = row.delivery_date || new Date(row.created_at).toLocaleDateString('vi-VN')
       const common = [
-        date,
+        `"${dateTime}"`,
+        `"${dateOnly}"`,
         row.firm_plan,
         `"${row.production_plan?.pu_code}"`,
         `"${row.production_plan?.ten_san_pham}"`,
@@ -130,7 +142,23 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       
       let specific: any[] = []
       if (activeStage === 'pour') specific = [row.shift, row.actual_bun_poured, row.lot_no]
-      if (activeStage === 'separate') specific = [row.shift, row.actual_bun_separated, row.actual_sheet_received, row.lot_no, row.ng_qty, row.error_type]
+      if (activeStage === 'separate') {
+        const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
+        const std = standards.find(s => s.thickness_mm === thickness)
+        const suggested = std ? Math.round(row.actual_bun_separated * std.optimal_sheets_per_bun) : 0
+        const perf = suggested > 0 ? Math.round((row.actual_sheet_received / suggested) * 100) : 0
+        
+        specific = [
+          row.shift, 
+          row.actual_bun_separated, 
+          row.actual_sheet_received, 
+          suggested, 
+          `${perf}%`,
+          row.lot_no, 
+          row.ng_qty, 
+          row.error_type
+        ]
+      }
       if (activeStage === 'warehouse') specific = [row.qty_delivered_sheet, row.delivery_date]
       
       csvContent += [...common, ...specific].join(",") + "\r\n"
