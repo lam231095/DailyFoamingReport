@@ -107,18 +107,31 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
                 <h4 className="text-[var(--text-1)] font-bold text-base leading-tight">
                   {foundPlan.ten_san_pham}
                 </h4>
-                <div className="flex flex-wrap gap-4 mt-3">
-                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-black/5">
+                <div className="flex flex-wrap gap-3 mt-3">
+                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-black/5 min-w-[90px]">
                     <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Bun Code</p>
                     <p className="text-sm font-mono font-bold text-brand-500">{foundPlan.bun_code || '---'}</p>
                   </div>
-                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-black/5">
+                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-black/5 min-w-[90px]">
                     <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">PU Code</p>
                     <p className="text-sm font-mono font-bold text-brand-500">{foundPlan.pu_code || '---'}</p>
                   </div>
-                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-black/5">
+                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-black/5 min-w-[90px]">
                     <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Kế hoạch Đổ</p>
                     <p className="text-sm font-bold text-brand-500">{foundPlan.sl_bun_can_do || 0} Bun</p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-black/5 min-w-[90px]">
+                    <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">SL Sheet</p>
+                    <p className="text-sm font-bold text-blue-600">{foundPlan.sl_sheet || 0} Sheet</p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-orange-500/20 bg-orange-500/5 min-w-[90px]">
+                    <p className="text-[10px] text-orange-600 font-bold uppercase">Độ dày</p>
+                    <p className="text-sm font-bold text-orange-600">
+                      {(() => {
+                        const match = foundPlan.ten_san_pham?.match(/([0-9.]+)\s*mm/i);
+                        return match ? match[1] : '---';
+                      })()} mm
+                    </p>
                   </div>
                 </div>
               </div>
