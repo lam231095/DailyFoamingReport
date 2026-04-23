@@ -79,7 +79,10 @@ export default function FoamingProcessTab({ user }: FoamingProcessTabProps) {
             className="flex flex-col items-center justify-center py-20 px-8 text-center bg-[var(--bg-card)]/40 rounded-3xl border-2 border-dashed border-[var(--border)]"
           >
             <div className="w-16 h-16 rounded-full bg-[var(--bg-card)] border border-[var(--border)] flex items-center justify-center mb-4 text-[var(--text-3)]">
-              {STAGES.find(s => s.id === activeStage)?.icon({ size: 32 })}
+              {(() => {
+                const Icon = STAGES.find(s => s.id === activeStage)?.icon
+                return Icon ? <Icon size={32} /> : null
+              })()}
             </div>
             <h4 className="text-[var(--text-2)] font-bold mb-1">Vui lòng tìm mã đơn hàng</h4>
             <p className="text-xs text-[var(--text-3)] max-w-[240px]">
