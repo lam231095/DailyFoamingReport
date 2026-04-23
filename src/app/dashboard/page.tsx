@@ -57,19 +57,12 @@ const TABS = [
     icon: Package,
     color: '#10b981',
   },
-  {
-    id: 'foaming',
-    label: 'Quy trình Foaming',
-    shortLabel: 'Foaming',
-    icon: Factory,
-    color: '#f43f5e',
-  },
 ]
 
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<SessionUser | null>(null)
-  const [activeTab, setActiveTab] = useState('production')
+  const [activeTab, setActiveTab] = useState('foaming')
   const [direction, setDirection] = useState(1) // 1=right, -1=left
 
   useEffect(() => {
