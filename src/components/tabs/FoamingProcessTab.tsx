@@ -2,17 +2,19 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Droplets, Scissors, Warehouse } from 'lucide-react'
+import { Droplets, Scissors, Warehouse, FileText } from 'lucide-react'
 import { ProductionPlan, SessionUser } from '@/types'
 import FoamingHeader from '../foaming/FoamingHeader'
 import PourForm from '../foaming/PourForm'
 import SeparateForm from '../foaming/SeparateForm'
 import WarehouseForm from '../foaming/WarehouseForm'
+import FoamingHistory from '../foaming/FoamingHistory'
 
 const STAGES = [
   { id: 'pour', label: 'C.Đoạn ĐỔ', icon: Droplets, color: '#3b82f6' },
   { id: 'separate', label: 'C.Đoạn TÁCH', icon: Scissors, color: '#a855f7' },
   { id: 'warehouse', label: 'NHẬP KHO', icon: Warehouse, color: '#10b981' },
+  { id: 'history', label: 'BÁO CÁO', icon: FileText, color: '#f59e0b' },
 ]
 
 interface FoamingProcessTabProps {
@@ -70,7 +72,16 @@ export default function FoamingProcessTab({ user }: FoamingProcessTabProps) {
       </div>
 
       <AnimatePresence mode="wait">
-        {!selectedPlan ? (
+        {activeStage === 'history' ? (
+          <motion.div
+            key="history"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+          >
+            <FoamingHistory user={user} />
+          </motion.div>
+        ) : !selectedPlan ? (
           <motion.div
             key="empty"
             initial={{ opacity: 0, scale: 0.98 }}
