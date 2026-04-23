@@ -150,63 +150,75 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
         {/* --- Phân tích hiệu suất --- */}
         <AnimatePresence>
-          {identifiedThickness && currentStandard && (
+          {identifiedThickness && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               className="overflow-hidden"
             >
-              <div className="bg-purple-500/5 rounded-2xl border-2 border-dashed border-purple-500/20 p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <TrendingUp size={16} className="text-purple-500" />
-                    <h4 className="text-xs font-bold text-purple-600 uppercase">Phân tích hiệu suất tách</h4>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500 text-white text-[10px] font-bold">
-                    <Zap size={10} fill="white" />
-                    TIÊU CHUẨN {identifiedThickness}MM
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-purple-500/10">
-                    <p className="text-[10px] text-[var(--text-3)] font-bold uppercase mb-1">Số sheet tối ưu (Gợi ý)</p>
-                    <p className="text-lg font-mono font-bold text-purple-600">
-                      {suggestedSheets} <span className="text-xs font-medium text-[var(--text-3)]">Sheet</span>
-                    </p>
-                    <p className="text-[9px] text-[var(--text-3)] mt-1">
-                      (Dựa trên {currentStandard.optimal_sheets_per_bun} sheet/bun)
-                    </p>
-                  </div>
-
-                  <div className={`p-3 rounded-xl border ${
-                    efficiency >= 95 ? 'bg-green-500/10 border-green-500/20' : 
-                    efficiency >= 85 ? 'bg-orange-500/10 border-orange-500/20' : 
-                    'bg-red-500/10 border-red-500/20'
-                  }`}>
-                    <p className="text-[10px] text-[var(--text-3)] font-bold uppercase mb-1">% Đạt tiêu chuẩn</p>
-                    <div className="flex items-end gap-2">
-                      <p className={`text-2xl font-mono font-bold ${
-                        efficiency >= 95 ? 'text-green-600' : 
-                        efficiency >= 85 ? 'text-orange-600' : 
-                        'text-red-600'
-                      }`}>
-                        {efficiency}%
-                      </p>
-                      <p className="text-[10px] font-bold mb-1.5 uppercase opacity-70">
-                        {efficiency >= 95 ? 'Tốt' : efficiency >= 85 ? 'Đạt' : 'Thấp'}
-                      </p>
+              {currentStandard ? (
+                <div className="bg-purple-500/5 rounded-2xl border-2 border-dashed border-purple-500/20 p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp size={16} className="text-purple-500" />
+                      <h4 className="text-xs font-bold text-purple-600 uppercase">Phân tích hiệu suất tách</h4>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500 text-white text-[10px] font-bold">
+                      <Zap size={10} fill="white" />
+                      TIÊU CHUẨN {identifiedThickness}MM
                     </div>
                   </div>
-                </div>
-                
-                {efficiency < 85 && formData.actual_sheet_received > 0 && (
-                  <div className="flex items-center gap-2 text-[10px] text-red-600 font-medium bg-red-500/5 p-2 rounded-lg">
-                    <Info size={12} />
-                    Số lượng sheet thực tế thấp hơn nhiều so với tiêu chuẩn ({suggestedSheets} sheet). Vui lòng kiểm tra lại.
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-purple-500/10">
+                      <p className="text-[10px] text-[var(--text-3)] font-bold uppercase mb-1">Số sheet tối ưu (Gợi ý)</p>
+                      <p className="text-lg font-mono font-bold text-purple-600">
+                        {suggestedSheets} <span className="text-xs font-medium text-[var(--text-3)]">Sheet</span>
+                      </p>
+                      <p className="text-[9px] text-[var(--text-3)] mt-1">
+                        (Dựa trên {currentStandard.optimal_sheets_per_bun} sheet/bun)
+                      </p>
+                    </div>
+
+                    <div className={`p-3 rounded-xl border ${
+                      efficiency >= 95 ? 'bg-green-500/10 border-green-500/20' : 
+                      efficiency >= 85 ? 'bg-orange-500/10 border-orange-500/20' : 
+                      'bg-red-500/10 border-red-500/20'
+                    }`}>
+                      <p className="text-[10px] text-[var(--text-3)] font-bold uppercase mb-1">% Đạt tiêu chuẩn</p>
+                      <div className="flex items-end gap-2">
+                        <p className={`text-2xl font-mono font-bold ${
+                          efficiency >= 95 ? 'text-green-600' : 
+                          efficiency >= 85 ? 'text-orange-600' : 
+                          'text-red-600'
+                        }`}>
+                          {efficiency}%
+                        </p>
+                        <p className="text-[10px] font-bold mb-1.5 uppercase opacity-70">
+                          {efficiency >= 95 ? 'Tốt' : efficiency >= 85 ? 'Đạt' : 'Thấp'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+                  
+                  {efficiency < 85 && formData.actual_sheet_received > 0 && (
+                    <div className="flex items-center gap-2 text-[10px] text-red-600 font-medium bg-red-500/5 p-2 rounded-lg">
+                      <Info size={12} />
+                      Số lượng sheet thực tế thấp hơn nhiều so với tiêu chuẩn ({suggestedSheets} sheet). Vui lòng kiểm tra lại.
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-orange-500/5 rounded-2xl border border-orange-500/20 p-4 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-600">
+                    <Info size={18} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-orange-700">Đã nhận diện độ dày {identifiedThickness}mm</p>
+                    <p className="text-[10px] text-orange-600">Nhưng chưa có dữ liệu "Số sheet tối ưu" cho mức này trong bảng tiêu chuẩn.</p>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
