@@ -193,62 +193,71 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {/* Khoảng thời gian */}
-          <div className="space-y-2 md:col-span-2 xl:col-span-1">
-            <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1 flex items-center gap-1">
-              <Calendar size={10} /> Khoảng thời gian
+        <div className="space-y-6">
+          {/* Hàng 1: Khoảng thời gian (Chiếm trọn hàng) */}
+          <div className="bg-orange-500/5 p-4 rounded-xl border border-orange-500/10 space-y-3">
+            <label className="text-[10px] font-bold text-orange-600 uppercase ml-1 flex items-center gap-1">
+              <Calendar size={12} /> Khoảng thời gian báo cáo
             </label>
-            <div className="flex flex-col sm:flex-row items-center gap-2">
-              <input 
-                type="date" 
-                value={filters.startDate}
-                onChange={(e) => setFilters({...filters, startDate: e.target.value})}
-                className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500"
-              />
-              <ArrowRight size={14} className="text-[var(--text-3)] rotate-90 sm:rotate-0" />
-              <input 
-                type="date" 
-                value={filters.endDate}
-                onChange={(e) => setFilters({...filters, endDate: e.target.value})}
-                className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500"
-              />
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex-1 w-full space-y-1">
+                <p className="text-[9px] text-[var(--text-3)] font-bold ml-1">TỪ NGÀY</p>
+                <input 
+                  type="date" 
+                  value={filters.startDate}
+                  onChange={(e) => setFilters({...filters, startDate: e.target.value})}
+                  className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-orange-500 transition-all font-mono"
+                />
+              </div>
+              <div className="hidden sm:flex items-center justify-center pt-5">
+                <ArrowRight size={20} className="text-orange-300" />
+              </div>
+              <div className="flex-1 w-full space-y-1">
+                <p className="text-[9px] text-[var(--text-3)] font-bold ml-1">ĐẾN NGÀY</p>
+                <input 
+                  type="date" 
+                  value={filters.endDate}
+                  onChange={(e) => setFilters({...filters, endDate: e.target.value})}
+                  className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-1)] outline-none focus:border-orange-500 transition-all font-mono"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Mã Firm Plan */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1 flex items-center gap-1">
-              <Search size={10} /> Mã Firm Plan / FPRO
-            </label>
-            <input 
-              type="text" 
-              placeholder="Nhập mã FPRO..."
-              value={filters.firmPlan}
-              onChange={(e) => setFilters({...filters, firmPlan: e.target.value})}
-              className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500 min-h-[38px]"
-            />
-          </div>
+          {/* Hàng 2: Mã đơn hàng & Công đoạn */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1 flex items-center gap-1">
+                <Search size={12} /> Tra cứu Mã Firm Plan / FPRO
+              </label>
+              <input 
+                type="text" 
+                placeholder="Nhập mã FPRO (VD: FPRO-260...)"
+                value={filters.firmPlan}
+                onChange={(e) => setFilters({...filters, firmPlan: e.target.value})}
+                className="w-full bg-[var(--bg-input)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-1)] outline-none focus:border-brand-500 font-mono transition-all"
+              />
+            </div>
 
-          {/* Công đoạn xem */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1 flex items-center gap-1">
-              <Clock size={10} /> Công đoạn xem
-            </label>
-            <div className="flex gap-1">
-              {(Object.keys(STAGE_CONFIG) as StageType[]).map(s => (
-                <button
-                  key={s}
-                  onClick={() => setActiveStage(s)}
-                  className={`flex-1 py-2 rounded-lg text-[10px] font-bold border transition-all ${
-                    activeStage === s 
-                      ? 'bg-orange-500 border-orange-500 text-white' 
-                      : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-3)]'
-                  }`}
-                >
-                  {s === 'pour' ? 'ĐỔ' : s === 'separate' ? 'TÁCH' : 'KHO'}
-                </button>
-              ))}
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1 flex items-center gap-1">
+                <Clock size={12} /> Chọn công đoạn sản xuất
+              </label>
+              <div className="flex gap-1 bg-[var(--bg-input)] p-1 rounded-xl border-2 border-[var(--border)]">
+                {(Object.keys(STAGE_CONFIG) as StageType[]).map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setActiveStage(s)}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                      activeStage === s 
+                        ? 'bg-brand-500 text-white shadow-md' 
+                        : 'text-[var(--text-3)] hover:bg-white/50 dark:hover:bg-black/20'
+                    }`}
+                  >
+                    {s === 'pour' ? 'ĐỔ' : s === 'separate' ? 'TÁCH' : 'KHO'}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
