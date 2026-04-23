@@ -76,3 +76,54 @@ export interface ResidualMaterialUsage {
   residual_materials?: ResidualMaterial;
   users?: { msnv: string; full_name: string };
 }
+
+export interface ProductionPlan {
+  id: string;
+  firm_plan: string;
+  bun_code: string | null;
+  pu_code: string | null;
+  ten_san_pham: string | null;
+  sl_sheet: number | null;
+  sl_bun_can_tach: number | null;
+  sl_bun_can_do: number | null;
+  week_label: string;
+  synced_at: string;
+}
+
+export interface FoamingPourReport {
+  id: string;
+  firm_plan: string;
+  shift: string;
+  actual_bun_poured: number;
+  lot_no: string | null;
+  recorder_id: string;
+  created_at: string;
+  production_plan?: ProductionPlan;
+  users?: { msnv: string; full_name: string };
+}
+
+export interface FoamingSeparateReport {
+  id: string;
+  firm_plan: string;
+  shift: string;
+  actual_bun_separated: number;
+  actual_sheet_received: number;
+  lot_no: string | null;
+  ng_qty: number;
+  error_type: string | null;
+  recorder_id: string;
+  created_at: string;
+  production_plan?: ProductionPlan;
+  users?: { msnv: string; full_name: string };
+}
+
+export interface FoamingWarehouseReport {
+  id: string;
+  firm_plan: string;
+  qty_delivered_sheet: number;
+  delivery_date: string;
+  deliverer_id: string;
+  created_at: string;
+  production_plan?: ProductionPlan;
+  users?: { msnv: string; full_name: string };
+}

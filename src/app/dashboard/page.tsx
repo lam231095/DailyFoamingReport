@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BarChart3, AlertOctagon, Calendar, Package } from 'lucide-react'
+import { BarChart3, AlertOctagon, Calendar, Package, Factory } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
@@ -12,6 +12,7 @@ import Changelog4MTab from '@/components/tabs/Changelog4MTab'
 import MonthlyStatsTab from '@/components/tabs/MonthlyStatsTab'
 import IssueAnalysisTab from '@/components/tabs/IssueAnalysisTab'
 import ResidualMaterialTab from '@/components/tabs/ResidualMaterialTab'
+import FoamingProcessTab from '@/components/tabs/FoamingProcessTab'
 
 const TABS = [
   {
@@ -48,6 +49,13 @@ const TABS = [
     shortLabel: 'Liệu Tồn',
     icon: Package,
     color: '#10b981',
+  },
+  {
+    id: 'foaming',
+    label: 'Quy trình Foaming',
+    shortLabel: 'Foaming',
+    icon: Factory,
+    color: '#f43f5e',
   },
 ]
 
@@ -173,6 +181,7 @@ export default function DashboardPage() {
             {activeTab === 'monthly'    && <MonthlyStatsTab user={user} />}
             {activeTab === 'issues'     && <IssueAnalysisTab user={user} />}
             {activeTab === 'residual'   && <ResidualMaterialTab user={user} />}
+            {activeTab === 'foaming'    && <FoamingProcessTab user={user} />}
           </motion.div>
         </AnimatePresence>
       </div>
