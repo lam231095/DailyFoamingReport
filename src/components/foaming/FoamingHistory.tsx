@@ -117,6 +117,12 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
   const exportCSV = () => {
     if (data.length === 0) return
     
+    // Header dựa trên stage
+    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
+    if (activeStage === 'pour') headers.push("Ca", "SL Đổ (Bun)", "Lot No")
+    if (activeStage === 'separate') headers.push("Ca", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
+    if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao")
+
     const csvContentRaw = headers.join(",") + "\r\n" + data.map(row => {
       const dateTime = new Date(row.created_at).toLocaleString('vi-VN')
       const dateOnly = row.delivery_date || new Date(row.created_at).toLocaleDateString('vi-VN')
