@@ -20,7 +20,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   const [formData, setFormData] = useState({
     shift: 'Ca 1',
     machine_id: 'Máy tách tự động 2',
-    operator_name: user.full_name,
+    operator_name: '',
     bun_thickness_mm: 0,
     sheet_thickness_mm: 0,
     actual_bun_separated: plan.sl_bun_can_tach || 0,

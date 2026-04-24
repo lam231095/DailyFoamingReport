@@ -19,7 +19,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
   const [formData, setFormData] = useState({
     shift: 'Ca 1',
     machine_id: 'Máy 1',
-    operator_name: user.full_name,
+    operator_name: '',
     actual_bun_poured: plan.sl_bun_can_do || 0,
     lot_no: '',
   })
