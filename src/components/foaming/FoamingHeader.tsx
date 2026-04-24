@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Search, Loader2, CheckCircle2, AlertCircle, QrCode } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan } from '@/types'
+import QRScannerModal from './QRScannerModal'
 
 interface FoamingHeaderProps {
   onPlanFound: (plan: ProductionPlan | null) => void
@@ -15,10 +16,11 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [foundPlan, setFoundPlan] = useState<ProductionPlan | null>(null)
+  const [isScannerOpen, setIsScannerOpen] = useState(false)
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!searchTerm.trim()) return
+  const handleSearch = async (term?: string) => {
+    const searchVal = (term || searchTerm).trim()
+    if (!searchVal) return
 
     setLoading(true)
     setError(null)
@@ -29,7 +31,7 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
       const { data, error: sbError } = await supabase
         .from('production_plan')
         .select('*')
-        .ilike('firm_plan', `%${searchTerm.trim()}%`)
+        .ilike('firm_plan', `%${searchVal}%`)
         .limit(1)
         .single()
 
@@ -57,18 +59,29 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
         Truy xuất Kế hoạch Sản xuất
       </h3>
 
-      <form onSubmit={handleSearch} className="relative group">
+      <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} className="relative group">
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Nhập mã FPRO hoặc RPRO..."
-          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl py-3.5 pl-12 pr-4 
+          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl py-3.5 pl-20 pr-4 
             text-[var(--text-1)] placeholder-[var(--text-3)] text-base font-medium
             focus:border-brand-500 focus:ring-0 transition-all duration-300
             group-hover:border-[var(--text-3)] outline-none"
         />
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-3)] group-focus-within:text-brand-500 transition-colors" size={20} />
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <Search className="text-[var(--text-3)] group-focus-within:text-brand-500 transition-colors" size={20} />
+          <div className="w-[1px] h-4 bg-[var(--border)] mx-0.5" />
+          <button
+            type="button"
+            onClick={() => setIsScannerOpen(true)}
+            className="text-brand-500 hover:text-brand-600 transition-colors active:scale-90"
+            title="Quét mã QR"
+          >
+            <QrCode size={20} />
+          </button>
+        </div>
         
         <button
           type="submit"
@@ -139,6 +152,15 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <QRScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={(decodedText) => {
+          setSearchTerm(decodedText)
+          handleSearch(decodedText)
+        }}
+      />
     </div>
   )
 }

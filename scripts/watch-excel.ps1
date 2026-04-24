@@ -63,25 +63,47 @@ $action = {
 }
 
 # Dùng cách đơn giản hơn với polling để tránh vấn đề scope
-Write-Log "Watcher active. Nhấn Ctrl+C để dừng."
-Write-Log ""
+# Theo dõi tất cả các file .xlsx trong thư mục
+$excelFiles = Get-ChildItem -Path $WATCH_DIR -Filter "*.xlsx"
+$fileStates = @{}
 
-$excelPath     = Join-Path $WATCH_DIR $WATCH_FILE
-$lastModified  = (Get-Item $excelPath -ErrorAction SilentlyContinue).LastWriteTime
-$lastSyncTime = [DateTime]::MinValue
+foreach ($f in $excelFiles) {
+    $fileStates[$f.FullName] = $f.LastWriteTime
+}
+
+Write-Log "Watcher active. Dang theo doi $($excelFiles.Count) file Excel."
+Write-Log "Nhan Ctrl+C de dung."
 
 while ($true) {
     Start-Sleep -Seconds 3
-
-    $currentItem = Get-Item $excelPath -ErrorAction SilentlyContinue
-    if ($null -eq $currentItem) { continue }
-
-    $currentModified = $currentItem.LastWriteTime
-
-    # Nếu file thay đổi và chưa sync gần đây (>15s)
-    if ($currentModified -gt $lastModified -and ((Get-Date) - $lastSyncTime).TotalSeconds -gt 15) {
-        $lastModified = $currentModified
-        $lastSyncTime = Get-Date
-        Run-Sync
+    
+    $currentExcelFiles = Get-ChildItem -Path $WATCH_DIR -Filter "*.xlsx"
+    
+    foreach ($f in $currentExcelFiles) {
+        $fullPath = $f.FullName
+        $lastModified = $f.LastWriteTime
+        
+        # Nếu là file mới hoặc file đã bị thay đổi
+        if (-not $fileStates.ContainsKey($fullPath) -or $lastModified -gt $fileStates[$fullPath]) {
+            
+            $fileStates[$fullPath] = $lastModified
+            $fileName = $f.Name
+            
+            Write-Log "Phat hien thay doi tai file: $fileName"
+            
+            # Chọn script sync phù hợp
+            $targetSyncScript = ""
+            if ($fileName -like "*W16-Prodcution*") {
+                $targetSyncScript = Join-Path $SCRIPT_DIR "sync-excel-to-supabase.ps1"
+            } elseif ($fileName -like "*dộ dày - số tấm*") {
+                $targetSyncScript = Join-Path $SCRIPT_DIR "sync-thickness-to-supabase.ps1"
+            }
+            
+            if ($targetSyncScript -and (Test-Path $targetSyncScript)) {
+                Write-Log "Dang kich hoat sync: $(Split-Path $targetSyncScript -Leaf)"
+                powershell -ExecutionPolicy Bypass -File "$targetSyncScript" >> "$LOG_FILE" 2>&1
+                Write-Log "Sync hoan tat cho $fileName"
+            }
+        }
     }
 }

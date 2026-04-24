@@ -1,0 +1,10 @@
+﻿[2026-04-23 14:15:25] ========================================
+[2026-04-23 14:15:25]   EXCEL WATCHER STARTED
+[2026-04-23 14:15:25]   Watching: C:\Users\lam.dv\Ortholite Vietnam\OVN Production - Documents\PRODUCTION\PRODUCTION SCHEDULE\Lâm Sup\PROJECT LÂM\REPORT DAILY\W16-Prodcution plan.xlsx
+[2026-04-23 14:15:25] ========================================
+[2026-04-23 14:15:25] Watcher active. Dang theo doi 2 file Excel.
+[2026-04-23 14:15:25] Nhan Ctrl+C de dung.
+[2026-04-23 15:07:50] Phat hien thay doi tai file: độ dày - số tấm.xlsx
+[2026-04-23 15:07:59] Phat hien thay doi tai file: độ dày - số tấm.xlsx
+[2026-04-23 15:41:02] Phat hien thay doi tai file: độ dày - số tấm.xlsx
+[2026-04-23 15:42:50] Phat hien thay doi tai file: độ dày - số tấm.xlsx
