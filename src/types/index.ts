@@ -94,6 +94,7 @@ export interface FoamingPourReport {
   id: string;
   firm_plan: string;
   shift: string;
+  machine_id: string | null;
   actual_bun_poured: number;
   lot_no: string | null;
   recorder_id: string;

@@ -18,6 +18,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
 
   const [formData, setFormData] = useState({
     shift: 'Ca 1',
+    machine_id: 'Máy 1',
     actual_bun_poured: plan.sl_bun_can_do || 0,
     lot_no: '',
   })
@@ -31,6 +32,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
       const { error } = await supabase.from('foaming_pour_reports').insert({
         firm_plan: plan.firm_plan,
         shift: formData.shift,
+        machine_id: formData.machine_id,
         actual_bun_poured: Number(formData.actual_bun_poured),
         lot_no: formData.lot_no,
         recorder_id: user.id
@@ -78,6 +80,20 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               <option>Ca 1</option>
               <option>Ca 2</option>
               <option>Ca 3</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Máy làm việc</label>
+            <select
+              value={formData.machine_id}
+              onChange={(e) => setFormData({ ...formData, machine_id: e.target.value })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+            >
+              <option>Máy 1</option>
+              <option>Máy 2</option>
+              <option>Máy 3</option>
             </select>
           </div>
 
