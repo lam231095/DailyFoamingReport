@@ -58,9 +58,11 @@ alter table production_reports enable row level security;
 alter table change_logs       enable row level security;
 
 -- Policy: Anon có thể đọc users (để validate MSNV khi đăng nhập)
+drop policy if exists "Allow anon read users" on users;
 create policy "Allow anon read users" on users
   for select using (true);
 
+drop policy if exists "Allow anon insert users" on users;
 create policy "Allow anon insert users" on users
   for insert with check (true);
 
