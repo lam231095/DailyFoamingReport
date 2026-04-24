@@ -19,6 +19,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
   const [formData, setFormData] = useState({
     shift: 'Ca 1',
     machine_id: 'Máy 1',
+    operator_name: user.full_name,
     actual_bun_poured: plan.sl_bun_can_do || 0,
     lot_no: '',
   })
@@ -33,6 +34,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         firm_plan: plan.firm_plan,
         shift: formData.shift,
         machine_id: formData.machine_id,
+        operator_name: formData.operator_name,
         actual_bun_poured: Number(formData.actual_bun_poured),
         lot_no: formData.lot_no,
         recorder_id: user.id
@@ -109,16 +111,30 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Lot No (Số lô)</label>
-          <input
-            type="text"
-            value={formData.lot_no}
-            onChange={(e) => setFormData({ ...formData, lot_no: e.target.value })}
-            placeholder="VD: L04-2304..."
-            className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
-              text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Tên Operator (Người đứng máy)</label>
+            <input
+              type="text"
+              value={formData.operator_name}
+              onChange={(e) => setFormData({ ...formData, operator_name: e.target.value })}
+              placeholder="Nhập tên người vận hành"
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Lot No (Số lô)</label>
+            <input
+              type="text"
+              value={formData.lot_no}
+              onChange={(e) => setFormData({ ...formData, lot_no: e.target.value })}
+              placeholder="VD: L04-2304..."
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+            />
+          </div>
         </div>
 
         {message && (

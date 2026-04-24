@@ -9,6 +9,7 @@ create table if not exists foaming_pour_reports (
   firm_plan           text references production_plan(firm_plan) on delete cascade,
   shift               text not null,                -- Ca làm việc (Ca 1, Ca 2,...)
   machine_id          text,                         -- Máy làm việc (Máy 1, Máy 2, Máy 3)
+  operator_name       text,                         -- Tên người đứng máy (Operator)
   actual_bun_poured   integer not null check (actual_bun_poured >= 0), -- Số bun thực tế đổ
   lot_no              text,                         -- Lot No
   recorder_id         uuid references users(id),    -- Người nhập

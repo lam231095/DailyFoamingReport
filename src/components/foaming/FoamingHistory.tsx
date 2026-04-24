@@ -119,7 +119,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     
     // Header dựa trên stage
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
-    if (activeStage === 'pour') headers.push("Ca", "Máy", "SL Đổ (Bun)", "Lot No")
+    if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No")
     if (activeStage === 'separate') headers.push("Ca", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao")
 
@@ -137,7 +137,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       ]
       
       let specific: any[] = []
-      if (activeStage === 'pour') specific = [row.shift, row.machine_id || '---', row.actual_bun_poured, row.lot_no]
+      if (activeStage === 'pour') specific = [row.shift, row.machine_id || '---', row.operator_name || '---', row.actual_bun_poured, row.lot_no]
       if (activeStage === 'separate') {
         const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
         const std = standards.find(s => s.thickness_mm === thickness)
@@ -446,8 +446,8 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                       )}
 
                       <div>
-                        <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Người báo cáo</p>
-                        <p className="text-xs font-bold text-[var(--text-2)]">{row.users?.full_name} ({row.users?.msnv})</p>
+                        <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Người báo cáo / Operator</p>
+                        <p className="text-xs font-bold text-[var(--text-2)]">{row.users?.full_name} / {row.operator_name || '---'}</p>
                       </div>
                     </div>
                   </div>
