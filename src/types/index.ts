@@ -108,6 +108,10 @@ export interface FoamingSeparateReport {
   id: string;
   firm_plan: string;
   shift: string;
+  machine_id: string | null;
+  operator_name: string | null;
+  bun_thickness_mm: number | null;
+  sheet_thickness_mm: number | null;
   actual_bun_separated: number;
   actual_sheet_received: number;
   lot_no: string | null;

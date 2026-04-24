@@ -18,16 +18,20 @@ create table if not exists foaming_pour_reports (
 
 -- 2. Công đoạn Tách (Separating)
 create table if not exists foaming_separate_reports (
-  id                  uuid primary key default gen_random_uuid(),
-  firm_plan           text references production_plan(firm_plan) on delete cascade,
-  shift               text not null,                -- Ca làm việc
-  actual_bun_separated integer not null check (actual_bun_separated >= 0), -- Số bun thực tế tách
+  id                    uuid primary key default gen_random_uuid(),
+  firm_plan             text references production_plan(firm_plan) on delete cascade,
+  shift                 text not null,                -- Ca làm việc
+  machine_id            text,                         -- Máy tách
+  operator_name         text,                         -- Người vận hành
+  bun_thickness_mm      numeric,                      -- Độ dày bun sau tách da (mm)
+  sheet_thickness_mm    numeric,                      -- Độ dày sheet thực tế (mm)
+  actual_bun_separated  integer not null check (actual_bun_separated >= 0), -- Số bun thực tế tách
   actual_sheet_received integer not null check (actual_sheet_received >= 0), -- Số sheet thực tế nhận
-  lot_no              text,                         -- Lot No
-  ng_qty              integer default 0 check (ng_qty >= 0), -- Số lượng NG
-  error_type          text,                         -- Loại lỗi
-  recorder_id         uuid references users(id),    -- Người nhập
-  created_at          timestamptz default now()
+  lot_no                text,                         -- Lot No
+  ng_qty                integer default 0 check (ng_qty >= 0), -- Số lượng NG
+  error_type            text,                         -- Loại lỗi
+  recorder_id           uuid references users(id),    -- Người nhập
+  created_at            timestamptz default now()
 );
 
 -- 3. Công đoạn Nhập kho/Giao hàng (Warehouse)

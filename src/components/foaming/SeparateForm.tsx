@@ -19,6 +19,10 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
   const [formData, setFormData] = useState({
     shift: 'Ca 1',
+    machine_id: 'Máy tách tự động 2',
+    operator_name: user.full_name,
+    bun_thickness_mm: 0,
+    sheet_thickness_mm: 0,
     actual_bun_separated: plan.sl_bun_can_tach || 0,
     actual_sheet_received: plan.sl_sheet || 0,
     lot_no: '',
@@ -61,6 +65,10 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       const { error } = await supabase.from('foaming_separate_reports').insert({
         firm_plan: plan.firm_plan,
         shift: formData.shift,
+        machine_id: formData.machine_id,
+        operator_name: formData.operator_name,
+        bun_thickness_mm: Number(formData.bun_thickness_mm),
+        sheet_thickness_mm: Number(formData.sheet_thickness_mm),
         actual_bun_separated: Number(formData.actual_bun_separated),
         actual_sheet_received: Number(formData.actual_sheet_received),
         lot_no: formData.lot_no,
@@ -114,6 +122,37 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
             </select>
           </div>
           <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Máy tách</label>
+            <select
+              value={formData.machine_id}
+              onChange={(e) => setFormData({ ...formData, machine_id: e.target.value })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-purple-500 outline-none transition-all"
+            >
+              <option>Máy tách tự động 2</option>
+              <option>Máy tách tự động 3</option>
+              <option>Máy tách bán tự động 1</option>
+              <option>Máy tách cơ 1</option>
+              <option>Máy tách cơ 2</option>
+              <option>Máy tách cơ 3</option>
+              <option>Máy tách cơ 4</option>
+              <option>Máy tách cơ 5</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Người vận hành (Operator)</label>
+            <input
+              type="text"
+              value={formData.operator_name}
+              onChange={(e) => setFormData({ ...formData, operator_name: e.target.value })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-purple-500 outline-none transition-all"
+            />
+          </div>
+          <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Lot No (Số lô)</label>
             <input
               type="text"
@@ -121,6 +160,31 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               onChange={(e) => setFormData({ ...formData, lot_no: e.target.value })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-purple-500 outline-none transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Độ dày bun sau tách da (mm)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={formData.bun_thickness_mm}
+              onChange={(e) => setFormData({ ...formData, bun_thickness_mm: Number(e.target.value) })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-purple-500 outline-none transition-all font-mono"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Độ dày sheet thực tế (mm)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={formData.sheet_thickness_mm}
+              onChange={(e) => setFormData({ ...formData, sheet_thickness_mm: Number(e.target.value) })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-purple-500 outline-none transition-all font-mono"
             />
           </div>
         </div>

@@ -120,7 +120,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     // Header dựa trên stage
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No")
-    if (activeStage === 'separate') headers.push("Ca", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
+    if (activeStage === 'separate') headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao")
 
     const csvContentRaw = headers.join(",") + "\r\n" + data.map(row => {
@@ -146,6 +146,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         
         specific = [
           row.shift, 
+          row.machine_id || '---',
+          row.operator_name || '---',
+          row.bun_thickness_mm || 0,
+          row.sheet_thickness_mm || 0,
           row.actual_bun_separated, 
           row.actual_sheet_received, 
           suggested, 
@@ -449,6 +453,18 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Người báo cáo / Operator</p>
                         <p className="text-xs font-bold text-[var(--text-2)]">{row.users?.full_name} / {row.operator_name || '---'}</p>
                       </div>
+                      {activeStage === 'separate' && (
+                        <>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Máy Tách</p>
+                            <p className="text-xs font-bold text-[var(--text-1)]">{row.machine_id || '---'}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Dày Bun / Sheet</p>
+                            <p className="text-xs font-bold text-[var(--text-1)]">{row.bun_thickness_mm || 0} / {row.sheet_thickness_mm || 0} mm</p>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                   
