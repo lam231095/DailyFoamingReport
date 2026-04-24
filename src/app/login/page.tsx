@@ -10,14 +10,23 @@ import { setSession } from '@/lib/session'
 export default function LoginPage() {
   const router = useRouter()
   const [msnv, setMsnv] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [isNewUser, setIsNewUser] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [shake, setShake] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!msnv.trim()) {
+    const cleanMsnv = msnv.trim().toUpperCase()
+
+    if (!cleanMsnv) {
       triggerError('Vui lòng nhập Mã Số Nhân Viên')
+      return
+    }
+
+    if (isNewUser && !fullName.trim()) {
+      triggerError('Vui lòng nhập Họ và Tên để đăng ký')
       return
     }
 
@@ -25,30 +34,60 @@ export default function LoginPage() {
     setError('')
 
     try {
+      // 1. Kiểm tra user tồn tại
       const { data, error: dbError } = await supabase
         .from('users')
         .select('id, msnv, full_name, department, role, is_active')
-        .eq('msnv', msnv.trim().toUpperCase())
-        .single()
+        .eq('msnv', cleanMsnv)
+        .maybeSingle()
 
-      if (dbError || !data) {
-        triggerError('Mã Số Nhân Viên không tồn tại trong hệ thống')
+      if (dbError) throw dbError
+
+      let userData = data
+
+      // 2. Nếu chưa có user và chưa ở chế độ đăng ký mới
+      if (!userData && !isNewUser) {
+        setIsNewUser(true)
+        setError('Mã số này chưa có trong hệ thống. Vui lòng nhập Họ Tên để đăng ký mới.')
+        setLoading(false)
         return
       }
-      if (!data.is_active) {
+
+      // 3. Nếu đang ở chế độ đăng ký mới và chưa có user
+      if (!userData && isNewUser) {
+        const { data: newUser, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            msnv: cleanMsnv,
+            full_name: fullName.trim(),
+            role: 'worker'
+          })
+          .select()
+          .single()
+
+        if (insertError) throw insertError
+        userData = newUser
+      }
+
+      // 4. Kiểm tra active
+      if (userData && !userData.is_active) {
         triggerError('Tài khoản này đã bị vô hiệu hóa. Liên hệ quản lý.')
         return
       }
 
-      setSession({
-        id: data.id,
-        msnv: data.msnv,
-        full_name: data.full_name,
-        department: data.department,
-        role: data.role,
-      })
-      router.push('/dashboard')
-    } catch {
+      // 5. Đăng nhập
+      if (userData) {
+        setSession({
+          id: userData.id,
+          msnv: userData.msnv,
+          full_name: userData.full_name,
+          department: userData.department,
+          role: userData.role,
+        })
+        router.push('/dashboard')
+      }
+    } catch (err: any) {
+      console.error(err)
       triggerError('Lỗi kết nối. Kiểm tra lại mạng và thử lại.')
     } finally {
       setLoading(false)
@@ -198,7 +237,11 @@ export default function LoginPage() {
                   id="msnv-input"
                   type="text"
                   value={msnv}
-                  onChange={(e) => { setMsnv(e.target.value); setError('') }}
+                  onChange={(e) => { 
+                    setMsnv(e.target.value); 
+                    setError('');
+                    if (isNewUser) setIsNewUser(false);
+                  }}
                   placeholder="VD: NV001, QL001"
                   autoComplete="off"
                   autoFocus
@@ -209,6 +252,38 @@ export default function LoginPage() {
                 />
               </div>
             </motion.div>
+
+            {/* Full Name input (New User) */}
+            <AnimatePresence>
+              {isNewUser && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, y: -20 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -20 }}
+                  className="space-y-2 overflow-hidden"
+                >
+                  <label className="label text-brand-400 font-semibold" htmlFor="name-input">
+                    Họ và Tên Nhân Viên mới
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-400/50">
+                      <Contact size={18} />
+                    </div>
+                    <input
+                      id="name-input"
+                      type="text"
+                      value={fullName}
+                      onChange={(e) => { setFullName(e.target.value); setError('') }}
+                      placeholder="Nhập đầy đủ họ tên"
+                      autoComplete="off"
+                      className="w-full pl-11 pr-4 py-3.5 rounded-xl border text-white placeholder:text-white/20
+                        focus:outline-none focus:ring-2 transition-all duration-200 text-sm font-medium
+                        bg-brand-500/5 border-brand-500/30 focus:ring-brand-500/50 focus:border-brand-500/60"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Error */}
             <AnimatePresence>
@@ -243,11 +318,11 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 size={18} className="animate-spin" />
-                  <span>Đang xác thực...</span>
+                  <span>Đang xử lý...</span>
                 </>
               ) : (
                 <>
-                  <span>Đăng Nhập Ca Làm Việc</span>
+                  <span>{isNewUser ? 'Hoàn tất Đăng ký' : 'Đăng Nhập Ca Làm Việc'}</span>
                   <ChevronRight size={18} />
                 </>
               )}

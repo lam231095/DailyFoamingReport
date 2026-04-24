@@ -61,6 +61,9 @@ alter table change_logs       enable row level security;
 create policy "Allow anon read users" on users
   for select using (true);
 
+create policy "Allow anon insert users" on users
+  for insert with check (true);
+
 -- Policy: Anon có thể đọc SKUs
 create policy "Allow anon read skus" on skus
   for select using (true);
