@@ -121,7 +121,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No")
     if (activeStage === 'separate') headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
-    if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao")
+    if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
 
     const csvContentRaw = headers.join(",") + "\r\n" + data.map(row => {
       const dateTime = new Date(row.created_at).toLocaleString('vi-VN')
@@ -159,7 +159,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           row.error_type
         ]
       }
-      if (activeStage === 'warehouse') specific = [row.qty_delivered_sheet, row.delivery_date]
+      if (activeStage === 'warehouse') specific = [row.qty_delivered_sheet, row.delivery_date, row.users?.full_name || '---']
       
       return [...common, ...specific].join(",")
     }).join("\r\n")
