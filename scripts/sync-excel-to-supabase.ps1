@@ -5,15 +5,23 @@
 # ==============================================================
 
 param(
-    [string]$WeekLabel = "W16-2026"
+    [string]$WeekLabel = "W17-2026",
+    [string]$ExcelPath = ""
 )
 
 # ---- CONFIG ----
 $SUPABASE_URL  = "https://brdecledtyypykowjnjt.supabase.co"
 $SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyZGVjbGVkdHl5cHlrb3dqbmp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNzgzMDksImV4cCI6MjA5MTg1NDMwOX0.86Vbjllr_IwYHgA92NJCxjPECmLWnb8ZQjiHISOrEkQ"
 $PROJECT_ROOT  = Split-Path -Parent $PSScriptRoot   # thư mục cha của scripts/
-$EXCEL_FILE    = (Get-ChildItem -Path $PROJECT_ROOT -Filter "*.xlsx" | Select-Object -First 1).FullName
-if (-not $EXCEL_FILE) { $EXCEL_FILE = Join-Path $PROJECT_ROOT "W16-Prodcution plan.xlsx" }
+
+if ($ExcelPath -ne "") {
+    $EXCEL_FILE = $ExcelPath
+} else {
+    $EXCEL_FILE = (Get-ChildItem -Path $PROJECT_ROOT -Filter "W17*.xlsx" | Select-Object -First 1).FullName
+    if (-not $EXCEL_FILE) { 
+        $EXCEL_FILE = (Get-ChildItem -Path $PROJECT_ROOT -Filter "*.xlsx" | Select-Object -First 1).FullName
+    }
+}
 
 # Header row = 10, data bắt đầu từ row 12
 $HEADER_ROW   = 10
