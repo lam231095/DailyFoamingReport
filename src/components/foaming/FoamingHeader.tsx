@@ -15,8 +15,8 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [foundPlan, setFoundPlan] = useState<ProductionPlan | null>(null)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
+  const [totalPoured, setTotalPoured] = useState(0)
 
   const handleSearch = async (term?: string) => {
     const searchVal = (term || searchTerm).trim()
@@ -44,6 +44,19 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
       } else {
         setFoundPlan(data)
         onPlanFound(data)
+
+        // Fetch tổng số lượng đã đổ
+        const { data: pourData, error: pourError } = await supabase
+          .from('foaming_pour_reports')
+          .select('actual_bun_poured')
+          .eq('firm_plan', data.firm_plan)
+
+        if (!pourError && pourData) {
+          const total = pourData.reduce((sum, row) => sum + (row.actual_bun_poured || 0), 0)
+          setTotalPoured(total)
+        } else {
+          setTotalPoured(0)
+        }
       }
     } catch (err: any) {
       setError('Lỗi khi truy xuất dữ liệu: ' + err.message)
@@ -137,6 +150,10 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
                     <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">SL Sheet</p>
                     <p className="text-sm font-bold text-blue-600">{foundPlan.sl_sheet || 0} Sheet</p>
                   </div>
+                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-black/5 min-w-[90px]">
+                    <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Kế hoạch Tách</p>
+                    <p className="text-sm font-bold text-purple-600">{foundPlan.sl_bun_can_tach || 0} Bun</p>
+                  </div>
                   <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-orange-500/20 bg-orange-500/5 min-w-[90px]">
                     <p className="text-[10px] text-orange-600 font-bold uppercase">Độ dày</p>
                     <p className="text-sm font-bold text-orange-600">
@@ -145,6 +162,32 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
                         return match ? match[1] : '---';
                       })()} mm
                     </p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-red-500/20 bg-red-500/5 min-w-[120px]">
+                    <p className="text-[10px] text-red-600 font-bold uppercase">Cần đổ thêm</p>
+                    <p className="text-sm font-bold text-red-600">
+                      {(foundPlan.sl_bun_can_do || 0) - totalPoured} Bun
+                      <span className="text-[10px] font-medium ml-1 opacity-70">(Đã đổ {totalPoured})</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-[var(--border)] border-dashed">
+                  <div>
+                    <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">NO.ORDER</p>
+                    <p className="text-xs font-bold text-[var(--text-1)]">{foundPlan.no_order || '---'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Tuần SX</p>
+                    <p className="text-xs font-bold text-[var(--text-1)]">{foundPlan.week_label || '---'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ngày HT dự kiến</p>
+                    <p className="text-xs font-bold text-[var(--text-1)]">{foundPlan.completion_date || '---'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ngày giao ETD</p>
+                    <p className="text-xs font-bold text-[var(--text-1)]">{foundPlan.delivery_date || '---'}</p>
                   </div>
                 </div>
               </div>

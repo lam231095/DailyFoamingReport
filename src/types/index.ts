@@ -86,6 +86,9 @@ export interface ProductionPlan {
   sl_sheet: number | null;
   sl_bun_can_tach: number | null;
   sl_bun_can_do: number | null;
+  no_order: string | null;
+  completion_date: string | null;
+  delivery_date: string | null;
   week_label: string;
   synced_at: string;
 }

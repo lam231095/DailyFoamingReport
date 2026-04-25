@@ -13,7 +13,10 @@ create table if not exists production_plan (
   sl_sheet        integer,                    -- Số lượng Sheet (tờ)
   sl_bun_can_tach integer,                    -- SL bun cần Tách (cột C9)
   sl_bun_can_do   integer,                    -- SL bun cần Đổ / Qty need to pour (cột C14)
-  week_label      text default 'W16-2026',    -- Tuần sản xuất
+  no_order        text,                       -- Số đơn hàng (Col 1)
+  completion_date text,                       -- Ngày hoàn thành (Col 17)
+  delivery_date   text,                       -- Ngày giao hàng (Col 18)
+  week_label      text default 'W17-2026',    -- Tuần sản xuất
   synced_at       timestamptz default now()   -- Lần sync cuối từ Excel
 );
 

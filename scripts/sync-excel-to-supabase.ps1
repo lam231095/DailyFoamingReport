@@ -28,6 +28,7 @@ $HEADER_ROW   = 2
 $DATA_START   = 3
 
 # Cột tương ứng
+$COL_NO_ORDER      = 1
 $COL_FIRM_PLAN    = 2
 $COL_BUN_CODE     = 5
 $COL_PU_CODE      = 6
@@ -35,6 +36,8 @@ $COL_TEN_SP       = 7
 $COL_SL_SHEET     = 8
 $COL_SL_TACH      = 9
 $COL_SL_DO        = 14
+$COL_COMPLETION   = 17
+$COL_DELIVERY     = 18
 
 # ---- FUNCTIONS ----
 
@@ -107,24 +110,30 @@ try {
 
     for ($r = $DATA_START; $r -le $nr; $r++) {
         $firmPlan = $ws.Cells.Item($r, $COL_FIRM_PLAN).Text.Trim()
+        $noOrder  = $ws.Cells.Item($r, $COL_NO_ORDER).Text.Trim()
         $bunCode  = $ws.Cells.Item($r, $COL_BUN_CODE).Text.Trim()
         $puCode   = $ws.Cells.Item($r, $COL_PU_CODE).Text.Trim()
         $tenSP    = $ws.Cells.Item($r, $COL_TEN_SP).Text.Trim() -replace "`r`n", " " -replace "`n", " "
         $slSheet  = $ws.Cells.Item($r, $COL_SL_SHEET).Text.Trim()
         $slTach   = $ws.Cells.Item($r, $COL_SL_TACH).Text.Trim()
         $slDo     = $ws.Cells.Item($r, $COL_SL_DO).Text.Trim()
+        $compDate = $ws.Cells.Item($r, $COL_COMPLETION).Text.Trim()
+        $delDate  = $ws.Cells.Item($r, $COL_DELIVERY).Text.Trim()
 
         # Bỏ qua dòng không có Firm Plan
         if ([string]::IsNullOrWhiteSpace($firmPlan)) { continue }
 
         $record = [ordered]@{
             firm_plan       = $firmPlan
+            no_order        = if ($noOrder  -ne "") { $noOrder }  else { $null }
             bun_code        = if ($bunCode  -ne "") { $bunCode }  else { $null }
             pu_code         = if ($puCode   -ne "") { $puCode }   else { $null }
             ten_san_pham    = if ($tenSP    -ne "") { $tenSP }    else { $null }
             sl_sheet        = Parse-Int $slSheet
             sl_bun_can_tach = Parse-Int $slTach
             sl_bun_can_do   = Parse-Int $slDo
+            completion_date = if ($compDate -ne "") { $compDate } else { $null }
+            delivery_date   = if ($delDate  -ne "") { $delDate }  else { $null }
             week_label      = $WeekLabel
             synced_at       = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
         }

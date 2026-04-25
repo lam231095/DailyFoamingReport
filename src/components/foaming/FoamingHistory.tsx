@@ -64,7 +64,13 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           production_plan!inner (
             pu_code,
             ten_san_pham,
-            bun_code
+            bun_code,
+            no_order,
+            week_label,
+            sl_bun_can_tach,
+            sl_bun_can_do,
+            completion_date,
+            delivery_date
           ),
           users!inner (
             full_name,
@@ -119,7 +125,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     if (data.length === 0) return
     
     // Header dựa trên stage
-    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
+    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No")
     if (activeStage === 'separate') headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
@@ -130,6 +136,8 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       const common = [
         `"${dateTime}"`,
         `"${dateOnly}"`,
+        `"${row.production_plan?.week_label || '---'}"`,
+        `"${row.production_plan?.no_order || '---'}"`,
         row.firm_plan,
         `"${row.production_plan?.pu_code}"`,
         `"${row.production_plan?.ten_san_pham}"`,
@@ -379,6 +387,12 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                       </span>
                       <span className="text-[11px] font-bold text-[var(--text-1)] font-mono">
                         {row.production_plan?.pu_code}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold">
+                        {row.production_plan?.no_order || '---'}
+                      </span>
+                      <span className="text-[10px] text-[var(--text-3)] font-bold">
+                        {row.production_plan?.week_label || '---'}
                       </span>
                       <span className="text-[10px] text-[var(--text-3)] font-medium">
                         • {row.shift || 'Warehouse'} {row.machine_id ? `• ${row.machine_id}` : ''}
