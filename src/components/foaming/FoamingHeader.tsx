@@ -18,6 +18,7 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
   const [foundPlan, setFoundPlan] = useState<ProductionPlan | null>(null)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [totalPoured, setTotalPoured] = useState(0)
+  const [totalNG, setTotalNG] = useState(0)
 
   const handleSearch = async (term?: string) => {
     const searchVal = (term || searchTerm).trim()
@@ -54,9 +55,22 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
 
         if (!pourError && pourData) {
           const total = pourData.reduce((sum, row) => sum + (row.actual_bun_poured || 0), 0)
+          const ngPour = pourData.reduce((sum, row) => sum + ((row as any).ng_bun_qty || 0), 0)
           setTotalPoured(total)
+          
+          // Fetch NG từ Tách và Kho
+          const [{ data: sepData }, { data: whData }] = await Promise.all([
+            supabase.from('foaming_separate_reports').select('ng_bun_qty').eq('firm_plan', data.firm_plan),
+            supabase.from('foaming_warehouse_reports').select('ng_bun_qty').eq('firm_plan', data.firm_plan)
+          ])
+
+          const ngSep = sepData?.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0) || 0
+          const ngWh = whData?.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0) || 0
+          
+          setTotalNG(ngPour + ngSep + ngWh)
         } else {
           setTotalPoured(0)
+          setTotalNG(0)
         }
       }
     } catch (err: any) {
@@ -169,6 +183,12 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
                     <p className="text-sm font-bold text-red-600">
                       {(foundPlan.sl_bun_can_do || 0) - totalPoured} Bun
                       <span className="text-[10px] font-medium ml-1 opacity-70">(Đã đổ {totalPoured})</span>
+                    </p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-black/20 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 min-w-[100px]">
+                    <p className="text-[10px] text-rose-600 font-bold uppercase underline">Số bun cần bù</p>
+                    <p className="text-sm font-bold text-rose-600">
+                      {totalNG} Bun
                     </p>
                   </div>
                 </div>

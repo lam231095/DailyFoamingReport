@@ -22,6 +22,8 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     operator_name: '',
     actual_bun_poured: plan.sl_bun_can_do || 0,
     lot_no: '',
+    ng_bun_qty: 0,
+    error_type: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +39,8 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         operator_name: formData.operator_name,
         actual_bun_poured: Number(formData.actual_bun_poured),
         lot_no: formData.lot_no,
+        ng_bun_qty: Number(formData.ng_bun_qty),
+        error_type: formData.error_type,
         recorder_id: user.id
       })
 
@@ -133,6 +137,31 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               placeholder="VD: L04-2304..."
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+            />
+          </div>
+        </div>
+
+        {/* --- Phần báo cáo NG --- */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-red-600 uppercase ml-1">Số lượng Bun NG (nếu có)</label>
+            <input
+              type="number"
+              value={formData.ng_bun_qty}
+              onChange={(e) => setFormData({ ...formData, ng_bun_qty: Number(e.target.value) })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-red-600 uppercase ml-1">Loại lỗi</label>
+            <input
+              type="text"
+              value={formData.error_type}
+              onChange={(e) => setFormData({ ...formData, error_type: e.target.value })}
+              placeholder="VD: Bọt khí, thiếu liệu..."
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
             />
           </div>
         </div>

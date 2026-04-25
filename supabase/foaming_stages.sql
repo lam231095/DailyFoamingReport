@@ -12,6 +12,8 @@ create table if not exists foaming_pour_reports (
   operator_name       text,                         -- Tên người đứng máy (Operator)
   actual_bun_poured   integer not null check (actual_bun_poured >= 0), -- Số bun thực tế đổ
   lot_no              text,                         -- Lot No
+  ng_bun_qty          integer default 0 check (ng_bun_qty >= 0), -- Số bun NG
+  error_type          text,                         -- Loại lỗi
   recorder_id         uuid references users(id),    -- Người nhập
   created_at          timestamptz default now()
 );
@@ -28,7 +30,8 @@ create table if not exists foaming_separate_reports (
   actual_bun_separated  integer not null check (actual_bun_separated >= 0), -- Số bun thực tế tách
   actual_sheet_received integer not null check (actual_sheet_received >= 0), -- Số sheet thực tế nhận
   lot_no                text,                         -- Lot No
-  ng_qty                integer default 0 check (ng_qty >= 0), -- Số lượng NG
+  ng_qty                integer default 0 check (ng_qty >= 0), -- Số lượng NG (Sheet)
+  ng_bun_qty            integer default 0 check (ng_bun_qty >= 0), -- Số bun NG
   error_type            text,                         -- Loại lỗi
   recorder_id           uuid references users(id),    -- Người nhập
   created_at            timestamptz default now()
@@ -40,6 +43,8 @@ create table if not exists foaming_warehouse_reports (
   firm_plan           text references production_plan(firm_plan) on delete cascade,
   qty_delivered_sheet integer not null check (qty_delivered_sheet >= 0), -- Số lượng giao (sheet)
   delivery_date       date not null default current_date,                -- Ngày giao
+  ng_bun_qty          integer default 0 check (ng_bun_qty >= 0), -- Số bun NG
+  error_type          text,                         -- Loại lỗi
   deliverer_id        uuid references users(id),                         -- Người giao
   created_at          timestamptz default now()
 );

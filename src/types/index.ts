@@ -101,6 +101,8 @@ export interface FoamingPourReport {
   operator_name: string | null;
   actual_bun_poured: number;
   lot_no: string | null;
+  ng_bun_qty: number;
+  error_type: string | null;
   recorder_id: string;
   created_at: string;
   production_plan?: ProductionPlan;
@@ -119,6 +121,7 @@ export interface FoamingSeparateReport {
   actual_sheet_received: number;
   lot_no: string | null;
   ng_qty: number;
+  ng_bun_qty: number;
   error_type: string | null;
   recorder_id: string;
   created_at: string;
@@ -131,6 +134,8 @@ export interface FoamingWarehouseReport {
   firm_plan: string;
   qty_delivered_sheet: number;
   delivery_date: string;
+  ng_bun_qty: number;
+  error_type: string | null;
   deliverer_id: string;
   created_at: string;
   production_plan?: ProductionPlan;

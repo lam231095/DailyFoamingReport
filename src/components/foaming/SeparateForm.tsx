@@ -28,6 +28,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     actual_sheet_received: plan.sl_sheet || 0,
     lot_no: '',
     ng_qty: 0,
+    ng_bun_qty: 0,
     error_type: '',
   })
 
@@ -73,6 +74,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         actual_sheet_received: Number(formData.actual_sheet_received),
         lot_no: formData.lot_no,
         ng_qty: Number(formData.ng_qty),
+        ng_bun_qty: Number(formData.ng_bun_qty),
         error_type: formData.error_type,
         recorder_id: user.id
       })
@@ -294,13 +296,23 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-red-600 uppercase ml-1">Số lượng NG (nếu có)</label>
+            <label className="text-xs font-bold text-red-600 uppercase ml-1">Số lượng NG (Sheet)</label>
             <input
               type="number"
               value={formData.ng_qty}
               onChange={(e) => setFormData({ ...formData, ng_qty: Number(e.target.value) })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-red-600 uppercase ml-1">Số lượng NG (Bun)</label>
+            <input
+              type="number"
+              value={formData.ng_bun_qty}
+              onChange={(e) => setFormData({ ...formData, ng_bun_qty: Number(e.target.value) })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
             />
