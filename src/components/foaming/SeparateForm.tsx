@@ -5,6 +5,7 @@ import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser } from '@/types'
+import { calculateOptimalSheetsPerBun, calculateSuggestedSheets, calculateEfficiency } from '@/lib/calculations'
 
 interface SeparateFormProps {
   plan: ProductionPlan
@@ -48,13 +49,12 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   const currentStandard = standards.find(s => s.thickness_mm === identifiedThickness)
   
   // 3. Tính toán số sheet tối ưu đơn hàng
-  const suggestedSheets = currentStandard 
-    ? Math.round(formData.actual_bun_separated * currentStandard.optimal_sheets_per_bun)
-    : 0
+  const optimalSheetsPerBun = currentStandard 
+    ? currentStandard.optimal_sheets_per_bun 
+    : (identifiedThickness ? calculateOptimalSheetsPerBun(identifiedThickness) : 0)
 
-  const efficiency = suggestedSheets > 0 
-    ? Math.round((formData.actual_sheet_received / suggestedSheets) * 100)
-    : 0
+  const suggestedSheets = calculateSuggestedSheets(formData.actual_bun_separated, optimalSheetsPerBun)
+  const efficiency = calculateEfficiency(formData.actual_sheet_received, suggestedSheets)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -220,7 +220,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               animate={{ opacity: 1, height: 'auto' }}
               className="overflow-hidden"
             >
-              {currentStandard ? (
+              {optimalSheetsPerBun > 0 ? (
                 <div className="bg-purple-500/5 rounded-2xl border-2 border-dashed border-purple-500/20 p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -229,9 +229,16 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                     </div>
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-purple-500 text-white text-[10px] font-bold">
                       <Zap size={10} fill="white" />
-                      TIÊU CHUẨN {identifiedThickness}MM
+                      {currentStandard ? `TIÊU CHUẨN ${identifiedThickness}MM` : `TÍNH TOÁN ${identifiedThickness}MM`}
                     </div>
                   </div>
+
+                  {!currentStandard && (
+                    <div className="flex items-center gap-2 text-[10px] text-orange-600 font-bold bg-orange-500/5 p-2 rounded-lg border border-orange-500/10">
+                      <Info size={12} />
+                      Độ dày này chưa có trong danh sách tiêu chuẩn. Đang sử dụng thuật toán tính toán tự động.
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-purple-500/10">
@@ -240,7 +247,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                         {suggestedSheets} <span className="text-xs font-medium text-[var(--text-3)]">Sheet</span>
                       </p>
                       <p className="text-[9px] text-[var(--text-3)] mt-1">
-                        (Dựa trên {currentStandard.optimal_sheets_per_bun} sheet/bun)
+                        (Dựa trên {optimalSheetsPerBun} sheet/bun)
                       </p>
                     </div>
 
@@ -278,8 +285,8 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                     <Info size={18} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-orange-700">Đã nhận diện độ dày {identifiedThickness}mm</p>
-                    <p className="text-[10px] text-orange-600">Nhưng chưa có dữ liệu "Số sheet tối ưu" cho mức này trong bảng tiêu chuẩn.</p>
+                    <p className="text-xs font-bold text-orange-700">Không xác định được độ dày</p>
+                    <p className="text-[10px] text-orange-600">Vui lòng kiểm tra lại tên sản phẩm trong kế hoạch sản xuất.</p>
                   </div>
                 </div>
               )}

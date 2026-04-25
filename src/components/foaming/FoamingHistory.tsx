@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser } from '@/types'
+import { calculateOptimalSheetsPerBun, calculateSuggestedSheets, calculateEfficiency } from '@/lib/calculations'
 
 interface FoamingHistoryProps {
   user: SessionUser
@@ -141,8 +142,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       if (activeStage === 'separate') {
         const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
         const std = standards.find(s => s.thickness_mm === thickness)
-        const suggested = std ? Math.round(row.actual_bun_separated * std.optimal_sheets_per_bun) : 0
-        const perf = suggested > 0 ? Math.round((row.actual_sheet_received / suggested) * 100) : 0
+        const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
+        
+        const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
+        const perf = calculateEfficiency(row.actual_sheet_received, suggested)
         
         specific = [
           row.shift, 
@@ -414,16 +417,20 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                             <p className={(() => {
                               const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
                               const std = standards.find(s => s.thickness_mm === thickness)
-                              const suggested = std ? Math.round(row.actual_bun_separated * std.optimal_sheets_per_bun) : 0
-                              const perf = suggested > 0 ? Math.round((row.actual_sheet_received / suggested) * 100) : 0
+                              const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
+                               
+                              const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
+                              const perf = calculateEfficiency(row.actual_sheet_received, suggested)
                               return `text-sm font-bold ${perf >= 95 ? 'text-green-600' : perf >= 85 ? 'text-orange-500' : 'text-red-500'}`
                             })()}>
                               {(() => {
                                 const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
                                 const std = standards.find(s => s.thickness_mm === thickness)
-                                const suggested = std ? Math.round(row.actual_bun_separated * std.optimal_sheets_per_bun) : 0
-                                const perf = suggested > 0 ? Math.round((row.actual_sheet_received / suggested) * 100) : 0
-                                return std ? `${perf}% (${suggested} tấm tối ưu)` : 'N/A'
+                                const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
+                                 
+                                const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
+                                const perf = calculateEfficiency(row.actual_sheet_received, suggested)
+                                return optimalSheetsPerBun > 0 ? `${perf}% (${suggested} tấm tối ưu)` : 'N/A'
                               })()}
                             </p>
                           </div>
