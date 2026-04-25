@@ -15,6 +15,7 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [foundPlan, setFoundPlan] = useState<ProductionPlan | null>(null)
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [totalPoured, setTotalPoured] = useState(0)
 
