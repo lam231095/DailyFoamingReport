@@ -50,7 +50,7 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
         // Fetch tổng số lượng đã đổ
         const { data: pourData, error: pourError } = await supabase
           .from('foaming_pour_reports')
-          .select('actual_bun_poured')
+          .select('actual_bun_poured, ng_bun_qty')
           .eq('firm_plan', data.firm_plan)
 
         if (!pourError && pourData) {
