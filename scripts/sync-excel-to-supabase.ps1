@@ -23,9 +23,9 @@ if ($ExcelPath -ne "") {
     }
 }
 
-# Header row = 10, data bắt đầu từ row 12
-$HEADER_ROW   = 10
-$DATA_START   = 12
+# Header row = 2, data bắt đầu từ row 3 (W17 layout)
+$HEADER_ROW   = 2
+$DATA_START   = 3
 
 # Cột tương ứng
 $COL_FIRM_PLAN    = 2
