@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info } from 'lucide-react'
+import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info, Plus, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser } from '@/types'
@@ -18,6 +18,17 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [standards, setStandards] = useState<any[]>([])
 
+  const ERROR_TYPES = [
+    'Bọt khí',
+    'Loang trắng',
+    'Loang đen',
+    'Lõm mặt',
+    'Xốp biên',
+    'Cứng đáy',
+    'NG màu',
+    'Lỗi khác'
+  ]
+
   const [formData, setFormData] = useState({
     shift: 'Ca 1',
     machine_id: 'Máy tách tự động 2',
@@ -27,8 +38,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     actual_bun_separated: plan.sl_bun_can_tach || 0,
     actual_sheet_received: plan.sl_sheet || 0,
     lot_no: '',
-    ng_qty: 0,
-    ng_bun_qty: 0,
+    ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
     error_type: '',
   })
 
@@ -57,12 +67,38 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   const suggestedSheets = calculateSuggestedSheets(formData.actual_bun_separated, optimalSheetsPerBun)
   const efficiency = calculateEfficiency(formData.actual_sheet_received, suggestedSheets)
 
+  const addNGItem = () => {
+    setFormData({
+      ...formData,
+      ng_items: [...formData.ng_items, { qty: 0, type: ERROR_TYPES[0] }]
+    })
+  }
+
+  const removeNGItem = (index: number) => {
+    if (formData.ng_items.length <= 1) return
+    const newItems = formData.ng_items.filter((_, i) => i !== index)
+    setFormData({ ...formData, ng_items: newItems })
+  }
+
+  const updateNGItem = (index: number, field: 'qty' | 'type', value: any) => {
+    const newItems = [...formData.ng_items]
+    newItems[index] = { ...newItems[index], [field]: value }
+    setFormData({ ...formData, ng_items: newItems })
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setMessage(null)
 
     try {
+      // Tính toán tổng NG và chuỗi mô tả lỗi
+      const totalNG = formData.ng_items.reduce((sum, item) => sum + (item.qty || 0), 0)
+      const combinedErrorType = formData.ng_items
+        .filter(item => item.qty > 0)
+        .map(item => `${item.type} (${item.qty})`)
+        .join(', ')
+
       const { error } = await supabase.from('foaming_separate_reports').insert({
         firm_plan: plan.firm_plan,
         shift: formData.shift,
@@ -73,9 +109,9 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         actual_bun_separated: Number(formData.actual_bun_separated),
         actual_sheet_received: Number(formData.actual_sheet_received),
         lot_no: formData.lot_no,
-        ng_qty: Number(formData.ng_qty),
-        ng_bun_qty: Number(formData.ng_bun_qty),
-        error_type: formData.error_type,
+        ng_qty: totalNG,
+        ng_bun_qty: 0,
+        error_type: combinedErrorType || (formData.ng_items[0].qty > 0 ? formData.ng_items[0].type : ''),
         recorder_id: user.id
       })
 
@@ -306,27 +342,55 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           )}
         </AnimatePresence>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-red-600 uppercase ml-1">Số lượng NG (Sheet)</label>
-            <input
-              type="number"
-              value={formData.ng_qty}
-              onChange={(e) => setFormData({ ...formData, ng_qty: Number(e.target.value) })}
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
-                text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
-            />
+        <div className="space-y-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-bold text-red-600 uppercase">Ghi nhận phế phẩm (NG)</h4>
+            <button
+              type="button"
+              onClick={addNGItem}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg text-[10px] font-bold hover:bg-red-700 transition-all shadow-sm"
+            >
+              <Plus size={14} /> THÊM LỖI
+            </button>
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-red-600 uppercase ml-1">Loại lỗi</label>
-            <input
-              type="text"
-              value={formData.error_type}
-              onChange={(e) => setFormData({ ...formData, error_type: e.target.value })}
-              placeholder="VD: Rỗ mặt, bọt khí..."
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
-                text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
-            />
+
+          <div className="space-y-3">
+            {formData.ng_items.map((item, index) => (
+              <div key={index} className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+                <div className="flex-1 w-full space-y-1.5">
+                  <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Số lượng (Sheet)</label>
+                  <input
+                    type="number"
+                    value={item.qty}
+                    onChange={(e) => updateNGItem(index, 'qty', Number(e.target.value))}
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 
+                      text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="flex-[2] w-full space-y-1.5">
+                  <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Loại lỗi</label>
+                  <select
+                    value={item.type}
+                    onChange={(e) => updateNGItem(index, 'type', e.target.value)}
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 
+                      text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm"
+                  >
+                    {ERROR_TYPES.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+                {formData.ng_items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeNGItem(index)}
+                    className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
