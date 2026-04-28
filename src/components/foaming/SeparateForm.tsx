@@ -254,12 +254,12 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                     </div>
 
                     <div className="bg-white/50 dark:bg-black/20 p-3 rounded-xl border border-purple-500/10">
-                      <p className="text-[10px] text-[var(--text-3)] font-bold uppercase mb-1">Độ dày bun tham chiếu</p>
+                      <p className="text-[10px] text-[var(--text-3)] font-bold uppercase mb-1">Tham chiếu độ dày (mm)</p>
                       <p className="text-lg font-mono font-bold text-blue-600">
-                        {currentStandard?.total_bun_thickness_mm || '--'} <span className="text-xs font-medium text-[var(--text-3)]">mm</span>
+                        Bun: {currentStandard?.total_bun_thickness_mm || '--'} <span className="text-xs font-medium text-[var(--text-3)]">mm</span>
                       </p>
                       <p className="text-[9px] text-[var(--text-3)] mt-1">
-                        (Tối thiểu: {currentStandard ? (currentStandard.total_bun_thickness_mm - currentStandard.tolerance_mm).toFixed(1) : '--'} mm)
+                        Sheet tối thiểu: <span className="font-bold text-purple-600">{currentStandard ? (currentStandard.thickness_mm - currentStandard.tolerance_mm).toFixed(1) : '--'}</span> mm
                       </p>
                     </div>
 
