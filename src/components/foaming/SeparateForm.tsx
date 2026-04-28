@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info, Plus, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
-import { ProductionPlan, SessionUser } from '@/types'
+import { ProductionPlan, SessionUser, User } from '@/types'
 import { calculateOptimalSheetsPerBun, calculateSuggestedSheets, calculateEfficiency } from '@/lib/calculations'
 
 interface SeparateFormProps {
@@ -17,6 +17,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [standards, setStandards] = useState<any[]>([])
+  const [operators, setOperators] = useState<User[]>([])
 
   const ERROR_TYPES = [
     'Bọt khí',
@@ -42,13 +43,26 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     error_type: '',
   })
 
-  // 1. Tải bảng tiêu chuẩn độ dày
   useEffect(() => {
     async function fetchStandards() {
       const { data } = await supabase.from('thickness_standards').select('*')
       setStandards(data || [])
     }
     fetchStandards()
+  }, [])
+
+  useEffect(() => {
+    async function fetchOperators() {
+      const { data } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('department', '%FOAMING Splitting%')
+        .in('position', ['team leader', 'Operator', 'Team Leader', 'operator', 'Team leader'])
+        .order('full_name')
+      
+      setOperators(data || [])
+    }
+    fetchOperators()
   }, [])
 
   // 2. Phân tích độ dày và tìm tiêu chuẩn
@@ -182,13 +196,17 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Người vận hành (Operator)</label>
-            <input
-              type="text"
+            <select
               value={formData.operator_name}
               onChange={(e) => setFormData({ ...formData, operator_name: e.target.value })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-purple-500 outline-none transition-all"
-            />
+            >
+              <option value="">-- Chọn người vận hành --</option>
+              {operators.map(op => (
+                <option key={op.id} value={op.full_name}>{op.full_name} ({op.msnv})</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Lot No (Số lô)</label>

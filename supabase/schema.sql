@@ -10,6 +10,7 @@ create table if not exists users (
   full_name   text not null,
   department  text,
   role        text default 'worker',
+  position    text,
   is_active   boolean default true,
   created_at  timestamptz default now()
 );

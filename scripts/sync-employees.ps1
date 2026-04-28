@@ -34,6 +34,7 @@ try {
             full_name = $name
             department = $dept
             role = $dbRole
+            position = $role
         })
     }
 

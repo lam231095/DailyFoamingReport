@@ -4,6 +4,7 @@ export interface User {
   full_name: string;
   department: string | null;
   role: string;
+  position?: string;
   is_active: boolean;
 }
 
@@ -52,6 +53,7 @@ export interface SessionUser {
   full_name: string;
   department: string | null;
   role: string;
+  position?: string;
 }
 
 export interface ResidualMaterial {
