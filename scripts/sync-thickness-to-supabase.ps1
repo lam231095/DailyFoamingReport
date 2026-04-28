@@ -37,8 +37,9 @@ try {
         $rec = [ordered]@{
             thickness_mm            = [double]$thickness
             total_bun_thickness_mm  = [double]$ws.Cells.Item($r, 2).Value2
-            sheets_per_bun          = [int]$ws.Cells.Item($r, 3).Value2
-            optimal_sheets_per_bun  = [int]$ws.Cells.Item($r, 4).Value2
+            tolerance_mm            = [double]$ws.Cells.Item($r, 3).Value2
+            sheets_per_bun          = [int]$ws.Cells.Item($r, 4).Value2
+            optimal_sheets_per_bun  = [int]$ws.Cells.Item($r, 5).Value2
             updated_at              = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
         }
         $records.Add($rec)

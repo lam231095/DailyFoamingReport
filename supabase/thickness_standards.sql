@@ -3,6 +3,7 @@ create table if not exists thickness_standards (
   id                      uuid primary key default gen_random_uuid(),
   thickness_mm            decimal(10,2) unique not null, -- Độ dày sheet (mm)
   total_bun_thickness_mm  decimal(10,2),                -- Tổng độ dày bun (mm)
+  tolerance_mm            decimal(10,2) default 0,      -- Dung sai (mm)
   sheets_per_bun          integer,                      -- Số sheet/bun cơ bản
   optimal_sheets_per_bun  integer,                      -- Số sheet/bun tối ưu
   updated_at              timestamptz default now()
