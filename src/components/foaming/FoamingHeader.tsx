@@ -5,6 +5,7 @@ import { Search, Loader2, CheckCircle2, AlertCircle, QrCode } from 'lucide-react
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan } from '@/types'
+import { calculateOptimalSheetsPerBun } from '@/lib/calculations'
 import QRScannerModal from './QRScannerModal'
 
 interface FoamingHeaderProps {
@@ -47,7 +48,7 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
         setFoundPlan(data)
         onPlanFound(data)
 
-        // Fetch tổng số lượng đã đổ
+        // Fetch tổng số lượng đã đổ và NG Đổ
         const { data: pourData, error: pourError } = await supabase
           .from('foaming_pour_reports')
           .select('actual_bun_poured, ng_bun_qty')
@@ -55,19 +56,33 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
 
         if (!pourError && pourData) {
           const total = pourData.reduce((sum, row) => sum + (row.actual_bun_poured || 0), 0)
-          const ngPour = pourData.reduce((sum, row) => sum + ((row as any).ng_bun_qty || 0), 0)
+          const ngPour = pourData.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0)
           setTotalPoured(total)
           
-          // Fetch NG từ Tách và Kho
-          const [{ data: sepData }, { data: whData }] = await Promise.all([
-            supabase.from('foaming_separate_reports').select('ng_bun_qty').eq('firm_plan', data.firm_plan),
-            supabase.from('foaming_warehouse_reports').select('ng_bun_qty').eq('firm_plan', data.firm_plan)
+          // Fetch NG từ Tách, Kho và Bảng tiêu chuẩn
+          const [{ data: sepData }, { data: whData }, { data: standards }] = await Promise.all([
+            supabase.from('foaming_separate_reports').select('ng_qty').eq('firm_plan', data.firm_plan),
+            supabase.from('foaming_warehouse_reports').select('ng_bun_qty').eq('firm_plan', data.firm_plan),
+            supabase.from('thickness_standards').select('*')
           ])
 
-          const ngSep = sepData?.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0) || 0
+          const ngSepSheets = sepData?.reduce((sum, row) => sum + (row.ng_qty || 0), 0) || 0
           const ngWh = whData?.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0) || 0
           
-          setTotalNG(ngPour + ngSep + ngWh)
+          // Xác định độ dày từ tên sản phẩm
+          const match = data.ten_san_pham?.match(/([0-9.]+)\s*mm/i)
+          const thickness = match ? parseFloat(match[1]) : null
+          
+          // Tìm số sheet tối ưu
+          const standard = standards?.find(s => s.thickness_mm === thickness)
+          const optimalSheets = standard 
+            ? standard.optimal_sheets_per_bun 
+            : (thickness ? calculateOptimalSheetsPerBun(thickness) : 1)
+
+          // Công thức mới: NG Đổ (bun) + NG Kho (bun) + ceil(NG Tách (tấm) / Số sheet tối ưu)
+          const ngSepEquivalentBuns = Math.ceil(ngSepSheets / (optimalSheets || 1))
+          
+          setTotalNG(ngPour + ngWh + ngSepEquivalentBuns)
         } else {
           setTotalPoured(0)
           setTotalNG(0)
