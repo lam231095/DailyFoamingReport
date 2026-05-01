@@ -27,6 +27,9 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     'Xốp biên',
     'Cứng đáy',
     'NG màu',
+    'Sọc dao',
+    'mm không đều',
+    'Mỏng dày',
     'Lỗi khác'
   ]
 
