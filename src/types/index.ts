@@ -105,6 +105,9 @@ export interface FoamingPourReport {
   lot_no: string | null;
   ng_bun_qty: number;
   error_type: string | null;
+  cleaning_agent_kg?: number;
+  waste_kg?: number;
+  note?: string | null;
   recorder_id: string;
   created_at: string;
   production_plan?: ProductionPlan;

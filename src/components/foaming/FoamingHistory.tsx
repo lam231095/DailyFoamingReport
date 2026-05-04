@@ -126,7 +126,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     
     // Header dựa trên stage
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
-    if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No")
+    if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Ghi chú")
     if (activeStage === 'separate') headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
 
@@ -146,7 +146,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       ]
       
       let specific: any[] = []
-      if (activeStage === 'pour') specific = [row.shift, row.machine_id || '---', row.operator_name || '---', row.actual_bun_poured, row.lot_no]
+      if (activeStage === 'pour') specific = [row.shift, row.machine_id || '---', row.operator_name || '---', row.actual_bun_poured, row.lot_no, row.cleaning_agent_kg || 0, row.waste_kg || 0, `"${(row.note || '').replace(/"/g, '""')}"`]
       if (activeStage === 'separate') {
         const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
         const std = standards.find(s => s.thickness_mm === thickness)
@@ -418,6 +418,16 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Lot No</p>
                             <p className="text-sm font-bold text-[var(--text-1)]">{row.lot_no || '---'}</p>
                           </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Chất rửa / Rác (kg)</p>
+                            <p className="text-sm font-bold text-teal-600">{row.cleaning_agent_kg || 0} / {row.waste_kg || 0}</p>
+                          </div>
+                          {row.note && (
+                            <div className="col-span-2 sm:col-span-3 bg-blue-500/5 p-2 rounded-lg border border-blue-500/10">
+                              <p className="text-[10px] text-blue-600 font-bold uppercase mb-0.5">Ghi chú</p>
+                              <p className="text-xs text-[var(--text-2)] italic">"{row.note}"</p>
+                            </div>
+                          )}
                         </>
                       )}
                       

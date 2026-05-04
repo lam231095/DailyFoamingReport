@@ -39,6 +39,9 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     lot_no: '',
     ng_bun_qty: 0,
     error_type: '',
+    cleaning_agent_kg: 0,
+    waste_kg: 0,
+    note: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,6 +59,9 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         lot_no: formData.lot_no,
         ng_bun_qty: Number(formData.ng_bun_qty),
         error_type: formData.error_type,
+        cleaning_agent_kg: Number(formData.cleaning_agent_kg),
+        waste_kg: Number(formData.waste_kg),
+        note: formData.note.trim() || null,
         recorder_id: user.id
       })
 
@@ -183,6 +189,43 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
                 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
             />
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Chất rửa đầu súng (kg)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={formData.cleaning_agent_kg}
+              onChange={(e) => setFormData({ ...formData, cleaning_agent_kg: Number(e.target.value) })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Rác (kg)</label>
+            <input
+              type="number"
+              step="0.1"
+              value={formData.waste_kg}
+              onChange={(e) => setFormData({ ...formData, waste_kg: Number(e.target.value) })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Ghi chú</label>
+          <textarea
+            value={formData.note}
+            onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+            placeholder="Ghi chú thêm nếu có..."
+            rows={3}
+            className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+              text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all resize-none"
+          />
         </div>
 
         {message && (
