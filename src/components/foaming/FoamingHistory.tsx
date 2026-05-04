@@ -319,6 +319,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     <option>Ca 1</option>
                     <option>Ca 2</option>
                     <option>Ca 3</option>
+                    <option>Ca HC</option>
                   </select>
                 </div>
               </div>

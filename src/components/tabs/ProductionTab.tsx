@@ -371,8 +371,8 @@ export default function ProductionTab({ user }: ProductionTabProps) {
             {/* Shift Selection */}
             <div>
               <label className="label">Ca Làm Việc</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['Ca 1', 'Ca 2', 'Ca 3'].map((s) => (
+              <div className="grid grid-cols-4 gap-2">
+                {['Ca 1', 'Ca 2', 'Ca 3', 'Ca HC'].map((s) => (
                   <button
                     key={s}
                     type="button"

@@ -203,7 +203,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Ca làm việc</label>
             <select value={formData.shift} onChange={e => setFormData({ ...formData, shift: e.target.value })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`}>
-              <option>Ca 1</option><option>Ca 2</option><option>Ca 3</option>
+              <option>Ca 1</option><option>Ca 2</option><option>Ca 3</option><option>Ca HC</option>
             </select>
           </div>
           <div className="space-y-2">

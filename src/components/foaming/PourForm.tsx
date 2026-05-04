@@ -101,6 +101,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               <option>Ca 1</option>
               <option>Ca 2</option>
               <option>Ca 3</option>
+              <option>Ca HC</option>
             </select>
           </div>
 
