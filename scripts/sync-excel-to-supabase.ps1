@@ -5,8 +5,9 @@
 # ==============================================================
 
 param(
-    [string]$WeekLabel = "W17-2026",
-    [string]$ExcelPath = ""
+    [string]$WeekLabel = "W19-2026",
+    [string]$ExcelPath = "",
+    [string]$SheetName = "W19-2026 - L1"
 )
 
 # ---- CONFIG ----
@@ -99,7 +100,13 @@ $xl.DisplayAlerts  = $false
 
 try {
     $wb = $xl.Workbooks.Open($EXCEL_FILE, 0, $true)  # ReadOnly = true
-    $ws = $wb.Worksheets.Item(1)
+    
+    if ($SheetName -ne "") {
+        $ws = $wb.Worksheets.Item($SheetName)
+    } else {
+        $ws = $wb.Worksheets.Item(1)
+    }
+    
     $nr = $ws.UsedRange.Rows.Count
 
     Write-Host "[1/3] Đã mở sheet '$($ws.Name)' - $nr rows" -ForegroundColor Green
@@ -141,7 +148,10 @@ try {
         $records.Add($record)
     }
 
-    Write-Host "[2/3] Đọc được $($records.Count) dòng dữ liệu hợp lệ" -ForegroundColor Green
+    Write-Host "[2/3] ??c 'c $($records.Count) dng d liu hp lǦ (tng sǦ $nr rows)" -ForegroundColor Green
+    if ($records.Count -gt 0) {
+        Write-Host "      V d 5 dng 'Ǧu: $(($records | Select-Object -First 5 | ForEach-Object { $_.firm_plan }) -join ', ')" -ForegroundColor Gray
+    }
 
     $wb.Close($false)
 } finally {
