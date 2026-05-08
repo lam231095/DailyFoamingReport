@@ -50,17 +50,24 @@ const TABS: { id: ProductType; label: string; color: string; bg: string }[] = [
   { id: 'ban_thanh_pham', label: '🔶 Bán thành phẩm', color: 'amber',  bg: 'bg-amber-500'  },
 ]
 
-const defaultForm = (plan: ProductionPlan) => ({
-  shift: 'Ca 1',
-  machine_id: 'Máy tách tự động 2',
-  operator_name: '',
-  bun_thickness_mm: 0,
-  sheet_thickness_mm: 0,
-  actual_bun_separated: plan.sl_bun_can_tach || 0,
-  actual_sheet_received: plan.sl_sheet || 0,
-  lot_no: '',
-  ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
-})
+const defaultForm = (plan: ProductionPlan) => {
+  const match = plan.ten_san_pham?.match(/([0-9.]+)\s*mm/i)
+  const thickness = match ? parseFloat(match[1]) : null
+  const std = thickness ? THICKNESS_TABLE[thickness] : null
+  const initialBunThickness = std ? std.bunRef : 144
+
+  return {
+    shift: 'Ca 1',
+    machine_id: 'Máy tách tự động 2',
+    operator_name: '',
+    bun_thickness_mm: initialBunThickness,
+    sheet_thickness_mm: thickness || 0,
+    actual_bun_separated: plan.sl_bun_can_tach || 0,
+    actual_sheet_received: plan.sl_sheet || 0,
+    lot_no: '',
+    ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
+  }
+}
 
 export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProps) {
   const [productType, setProductType] = useState<ProductType>('thanh_pham')
@@ -242,16 +249,30 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         {/* Độ dày */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Độ dày bun sau tách da (mm)</label>
-            <input type="number" step="0.1" value={formData.bun_thickness_mm}
-              onChange={e => setFormData({ ...formData, bun_thickness_mm: Number(e.target.value) })}
-              className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} />
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-xs font-bold text-[var(--text-2)] uppercase">Độ dày bun sau tách da (mm)</label>
+              <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">Tự động</span>
+            </div>
+            <input 
+              type="number" 
+              step="0.1" 
+              value={formData.bun_thickness_mm}
+              readOnly
+              className={`w-full bg-gray-50 dark:bg-black/10 border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-bold outline-none transition-all font-mono cursor-not-allowed`} 
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Độ dày sheet thực tế (mm)</label>
-            <input type="number" step="0.1" value={formData.sheet_thickness_mm}
-              onChange={e => setFormData({ ...formData, sheet_thickness_mm: Number(e.target.value) })}
-              className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} />
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-xs font-bold text-[var(--text-2)] uppercase">Độ dày sheet thực tế (mm)</label>
+              <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">Tự động</span>
+            </div>
+            <input 
+              type="number" 
+              step="0.1" 
+              value={formData.sheet_thickness_mm}
+              readOnly
+              className={`w-full bg-gray-50 dark:bg-black/10 border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-bold outline-none transition-all font-mono cursor-not-allowed`} 
+            />
           </div>
         </div>
 
