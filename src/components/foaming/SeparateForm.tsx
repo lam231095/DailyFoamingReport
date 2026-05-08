@@ -264,14 +264,14 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           <div className="space-y-2">
             <div className="flex items-center justify-between ml-1">
               <label className="text-xs font-bold text-[var(--text-2)] uppercase">Độ dày sheet thực tế (mm)</label>
-              <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">Tự động</span>
+              <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">Gợi ý</span>
             </div>
             <input 
               type="number" 
               step="0.1" 
               value={formData.sheet_thickness_mm}
-              readOnly
-              className={`w-full bg-gray-50 dark:bg-black/10 border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-bold outline-none transition-all font-mono cursor-not-allowed`} 
+              onChange={e => setFormData({ ...formData, sheet_thickness_mm: Number(e.target.value) })}
+              className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} 
             />
           </div>
         </div>
