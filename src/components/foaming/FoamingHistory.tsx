@@ -127,7 +127,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     // Header dựa trên stage
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Ghi chú")
-    if (activeStage === 'separate') headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
+    if (activeStage === 'separate') headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
 
     const csvContentRaw = headers.join(",") + "\r\n" + data.map(row => {
@@ -155,11 +155,16 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
         const perf = calculateEfficiency(row.actual_sheet_received, suggested)
         
+        const totalActualSheetThickness = (row.actual_sheet_received || 0) * (row.sheet_thickness_mm || 0)
+        const actualBunThickness = row.actual_bun_separated > 0 ? (totalActualSheetThickness / row.actual_bun_separated) : 0
+
         specific = [
           row.shift, 
           row.machine_id || '---',
           row.operator_name || '---',
           row.bun_thickness_mm || 0,
+          actualBunThickness.toFixed(2),
+          totalActualSheetThickness.toFixed(2),
           row.sheet_thickness_mm || 0,
           row.actual_bun_separated, 
           row.actual_sheet_received, 
