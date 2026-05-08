@@ -23,6 +23,12 @@ const STAGE_CONFIG = {
   warehouse: { table: 'foaming_warehouse_reports', label: 'Nhập kho' },
 }
 
+const ERROR_TYPES = [
+  'Bọt khí', 'Loang trắng', 'Loang đen', 'Lõm mặt',
+  'Xốp biên', 'Cứng đáy', 'NG màu', 'Sọc dao',
+  'mm không đều', 'Mỏng dày', 'Lỗi khác'
+]
+
 export default function FoamingHistory({ user }: FoamingHistoryProps) {
   const [activeStage, setActiveStage] = useState<StageType>('pour')
   const [data, setData] = useState<any[]>([])
@@ -127,7 +133,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     // Header dựa trên stage
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Ghi chú")
-    if (activeStage === 'separate') headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi")
+    if (activeStage === 'separate') {
+      headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG")
+      headers.push(...ERROR_TYPES)
+    }
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
 
     const csvContentRaw = headers.join(",") + "\r\n" + data.map(row => {
@@ -158,6 +167,14 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         const totalActualSheetThickness = (row.actual_sheet_received || 0) * (row.sheet_thickness_mm || 0)
         const actualBunThickness = row.actual_bun_separated > 0 ? (totalActualSheetThickness / row.actual_bun_separated) : 0
 
+        // Parse error types into separate columns
+        const errorDetails = ERROR_TYPES.map(type => {
+          const escapedType = type.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          const regex = new RegExp(`${escapedType}\\s*\\((\\d+)\\)`, 'i')
+          const match = row.error_type?.match(regex)
+          return match ? parseInt(match[1]) : 0
+        })
+
         specific = [
           row.shift, 
           row.machine_id || '---',
@@ -172,7 +189,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           `${perf}%`,
           row.lot_no, 
           row.ng_qty, 
-          row.error_type
+          ...errorDetails
         ]
       }
       if (activeStage === 'warehouse') specific = [row.qty_delivered_sheet, row.delivery_date, row.users?.full_name || '---']
