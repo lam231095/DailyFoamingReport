@@ -184,9 +184,9 @@ export default function ProductionTab({ user }: ProductionTabProps) {
   return (
     <>
       <SuccessModal
-        show={showSuccess}
+        isOpen={showSuccess}
         message="Sản lượng đã ghi nhận!"
-        onDone={() => setShowSuccess(false)}
+        onClose={() => setShowSuccess(false)}
       />
 
       <div className="space-y-4">

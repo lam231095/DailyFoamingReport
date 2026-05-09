@@ -126,9 +126,9 @@ export default function Changelog4MTab({ user }: Changelog4MTabProps) {
   return (
     <>
       <SuccessModal
-        show={showSuccess}
+        isOpen={showSuccess}
         message="Biến động 4M đã ghi nhận!"
-        onDone={() => setShowSuccess(false)}
+        onClose={() => setShowSuccess(false)}
       />
 
       <div className="space-y-4">
