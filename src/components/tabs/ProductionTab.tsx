@@ -453,7 +453,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
                   {reports.map((r) => {
-                    const pts = r.productivity_points
+                    const pts = r.productivity_points || 0
                     const ptColor = pts >= 12 ? '#22c55e' : pts >= 8 ? '#f59e0b' : '#ef4444'
                     return (
                       <motion.tr

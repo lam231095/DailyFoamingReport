@@ -202,9 +202,9 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
         r.skus?.id || '',
         `"${(r.skus?.product_type || '').replace(/"/g, '""')}"`,
         r.working_hours,
-        r.actual_quantity,
+        r.actual_quantity || 0,
         r.skus?.unit || 'đôi',
-        r.productivity_points,
+        r.productivity_points || 0,
         `"${(r.note || '').replace(/"/g, '""')}"`
       ]
       csvContent += row.join(',') + '\n'
@@ -229,8 +229,8 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
   const stats = useMemo(() => {
     if (reports.length === 0) return null
 
-    const totalQty = reports.reduce((acc, r) => acc + r.actual_quantity, 0)
-    const avgPoints = reports.reduce((acc, r) => acc + r.productivity_points, 0) / reports.length
+    const totalQty = reports.reduce((acc, r) => acc + (r.actual_quantity || 0), 0)
+    const avgPoints = reports.reduce((acc, r) => acc + (r.productivity_points || 0), 0) / reports.length
     
     // Group by day
     const dayMap = new Map<number, { sumPoints: number, sumQty: number, count: number }>()
@@ -238,8 +238,8 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
       const d = new Date(r.report_date).getDate()
       const existing = dayMap.get(d) || { sumPoints: 0, sumQty: 0, count: 0 }
       dayMap.set(d, {
-        sumPoints: existing.sumPoints + r.productivity_points,
-        sumQty: existing.sumQty + r.actual_quantity,
+        sumPoints: existing.sumPoints + (r.productivity_points || 0),
+        sumQty: existing.sumQty + (r.actual_quantity || 0),
         count: existing.count + 1
       })
     })
@@ -257,8 +257,8 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
       const name = r.skus?.product_type || 'Unknown'
       const existing = skuMap.get(name) || { sumPoints: 0, sumQty: 0, count: 0 }
       skuMap.set(name, {
-        sumPoints: existing.sumPoints + r.productivity_points,
-        sumQty: existing.sumQty + r.actual_quantity,
+        sumPoints: existing.sumPoints + (r.productivity_points || 0),
+        sumQty: existing.sumQty + (r.actual_quantity || 0),
         count: existing.count + 1
       })
     })
