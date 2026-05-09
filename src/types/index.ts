@@ -15,6 +15,8 @@ export interface SKU {
   bun_code: string | null;
   pu_code: string | null;
   ten_san_pham: string | null;
+  product_type?: string;
+  unit?: string;
 }
 
 export interface ResidualMaterial {
@@ -108,9 +110,13 @@ export interface FoamingPourReport {
   note?: string | null;
   recorder_id: string;
   created_at: string;
-  report_date?: string; // Alias
+  report_date: string;
+  working_hours?: number;
+  actual_quantity: number;
+  productivity_points: number;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
+  skus?: SKU;
 }
 
 export interface FoamingSeparateReport {
@@ -129,9 +135,13 @@ export interface FoamingSeparateReport {
   error_type: string | null;
   recorder_id: string;
   created_at: string;
-  report_date?: string; // Alias
+  report_date: string;
+  working_hours?: number;
+  actual_quantity: number;
+  productivity_points: number;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
+  skus?: SKU;
 }
 
 export interface FoamingWarehouseReport {
@@ -143,9 +153,13 @@ export interface FoamingWarehouseReport {
   error_type: string | null;
   deliverer_id: string;
   created_at: string;
-  report_date?: string; // Alias
+  report_date: string;
+  working_hours?: number;
+  actual_quantity: number;
+  productivity_points: number;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
+  skus?: SKU;
 }
 
 export type ProductionReport = FoamingPourReport | FoamingSeparateReport | FoamingWarehouseReport;
