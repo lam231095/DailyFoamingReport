@@ -84,6 +84,8 @@ export interface Change4M {
   description: string;
   reported_by: string;
   created_at?: string;
+  logged_at?: string; // Alias
+  shift?: string; // Alias
 }
 
 export type ChangeLog = Change4M;
