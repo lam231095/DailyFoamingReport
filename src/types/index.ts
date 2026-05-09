@@ -139,6 +139,7 @@ export interface FoamingSeparateReport {
   working_hours?: number;
   actual_quantity: number;
   productivity_points: number;
+  note?: string | null; // Alias
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;
@@ -158,6 +159,7 @@ export interface FoamingWarehouseReport {
   working_hours?: number;
   actual_quantity: number;
   productivity_points: number;
+  note?: string | null; // Alias
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;
