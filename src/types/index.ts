@@ -147,6 +147,7 @@ export interface FoamingSeparateReport {
 export interface FoamingWarehouseReport {
   id: string;
   firm_plan: string;
+  shift?: string;
   qty_delivered_sheet: number;
   delivery_date: string;
   ng_bun_qty: number;
