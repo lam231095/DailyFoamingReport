@@ -2,8 +2,10 @@ export interface User {
   id: string;
   msnv: string;
   full_name: string;
-  department: string;
-  role: 'worker' | 'supervisor' | 'qc' | 'admin' | 'manager';
+  department: string | null;
+  role: string;
+  position?: string;
+  is_active?: boolean;
   created_at?: string;
 }
 
@@ -11,12 +13,15 @@ export type SessionUser = User;
 
 export interface SKU {
   id: string;
-  firm_plan: string;
-  bun_code: string | null;
-  pu_code: string | null;
-  ten_san_pham: string | null;
+  firm_plan?: string;
+  bun_code?: string | null;
+  pu_code?: string | null;
+  ten_san_pham?: string | null;
   product_type?: string;
   unit?: string;
+  target_per_hour?: number;
+  is_active?: boolean;
+  updated_at?: string;
 }
 
 export interface ResidualMaterial {
@@ -80,21 +85,24 @@ export interface DailyReport {
   created_at?: string;
 }
 
-export interface Change4M {
+export interface ChangeLog {
   id: string;
-  type: 'Man' | 'Machine' | 'Material' | 'Method';
-  description: string;
-  reported_by: string;
-  created_at: string;
-  logged_at: string; // Alias
-  shift?: string; // Alias
-  category: string;
+  user_id: string;
   machine_id: string;
-  severity: 'low' | 'medium' | 'high';
+  category: string;
+  description: string;
   affects_quality: boolean;
+  severity: 'low' | 'medium' | 'high';
+  logged_at: string;
+  shift?: string | null;
+  users?: { msnv: string; full_name: string };
+  // Alias for 4M compatibility
+  type?: string;
+  reported_by?: string;
+  created_at?: string;
 }
 
-export type ChangeLog = Change4M;
+export type FourMCategory = 'Man' | 'Machine' | 'Material' | 'Method';
 
 export interface FoamingPourReport {
   id: string;
@@ -105,15 +113,15 @@ export interface FoamingPourReport {
   actual_bun_poured: number;
   ng_bun_qty: number;
   error_type: string | null;
-  cleaning_agent_used?: boolean;
+  cleaning_agent_kg?: number;
   waste_kg?: number;
   note?: string | null;
   recorder_id: string;
   created_at: string;
-  report_date: string;
+  report_date?: string;
   working_hours?: number;
-  actual_quantity: number;
-  productivity_points: number;
+  actual_quantity?: number;
+  productivity_points?: number;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;
@@ -133,13 +141,15 @@ export interface FoamingSeparateReport {
   ng_qty: number;
   ng_bun_qty: number;
   error_type: string | null;
+  error_hardness_above?: number;
+  error_hardness_below?: number;
   recorder_id: string;
   created_at: string;
-  report_date: string;
+  report_date?: string;
   working_hours?: number;
-  actual_quantity: number;
-  productivity_points: number;
-  note?: string | null; // Alias
+  actual_quantity?: number;
+  productivity_points?: number;
+  note?: string | null;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;
@@ -155,11 +165,11 @@ export interface FoamingWarehouseReport {
   error_type: string | null;
   deliverer_id: string;
   created_at: string;
-  report_date: string;
+  report_date?: string;
   working_hours?: number;
-  actual_quantity: number;
-  productivity_points: number;
-  note?: string | null; // Alias
+  actual_quantity?: number;
+  productivity_points?: number;
+  note?: string | null;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;

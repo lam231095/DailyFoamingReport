@@ -1,178 +1,515 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  BarChart3, 
-  Target, 
-  CheckCircle2, 
-  AlertCircle, 
-  Plus, 
-  Search,
-  ArrowUpRight
-} from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { ProductionPlan, DailyReport } from '@/types';
+import { useState, useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  BarChart3, ChevronDown, Clock, Package,
+  TrendingUp, AlertTriangle, RefreshCw, Send,
+  Trophy, Zap
+} from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { SessionUser, SKU, ProductionReport } from '@/types'
+import SuccessModal from '@/components/ui/SuccessModal'
 
-export default function ProductionTab() {
-  const [plans, setPlans] = useState<ProductionPlan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+interface ProductionTabProps {
+  user: SessionUser
+}
 
-  useEffect(() => {
-    fetchPlans();
-  }, []);
+// ── Productivity Gauge ─────────────────────────────────────
+function ProductivityGauge({ points }: { points: number }) {
+  const clamped = Math.min(Math.max(points, 0), 15)
+  const pct = clamped / 15
+  const radius = 54
+  const circumference = 2 * Math.PI * radius
+  // Half-circle arc: starts from -180deg → 0deg
+  const arcLength = circumference * 0.5
+  const offset = arcLength - pct * arcLength
 
-  const fetchPlans = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('production_plan')
-      .select('*')
-      .order('created_at', { ascending: false });
+  const color =
+    clamped >= 12 ? '#22c55e' :
+    clamped >= 8  ? '#f59e0b' :
+    clamped >= 4  ? '#f97316' : '#ef4444'
 
-    if (!error && data) {
-      setPlans(data);
-    }
-    setLoading(false);
-  };
-
-  const filteredPlans = plans.filter(p => 
-    (p.product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.firm_plan || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const label =
+    clamped >= 12 ? 'Xuất sắc' :
+    clamped >= 8  ? 'Tốt' :
+    clamped >= 4  ? 'Trung bình' : 'Cần cải thiện'
 
   return (
-    <div className="space-y-6">
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-6 glass-card border-l-4 border-indigo-500 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-slate-500 font-medium">Tổng mục tiêu tuần</p>
-              <h3 className="text-2xl font-bold mt-1">45,200 <span className="text-sm font-normal text-slate-400">tấm</span></h3>
-            </div>
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 rounded-lg">
-              <Target size={20} />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-xs text-green-500">
-            <ArrowUpRight size={14} className="mr-1" />
-            <span>+12% so với tuần trước</span>
-          </div>
-        </div>
-
-        <div className="p-6 glass-card border-l-4 border-emerald-500 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-slate-500 font-medium">Thực tế đã đạt</p>
-              <h3 className="text-2xl font-bold mt-1">38,150 <span className="text-sm font-normal text-slate-400">tấm</span></h3>
-            </div>
-            <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-lg">
-              <CheckCircle2 size={20} />
-            </div>
-          </div>
-          <div className="mt-4 w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
-            <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: '84%' }}></div>
-          </div>
-        </div>
-
-        <div className="p-6 glass-card border-l-4 border-amber-500 shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-slate-500 font-medium">Tổng lỗi độ cứng</p>
-              <h3 className="text-2xl font-bold mt-1">
-                {plans.reduce((acc, p) => acc + 0, 0)} <span className="text-sm font-normal text-slate-400">lỗi</span>
-              </h3>
-            </div>
-            <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 rounded-lg">
-              <AlertCircle size={20} />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-xs text-amber-600">
-            <ArrowUpRight size={14} className="mr-1" />
-            <span>Độ cứng trên/dưới chuẩn</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="relative w-full sm:w-96">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="Tìm theo Firm Plan hoặc Tên Sản Phẩm..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500"
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative" style={{ width: 132, height: 72 }}>
+        <svg viewBox="0 0 132 72" className="w-full h-full overflow-visible">
+          {/* Track */}
+          <path
+            d="M 10 66 A 56 56 0 0 1 122 66"
+            fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="12"
+            strokeLinecap="round"
           />
-        </div>
-        <button className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors font-medium">
-          <Plus size={18} />
-          Báo cáo sản lượng mới
-        </button>
+          {/* Active arc */}
+          <motion.path
+            d="M 10 66 A 56 56 0 0 1 122 66"
+            fill="none"
+            stroke={color}
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeDasharray={arcLength}
+            initial={{ strokeDashoffset: arcLength }}
+            animate={{ strokeDashoffset: offset }}
+            transition={{ duration: 0.9, ease: 'easeOut', type: 'spring', stiffness: 60 }}
+            style={{ filter: `drop-shadow(0 0 6px ${color}80)` }}
+          />
+          {/* Center value */}
+          <text x="66" y="60" textAnchor="middle" fontSize="22" fontWeight="800" fill={color}>
+            {points > 0 ? clamped.toFixed(1) : '—'}
+          </text>
+          <text x="66" y="72" textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.35)">
+            / 15 điểm
+          </text>
+        </svg>
       </div>
-
-      {/* Production List */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <table className="w-full text-left border-collapse bg-white dark:bg-slate-950">
-          <thead>
-            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Firm Plan / Bun</th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Sản phẩm</th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Mục tiêu (Tấm)</th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Thực tế</th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Tiến độ</th>
-              <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Trạng thái</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-            {loading ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-slate-400 italic">Đang tải dữ liệu...</td>
-              </tr>
-            ) : filteredPlans.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-10 text-center text-slate-400 italic">Không tìm thấy kế hoạch nào.</td>
-              </tr>
-            ) : filteredPlans.map((plan) => (
-              <tr key={plan.id} className="hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors group">
-                <td className="px-6 py-4">
-                  <div className="font-bold text-slate-900 dark:text-slate-100">{plan.firm_plan}</div>
-                  <div className="text-xs text-slate-500">{plan.bun_code}</div>
-                </td>
-                <td className="px-6 py-4 max-w-xs truncate font-medium text-sm" title={plan.product_name || ''}>
-                  {plan.product_name}
-                </td>
-                <td className="px-6 py-4 text-center font-mono font-bold text-indigo-600">
-                  {(plan.target_sheets || 0).toLocaleString()}
-                </td>
-                <td className="px-6 py-4 text-center font-mono font-bold">
-                  {/* Placeholder for actual data */}
-                  0
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-1.5">
-                      <div className="bg-indigo-500 h-1.5 rounded-full" style={{ width: '0%' }}></div>
-                    </div>
-                    <span className="text-xs font-bold w-8 text-right">0%</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                    plan.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    plan.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
-                    'bg-slate-100 text-slate-600'
-                  }`}>
-                    {plan.status}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {points > 0 && (
+        <motion.span
+          key={label}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xs font-semibold px-2.5 py-0.5 rounded-full"
+          style={{ color, background: `${color}18`, border: `1px solid ${color}40` }}
+        >
+          {label}
+        </motion.span>
+      )}
     </div>
-  );
+  )
+}
+
+// ── Main Component ─────────────────────────────────────────
+export default function ProductionTab({ user }: ProductionTabProps) {
+  const [skus, setSkus] = useState<SKU[]>([])
+  const [reports, setReports] = useState<(ProductionReport & { skus: SKU })[]>([])
+  const [loadingSkus, setLoadingSkus] = useState(true)
+  const [loadingReports, setLoadingReports] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  const [selectedSku, setSelectedSku] = useState('')
+  const [workingHours, setWorkingHours] = useState('')
+  const [actualQty, setActualQty] = useState('')
+  const [note, setNote] = useState('')
+  const [shift, setShift] = useState('Ca 1')
+  const [skuOpen, setSkuOpen] = useState(false)
+
+  // Auto-detect shift based on current time
+  useEffect(() => {
+    const hour = new Date().getHours()
+    if (hour >= 6 && hour < 14) setShift('Ca 1')
+    else if (hour >= 14 && hour < 22) setShift('Ca 2')
+    else setShift('Ca 3')
+  }, [])
+
+  // Computed productivity
+  const currentSku = skus.find((s) => s.id === selectedSku)
+  const productivityPoints = (() => {
+    const h = parseFloat(workingHours)
+    const q = parseFloat(actualQty)
+    if (!currentSku || !h || !q || h <= 0) return 0
+    return Math.min((q / (currentSku.target_per_hour * h)) * 15, 15)
+  })()
+
+  const fetchSkus = useCallback(async () => {
+    setLoadingSkus(true)
+    const { data } = await supabase.from('skus').select('*').eq('is_active', true).order('product_type')
+    setSkus(data ?? [])
+    setLoadingSkus(false)
+  }, [])
+
+  const fetchReports = useCallback(async () => {
+    setLoadingReports(true)
+    const today = new Date().toISOString().split('T')[0]
+    let query = supabase
+      .from('production_reports')
+      .select('*, skus(*), users(full_name)')
+      .eq('report_date', today)
+
+    if (user.role !== 'supervisor' && user.role !== 'admin' && user.role !== 'manager') {
+       query = query.eq('user_id', user.id)
+    }
+
+    const { data } = await query
+      .order('created_at', { ascending: false })
+      .limit(user.role === 'worker' ? 10 : 30)
+
+    setReports((data as (ProductionReport & { skus: SKU })[]) ?? [])
+    setLoadingReports(false)
+  }, [user.id])
+
+  useEffect(() => {
+    fetchSkus()
+    fetchReports()
+  }, [fetchSkus, fetchReports])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedSku || !workingHours || !actualQty) return
+    setSubmitting(true)
+    try {
+      const { error } = await supabase.from('production_reports').insert({
+        user_id: user.id,
+        sku_id: selectedSku,
+        working_hours: parseFloat(workingHours),
+        actual_quantity: parseFloat(actualQty),
+        productivity_points: parseFloat(productivityPoints.toFixed(2)),
+        note: note.trim() || null,
+        report_date: new Date().toISOString().split('T')[0],
+        shift: shift,
+      })
+      if (error) throw error
+      setShowSuccess(true)
+      setSelectedSku('')
+      setWorkingHours('')
+      setActualQty('')
+      setNote('')
+      await fetchReports()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const todayTotal = reports.reduce((acc, r) => acc + r.actual_quantity, 0)
+  const avgPoints = reports.length
+    ? reports.reduce((acc, r) => acc + r.productivity_points, 0) / reports.length
+    : 0
+
+  return (
+    <>
+      <SuccessModal
+        show={showSuccess}
+        message="Sản lượng đã ghi nhận!"
+        onDone={() => setShowSuccess(false)}
+      />
+
+      <div className="space-y-4">
+
+        {/* ── Live KPI banner ───────────────────────── */}
+        {reports.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="grid grid-cols-3 gap-3"
+          >
+            {[
+              { icon: BarChart3, label: 'Lượt ghi', value: String(reports.length), color: '#0052CC' },
+              { icon: Package, label: 'Tổng Đôi', value: todayTotal.toLocaleString('vi-VN'), color: '#8b5cf6' },
+              { icon: Trophy, label: 'KPI TB', value: `${avgPoints.toFixed(1)}/15`, color: avgPoints >= 12 ? '#22c55e' : (avgPoints >= 8 ? '#f59e0b' : '#ef4444') },
+            ].map((stat) => (
+              <div key={stat.label}
+                className="card p-3 flex flex-col items-center gap-1 text-center"
+              >
+                <stat.icon size={16} style={{ color: stat.color }} />
+                <p className="text-base font-bold text-[var(--text-1)]">{stat.value}</p>
+                <p className="text-[10px] text-[var(--text-3)]">{stat.label}</p>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* ── Form card ────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="card p-5"
+        >
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
+              <BarChart3 size={16} className="text-brand-500" />
+            </div>
+            <div>
+              <h2 className="section-title text-base">Báo Cáo Sản Lượng</h2>
+              <p className="text-xs text-[var(--text-3)]">Ca hôm nay · {new Date().toLocaleDateString('vi-VN')}</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+
+            {/* SKU Dropdown */}
+            <div>
+              <label className="label" htmlFor="sku-select">Loại Sản Phẩm</label>
+              <div className="relative">
+                <button
+                  id="sku-select"
+                  type="button"
+                  onClick={() => setSkuOpen((p) => !p)}
+                  className="input-field flex items-center justify-between"
+                  disabled={loadingSkus}
+                >
+                  <span className={currentSku ? 'text-[var(--text-1)]' : 'text-[var(--text-3)]'}>
+                    {loadingSkus ? 'Đang tải...' : currentSku ? currentSku.product_type : 'Chọn loại sản phẩm...'}
+                  </span>
+                  <ChevronDown size={15} className={`text-[var(--text-3)] transition-transform duration-200 ${skuOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                <AnimatePresence>
+                  {skuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setSkuOpen(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, y: -6, scaleY: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scaleY: 1 }}
+                        exit={{ opacity: 0, y: -6, scaleY: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        style={{ transformOrigin: 'top' }}
+                        className="absolute top-full left-0 right-0 mt-1 z-20 rounded-xl border border-[var(--border)]
+                          bg-[var(--bg-card)] shadow-glass overflow-hidden max-h-52 overflow-y-auto"
+                      >
+                        {skus.map((sku) => (
+                          <button
+                            key={sku.id}
+                            type="button"
+                            onClick={() => { setSelectedSku(sku.id); setSkuOpen(false) }}
+                            className="w-full flex items-center justify-between px-4 py-3
+                              hover:bg-brand-500/8 transition-colors duration-100 text-left"
+                          >
+                            <p className="text-sm font-semibold text-[var(--text-1)]">{sku.product_type}</p>
+                            <span className="text-xs text-[var(--text-3)] shrink-0">
+                              {sku.target_per_hour} {sku.unit}/h
+                            </span>
+                          </button>
+                        ))}
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+            {/* Target info */}
+            {currentSku && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-500/6 border border-brand-500/15"
+              >
+                <Zap size={12} className="text-brand-500" />
+                <p className="text-xs text-brand-500">
+                  Mục tiêu: <strong>{currentSku.target_per_hour} {currentSku.unit}/giờ</strong>
+                </p>
+              </motion.div>
+            )}
+
+            {/* Hours + Qty grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label" htmlFor="hours-input">
+                  <Clock size={11} className="inline mr-1" />
+                  Số Giờ Làm
+                </label>
+                <input
+                  id="hours-input"
+                  type="number"
+                  value={workingHours}
+                  onChange={(e) => setWorkingHours(e.target.value)}
+                  placeholder="8"
+                  step="0.5"
+                  min="0.5"
+                  max="24"
+                  className="input-field"
+                />
+              </div>
+              <div>
+                <label className="label" htmlFor="qty-input">
+                  <Package size={11} className="inline mr-1" />
+                  Số Đôi Thực Tế
+                </label>
+                <input
+                  id="qty-input"
+                  type="number"
+                  value={actualQty}
+                  onChange={(e) => setActualQty(e.target.value)}
+                  placeholder="640"
+                  min="0"
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            {/* Productivity live preview */}
+            <AnimatePresence>
+              {(workingHours || actualQty) && currentSku && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
+                  className="flex flex-col items-center gap-2 py-4 px-4 rounded-xl border border-[var(--border)] bg-[var(--bg-input)]"
+                >
+                  <p className="text-xs font-medium text-[var(--text-3)] flex items-center gap-1">
+                    <TrendingUp size={11} />
+                    Điểm Năng Suất Thực Tế
+                  </p>
+                  <ProductivityGauge points={productivityPoints} />
+                  <p className="text-[10px] text-[var(--text-3)] text-center">
+                    = ({actualQty || 0} ÷ ({currentSku.target_per_hour} × {workingHours || 0})) × 15
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Note */}
+            <div>
+              <label className="label" htmlFor="note-input">Ghi Chú <span className="text-[var(--text-3)]">(tuỳ chọn)</span></label>
+              <textarea
+                id="note-input"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Máy dừng 30 phút, thiếu NVL..."
+                rows={2}
+                className="input-field resize-none"
+              />
+            </div>
+
+            {/* Shift Selection */}
+            <div>
+              <label className="label">Ca Làm Việc</label>
+              <div className="grid grid-cols-4 gap-2">
+                {['Ca 1', 'Ca 2', 'Ca 3', 'Ca HC'].map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setShift(s)}
+                    className={`py-2 rounded-lg text-xs font-bold border transition-all ${
+                      shift === s 
+                        ? 'bg-brand-500 border-brand-500 text-white shadow-md shadow-brand-500/20' 
+                        : 'bg-[var(--bg-input)] border-[var(--border)] text-[var(--text-3)] hover:border-brand-500/50'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit */}
+            <motion.button
+              type="submit"
+              disabled={submitting || !selectedSku || !workingHours || !actualQty}
+              whileTap={{ scale: 0.97 }}
+              className="btn-primary w-full py-3.5 text-sm"
+            >
+              {submitting ? (
+                <><RefreshCw size={16} className="animate-spin" /> Đang ghi nhận...</>
+              ) : (
+                <><Send size={16} /> Ghi Nhận Sản Lượng</>
+              )}
+            </motion.button>
+          </form>
+        </motion.div>
+
+        {/* ── Today's history ───────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="card p-5"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="section-title text-sm">Lịch Sử Hôm Nay</h3>
+            <button
+              onClick={fetchReports}
+              className="btn-ghost py-1 px-2 text-xs gap-1"
+              disabled={loadingReports}
+            >
+              <RefreshCw size={12} className={loadingReports ? 'animate-spin' : ''} />
+              Làm mới
+            </button>
+          </div>
+
+          {loadingReports ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-12 rounded-lg shimmer bg-[var(--bg-input)]" />
+              ))}
+            </div>
+          ) : reports.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-8">
+              <Package size={32} className="text-[var(--text-3)]" />
+              <p className="text-sm text-[var(--text-3)]">Chưa có dữ liệu hôm nay</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-1">
+              <table className="w-full text-xs min-w-[400px]">
+                <thead>
+                  <tr className="border-b border-[var(--border)]">
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Loại SP</th>
+                    {(user.role === 'supervisor' || user.role === 'admin' || user.role === 'manager') && (
+                      <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Người BC</th>
+                    )}
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Ca</th>
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Giờ làm</th>
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Số đôi</th>
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">KPI</th>
+                    <th className="pb-2 text-left font-medium text-[var(--text-3)] px-1">Giờ ghi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {reports.map((r) => {
+                    const pts = r.productivity_points
+                    const ptColor = pts >= 12 ? '#22c55e' : pts >= 8 ? '#f59e0b' : '#ef4444'
+                    return (
+                      <motion.tr
+                        key={r.id}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="group"
+                      >
+                          <td className="py-2.5 px-1">
+                            <p className="font-semibold text-[var(--text-1)]">{r.skus?.product_type}</p>
+                          </td>
+                          {(user.role === 'supervisor' || user.role === 'admin' || user.role === 'manager') && (
+                            <td className="py-2.5 px-1 text-[var(--text-2)] whitespace-nowrap">
+                              {r.users?.full_name?.split(' ').pop()}
+                            </td>
+                          )}
+                          <td className="py-2.5 px-1 text-[var(--text-2)] whitespace-nowrap">
+                            <span className="px-1.5 py-0.5 rounded bg-[var(--bg-input)] text-[9px] font-bold">
+                              {r.shift || '—'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-1 text-[var(--text-2)]">{r.working_hours}h</td>
+                          <td className="py-2.5 px-1 font-medium text-[var(--text-1)]">
+                            {r.actual_quantity.toLocaleString('vi-VN')}
+                          </td>
+                        <td className="py-2.5 px-1">
+                          <span className="font-bold" style={{ color: ptColor }}>
+                            {pts.toFixed(1)}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-1 text-[var(--text-3)]">
+                          {new Date(r.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                      </motion.tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Warning if any low KPI */}
+          {reports.some((r) => r.productivity_points < 8) && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/8 border border-amber-500/20"
+            >
+              <AlertTriangle size={13} className="text-amber-500 shrink-0" />
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Có lượt báo cáo chưa đạt KPI tối thiểu (8/15 điểm)
+              </p>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
+    </>
+  )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info, Plus, Trash2 } from 'lucide-react'
+import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info, Plus, Trash2, AlertOctagon } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
@@ -65,6 +65,8 @@ const defaultForm = (plan: ProductionPlan) => {
     actual_bun_separated: plan.sl_bun_can_tach || 0,
     actual_sheet_received: plan.sl_sheet || 0,
     lot_no: '',
+    error_hardness_above: 0,
+    error_hardness_below: 0,
     ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
   }
 }
@@ -143,6 +145,8 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         ng_qty: totalNG,
         ng_bun_qty: 0,
         error_type: combinedError || '',
+        error_hardness_above: Number(formData.error_hardness_above),
+        error_hardness_below: Number(formData.error_hardness_below),
         product_type: productType,
         recorder_id: user.id,
       })
@@ -378,8 +382,36 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
         {/* NG Section */}
         <div className="space-y-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
+          {/* Lỗi Độ Cứng (Mới) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 pb-4 border-b border-red-500/10">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-amber-600 uppercase ml-1 flex items-center gap-1.5">
+                <AlertOctagon size={12} /> Lỗi độ cứng TRÊN chuẩn
+              </label>
+              <input 
+                type="number" 
+                value={formData.error_hardness_above}
+                onChange={e => setFormData({ ...formData, error_hardness_above: Number(e.target.value) })}
+                className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-bold focus:border-amber-500 outline-none transition-all text-sm" 
+                placeholder="Số lượng..."
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-orange-600 uppercase ml-1 flex items-center gap-1.5">
+                <AlertOctagon size={12} /> Lỗi độ cứng DƯỚI chuẩn
+              </label>
+              <input 
+                type="number" 
+                value={formData.error_hardness_below}
+                onChange={e => setFormData({ ...formData, error_hardness_below: Number(e.target.value) })}
+                className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-bold focus:border-orange-500 outline-none transition-all text-sm" 
+                placeholder="Số lượng..."
+              />
+            </div>
+          </div>
+
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-bold text-red-600 uppercase">Ghi nhận phế phẩm (NG)</h4>
+            <h4 className="text-xs font-bold text-red-600 uppercase">Ghi nhận phế phẩm (NG khác)</h4>
             <button type="button" onClick={addNGItem}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg text-[10px] font-bold hover:bg-red-700 transition-all shadow-sm">
               <Plus size={14} /> THÊM LỖI
