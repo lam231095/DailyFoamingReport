@@ -103,8 +103,8 @@ export default function TachReportTab() {
   };
 
   const filteredPlans = plans.filter(p => 
-    p.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.firm_plan.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.firm_plan || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -156,16 +156,16 @@ export default function TachReportTab() {
                   </div>
                 </div>
                 <p className="text-sm font-medium text-slate-700 dark:text-slate-300 line-clamp-2 mb-4 h-10">
-                  {plan.product_name}
+                  {plan.product_name || ''}
                 </p>
                 <div className="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800">
                   <div className="text-center">
                     <p className="text-[10px] text-slate-400 uppercase font-bold">Mục tiêu Tách</p>
-                    <p className="font-mono font-bold text-indigo-600">{plan.target_buns_tach}</p>
+                    <p className="font-mono font-bold text-indigo-600">{(plan.target_buns_tach || 0).toLocaleString()}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] text-slate-400 uppercase font-bold">Mục tiêu Tấm</p>
-                    <p className="font-mono font-bold text-slate-600">{plan.target_sheets}</p>
+                    <p className="font-mono font-bold text-slate-600">{(plan.target_sheets || 0).toLocaleString()}</p>
                   </div>
                 </div>
                 <div className="absolute bottom-0 left-0 h-1 bg-indigo-500 transition-all duration-500" style={{ width: '30%' }}></div>
@@ -213,7 +213,7 @@ export default function TachReportTab() {
             >
               <div className="p-6 border-b border-slate-100 dark:border-slate-800 premium-gradient text-white">
                 <h3 className="text-xl font-bold">Báo Cáo Tách: {selectedPlan.firm_plan}</h3>
-                <p className="text-white/80 text-sm">{selectedPlan.product_name}</p>
+                <p className="text-white/80 text-sm">{selectedPlan.product_name || ''}</p>
               </div>
               
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
