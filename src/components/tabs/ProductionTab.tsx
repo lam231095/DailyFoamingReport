@@ -37,8 +37,8 @@ export default function ProductionTab() {
   };
 
   const filteredPlans = plans.filter(p => 
-    p.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.firm_plan.toLowerCase().includes(searchTerm.toLowerCase())
+    (p.product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.firm_plan || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -141,11 +141,11 @@ export default function ProductionTab() {
                   <div className="font-bold text-slate-900 dark:text-slate-100">{plan.firm_plan}</div>
                   <div className="text-xs text-slate-500">{plan.bun_code}</div>
                 </td>
-                <td className="px-6 py-4 max-w-xs truncate font-medium text-sm" title={plan.product_name}>
+                <td className="px-6 py-4 max-w-xs truncate font-medium text-sm" title={plan.product_name || ''}>
                   {plan.product_name}
                 </td>
                 <td className="px-6 py-4 text-center font-mono font-bold text-indigo-600">
-                  {plan.target_sheets.toLocaleString()}
+                  {(plan.target_sheets || 0).toLocaleString()}
                 </td>
                 <td className="px-6 py-4 text-center font-mono font-bold">
                   {/* Placeholder for actual data */}
