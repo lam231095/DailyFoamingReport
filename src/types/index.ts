@@ -86,6 +86,10 @@ export interface Change4M {
   created_at?: string;
   logged_at?: string; // Alias
   shift?: string; // Alias
+  category: string;
+  machine_id: string;
+  severity: 'low' | 'medium' | 'high';
+  affects_quality: boolean;
 }
 
 export type ChangeLog = Change4M;
