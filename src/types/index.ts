@@ -3,7 +3,7 @@ export interface User {
   msnv: string;
   full_name: string;
   department: string;
-  role: 'worker' | 'supervisor' | 'qc';
+  role: 'worker' | 'supervisor' | 'qc' | 'admin' | 'manager';
   created_at?: string;
 }
 
