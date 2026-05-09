@@ -1,27 +1,23 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { getSession } from '@/lib/session'
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function Home() {
-  const router = useRouter()
+export default function RootPage() {
+  const router = useRouter();
 
   useEffect(() => {
-    const session = getSession()
+    const session = localStorage.getItem('ovn_session');
     if (session) {
-      router.replace('/dashboard')
+      router.push('/dashboard');
     } else {
-      router.replace('/login')
+      router.push('/login');
     }
-  }, [router])
+  }, [router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-page)]">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-full border-4 border-brand-500 border-t-transparent animate-spin" />
-        <p className="text-[var(--text-2)] text-sm">Đang tải...</p>
-      </div>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
     </div>
-  )
+  );
 }

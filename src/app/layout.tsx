@@ -1,52 +1,26 @@
-import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
 
-const inter = Inter({
-  subsets: ['latin', 'vietnamese'],
-  variable: '--font-inter',
-  display: 'swap',
-})
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'OVN Production | Quản Lý Sản Xuất',
-  description: 'Hệ thống quản lý sản lượng và biến động 4M - Ortholite Vietnam',
-  keywords: 'sản xuất, giày, Ortholite, quản lý sản lượng, KPI',
-}
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: '#0052CC',
-}
+  title: "OVN Production Report - Ortholite Vietnam",
+  description: "Hệ thống quản lý sản lượng và biến động 4M",
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="vi" suppressHydrationWarning>
-      <head>
-        <meta name="theme-color" content="#0052CC" />
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏭</text></svg>" />
-      </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                const theme = localStorage.getItem('ovn_theme') || 'dark';
-                document.documentElement.classList.toggle('dark', theme === 'dark');
-              } catch(e) {
-                document.documentElement.classList.add('dark');
-              }
-            `,
-          }}
-        />
-        {children}
+    <html lang="vi">
+      <body className={inter.className}>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+          {children}
+        </div>
       </body>
     </html>
-  )
+  );
 }

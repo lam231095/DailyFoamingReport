@@ -1,111 +1,64 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { Factory, LogOut, Calendar, User, ChevronDown } from 'lucide-react'
-import { clearSession } from '@/lib/session'
-import { SessionUser } from '@/types'
-import ThemeToggle from '@/components/ui/ThemeToggle'
-import { useState } from 'react'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { LogOut, User, Bell, LayoutDashboard } from 'lucide-react';
+import { User as UserType } from '@/types';
 
-interface HeaderProps {
-  user: SessionUser
-}
+export default function Header() {
+  const [user, setUser] = useState<UserType | null>(null);
+  const router = useRouter();
 
-export default function Header({ user }: HeaderProps) {
-  const router = useRouter()
-  const [menuOpen, setMenuOpen] = useState(false)
+  useEffect(() => {
+    const session = localStorage.getItem('ovn_session');
+    if (session) {
+      setUser(JSON.parse(session));
+    } else {
+      router.push('/login');
+    }
+  }, [router]);
 
   const handleLogout = () => {
-    clearSession()
-    router.replace('/login')
-  }
-
-  const today = new Date().toLocaleDateString('vi-VN', {
-    weekday: 'long',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  })
+    localStorage.removeItem('ovn_session');
+    router.push('/login');
+  };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--bg-card)]/90 backdrop-blur-md">
-      <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center shadow-brand-sm">
-            <Factory size={16} className="text-white" />
-          </div>
-          <div className="hidden sm:block">
-            <p className="text-xs text-[var(--text-3)] leading-none">Ortholite Vietnam</p>
-            <p className="text-sm font-bold text-[var(--text-1)] leading-tight">OVN Production</p>
-          </div>
-        </div>
-
-        {/* Date badge */}
-        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full
-          bg-brand-500/8 dark:bg-brand-500/10 border border-brand-500/20">
-          <Calendar size={12} className="text-brand-500" />
-          <span className="text-xs font-medium text-brand-500 capitalize">{today}</span>
-        </div>
-
-        {/* Right controls */}
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <ThemeToggle />
+          <div className="w-8 h-8 rounded-lg premium-gradient flex items-center justify-center text-white">
+            <LayoutDashboard size={18} />
+          </div>
+          <span className="font-bold text-xl tracking-tight hidden sm:block">OVN Portal</span>
+        </div>
 
-          {/* User menu */}
-          <div className="relative">
-            <motion.button
-              onClick={() => setMenuOpen((p) => !p)}
-              whileTap={{ scale: 0.96 }}
-              className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl
-                border border-[var(--border)] bg-[var(--bg-input)]
-                hover:border-brand-500/40 transition-all duration-200"
+        <div className="flex items-center gap-4">
+          <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-full transition-colors relative">
+            <Bell size={20} />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-pink-500 rounded-full border-2 border-white dark:border-slate-950"></span>
+          </button>
+          
+          <div className="h-8 w-[1px] bg-slate-200 dark:border-slate-800 mx-2"></div>
+
+          <div className="flex items-center gap-3">
+            <div className="text-right hidden md:block">
+              <p className="text-sm font-bold">{user?.full_name || 'Đang tải...'}</p>
+              <p className="text-xs text-slate-500">{user?.department} - {user?.role}</p>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500">
+              <User size={24} />
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
+              title="Đăng xuất"
             >
-              <div className="w-7 h-7 rounded-lg bg-brand-500 flex items-center justify-center text-white text-xs font-bold">
-                {user.full_name.charAt(0)}
-              </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-xs font-semibold text-[var(--text-1)] leading-none">{user.full_name}</p>
-                <p className="text-[10px] text-[var(--text-3)] leading-tight mt-0.5">{user.msnv}</p>
-              </div>
-              <ChevronDown size={12} className={`text-[var(--text-3)] transition-transform duration-200 ${menuOpen ? 'rotate-180' : ''}`} />
-            </motion.button>
-
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -8 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -8 }}
-                  transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-52 z-50 rounded-xl border border-[var(--border)]
-                    bg-[var(--bg-card)] shadow-glass overflow-hidden"
-                >
-                  <div className="px-4 py-3 border-b border-[var(--border)]">
-                    <p className="text-sm font-semibold text-[var(--text-1)]">{user.full_name}</p>
-                    <p className="text-xs text-[var(--text-3)] mt-0.5">{user.department ?? 'Nhân viên sản xuất'}</p>
-                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/20">
-                      <User size={10} className="text-brand-500" />
-                      <span className="text-xs text-brand-500 font-medium">{user.msnv}</span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-red-500
-                      hover:bg-red-500/8 transition-colors duration-150"
-                  >
-                    <LogOut size={14} />
-                    <span>Đăng xuất</span>
-                  </button>
-                </motion.div>
-              </>
-            )}
+              <LogOut size={20} />
+            </button>
           </div>
         </div>
       </div>
     </header>
-  )
+  );
 }
