@@ -7,6 +7,8 @@ export interface User {
   created_at?: string;
 }
 
+export type SessionUser = User;
+
 export interface ProductionPlan {
   id: string;
   week_info: string;
