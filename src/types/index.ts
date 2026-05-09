@@ -2,147 +2,44 @@ export interface User {
   id: string;
   msnv: string;
   full_name: string;
-  department: string | null;
-  role: string;
-  position?: string;
-  is_active: boolean;
-}
-
-export interface SKU {
-  id: string;
-  product_type: string;
-  target_per_hour: number;
-  unit: string;
-  is_active: boolean;
-  updated_at: string;
-}
-
-export interface ProductionReport {
-  id: string;
-  user_id: string;
-  sku_id: string;
-  working_hours: number;
-  actual_quantity: number;
-  productivity_points: number;
-  report_date: string;
-  note: string | null;
-  created_at: string;
-  shift?: string | null;
-  skus?: SKU;
-  users?: { msnv: string; full_name: string };
-}
-
-export interface ChangeLog {
-  id: string;
-  user_id: string;
-  machine_id: string;
-  category: '4M_Category';
-  description: string;
-  affects_quality: boolean;
-  severity: 'low' | 'medium' | 'high';
-  logged_at: string;
-  shift?: string | null;
-  users?: { msnv: string; full_name: string };
-}
-
-export type FourMCategory = 'Man' | 'Machine' | 'Material' | 'Method';
-
-export interface SessionUser {
-  id: string;
-  msnv: string;
-  full_name: string;
-  department: string | null;
-  role: string;
-  position?: string;
-}
-
-export interface ResidualMaterial {
-  id: string;
-  user_id: string;
-  stage: 'Foaming Đổ' | 'Foaming Tách';
-  material_name: string;
-  initial_quantity: number;
-  current_quantity: number;
-  unit: 'tấm' | 'bun';
-  entry_date: string;
-  created_at: string;
-  users?: { msnv: string; full_name: string };
-}
-
-export interface ResidualMaterialUsage {
-  id: string;
-  material_id: string;
-  user_id: string;
-  used_quantity: number;
-  used_at: string;
-  residual_materials?: ResidualMaterial;
-  users?: { msnv: string; full_name: string };
+  department: string;
+  role: 'worker' | 'supervisor' | 'qc';
+  created_at?: string;
 }
 
 export interface ProductionPlan {
   id: string;
+  week_info: string;
   firm_plan: string;
-  bun_code: string | null;
-  pu_code: string | null;
-  ten_san_pham: string | null;
-  sl_sheet: number | null;
-  sl_bun_can_tach: number | null;
-  sl_bun_can_do: number | null;
-  no_order: string | null;
-  completion_date: string | null;
-  delivery_date: string | null;
-  week_label: string;
-  synced_at: string;
+  bun_code: string;
+  pu_code: string;
+  product_name: string;
+  target_sheets: number;
+  target_buns_tach: number;
+  target_buns_do: number;
+  status: 'pending' | 'in_progress' | 'completed';
+  created_at?: string;
 }
 
-export interface FoamingPourReport {
+export interface DailyReport {
   id: string;
-  firm_plan: string;
+  plan_id: string;
+  worker_id: string;
+  actual_sheets: number;
+  actual_buns: number;
   shift: string;
-  machine_id: string | null;
-  operator_name: string | null;
-  actual_bun_poured: number;
-  lot_no: string | null;
-  ng_bun_qty: number;
-  error_type: string | null;
-  cleaning_agent_kg?: number;
-  waste_kg?: number;
-  note?: string | null;
-  recorder_id: string;
-  created_at: string;
-  production_plan?: ProductionPlan;
-  users?: { msnv: string; full_name: string };
+  report_date: string;
+  kpi_score: number;
+  error_hardness_above?: number;
+  error_hardness_below?: number;
+  notes?: string;
+  created_at?: string;
 }
 
-export interface FoamingSeparateReport {
+export interface Change4M {
   id: string;
-  firm_plan: string;
-  shift: string;
-  machine_id: string | null;
-  operator_name: string | null;
-  bun_thickness_mm: number | null;
-  sheet_thickness_mm: number | null;
-  actual_bun_separated: number;
-  actual_sheet_received: number;
-  lot_no: string | null;
-  ng_qty: number;
-  ng_bun_qty: number;
-  error_type: string | null;
-  recorder_id: string;
-  created_at: string;
-  production_plan?: ProductionPlan;
-  users?: { msnv: string; full_name: string };
-}
-
-export interface FoamingWarehouseReport {
-  id: string;
-  firm_plan: string;
-  qty_delivered_sheet: number;
-  delivery_date: string;
-  ng_bun_qty: number;
-  error_type: string | null;
-  deliverer_id: string;
-  created_at: string;
-  production_plan?: ProductionPlan;
-  users?: { msnv: string; full_name: string };
+  type: 'Man' | 'Machine' | 'Material' | 'Method';
+  description: string;
+  reported_by: string;
+  created_at?: string;
 }
