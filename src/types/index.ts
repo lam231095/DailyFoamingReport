@@ -21,6 +21,16 @@ export interface ProductionPlan {
   target_buns_do: number;
   status: 'pending' | 'in_progress' | 'completed';
   created_at?: string;
+  
+  // Tên cũ hỗ trợ cho các component foaming
+  ten_san_pham?: string;
+  sl_bun_can_do?: number;
+  sl_sheet?: number;
+  sl_bun_can_tach?: number;
+  no_order?: string;
+  week_label?: string;
+  completion_date?: string;
+  delivery_date?: string;
 }
 
 export interface DailyReport {
