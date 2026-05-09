@@ -194,7 +194,7 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
     reports.forEach(r => {
       const logTime = new Date(r.created_at).toLocaleTimeString('vi-VN')
       const row = [
-        r.report_date,
+        r.report_date || '',
         r.shift || '—',
         logTime,
         r.users?.msnv || '',
@@ -235,6 +235,7 @@ export default function MonthlyStatsTab({ user }: MonthlyStatsTabProps) {
     // Group by day
     const dayMap = new Map<number, { sumPoints: number, sumQty: number, count: number }>()
     reports.forEach(r => {
+      if (!r.report_date) return
       const d = new Date(r.report_date).getDate()
       const existing = dayMap.get(d) || { sumPoints: 0, sumQty: 0, count: 0 }
       dayMap.set(d, {
