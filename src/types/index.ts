@@ -108,6 +108,7 @@ export interface FoamingPourReport {
   note?: string | null;
   recorder_id: string;
   created_at: string;
+  report_date?: string; // Alias
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
 }
@@ -128,6 +129,7 @@ export interface FoamingSeparateReport {
   error_type: string | null;
   recorder_id: string;
   created_at: string;
+  report_date?: string; // Alias
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
 }
@@ -141,6 +143,7 @@ export interface FoamingWarehouseReport {
   error_type: string | null;
   deliverer_id: string;
   created_at: string;
+  report_date?: string; // Alias
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
 }
