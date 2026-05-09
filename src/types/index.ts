@@ -83,8 +83,8 @@ export interface Change4M {
   type: 'Man' | 'Machine' | 'Material' | 'Method';
   description: string;
   reported_by: string;
-  created_at?: string;
-  logged_at?: string; // Alias
+  created_at: string;
+  logged_at: string; // Alias
   shift?: string; // Alias
   category: string;
   machine_id: string;
