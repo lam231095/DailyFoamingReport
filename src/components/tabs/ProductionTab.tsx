@@ -111,8 +111,9 @@ export default function ProductionTab({ user }: ProductionTabProps) {
   const productivityPoints = (() => {
     const h = parseFloat(workingHours)
     const q = parseFloat(actualQty)
-    if (!currentSku || !h || !q || h <= 0) return 0
-    return Math.min((q / (currentSku.target_per_hour * h)) * 15, 15)
+    const target = currentSku?.target_per_hour
+    if (!target || !h || !q || h <= 0) return 0
+    return Math.min((q / (target * h)) * 15, 15)
   })()
 
   const fetchSkus = useCallback(async () => {
@@ -176,9 +177,9 @@ export default function ProductionTab({ user }: ProductionTabProps) {
     }
   }
 
-  const todayTotal = reports.reduce((acc, r) => acc + r.actual_quantity, 0)
+  const todayTotal = reports.reduce((acc, r) => acc + (r.actual_quantity || 0), 0)
   const avgPoints = reports.length
-    ? reports.reduce((acc, r) => acc + r.productivity_points, 0) / reports.length
+    ? reports.reduce((acc, r) => acc + (r.productivity_points || 0), 0) / reports.length
     : 0
 
   return (
@@ -477,7 +478,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
                           </td>
                           <td className="py-2.5 px-1 text-[var(--text-2)]">{r.working_hours}h</td>
                           <td className="py-2.5 px-1 font-medium text-[var(--text-1)]">
-                            {r.actual_quantity.toLocaleString('vi-VN')}
+                            {(r.actual_quantity || 0).toLocaleString('vi-VN')}
                           </td>
                         <td className="py-2.5 px-1">
                           <span className="font-bold" style={{ color: ptColor }}>
@@ -496,7 +497,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
           )}
 
           {/* Warning if any low KPI */}
-          {reports.some((r) => r.productivity_points < 8) && (
+          {reports.some((r) => (r.productivity_points || 0) < 8) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

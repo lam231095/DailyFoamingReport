@@ -40,7 +40,8 @@ const THICKNESS_TABLE: Record<number, { bunRef: number; tolerance: number; tp: n
 const ERROR_TYPES = [
   'Bọt khí', 'Loang trắng', 'Loang đen', 'Lõm mặt',
   'Xốp biên', 'Cứng đáy', 'NG màu', 'Sọc dao',
-  'mm không đều', 'Mỏng dày', 'Cong, biến dạng', 'Nứt rách', 'Lỗi khác'
+  'mm không đều', 'Mỏng dày', 'Cong, biến dạng', 'Nứt rách', 'Lỗi khác',
+  'Độ cứng vượt chuẩn', 'Độ cứng dưới chuẩn'
 ]
 
 type ProductType = 'thanh_pham' | 'ban_thanh_pham'
