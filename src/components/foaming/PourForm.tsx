@@ -5,6 +5,16 @@ import { Save, Loader2, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
+import { Plus, Trash2, Info, Package, MapPin, Palette, Truck } from 'lucide-react'
+
+const ERROR_TYPES = [
+  'Bọt khí', 'Loang màu', 'Thiếu liệu', 'Dính khuôn',
+  'Biến dạng', 'Lỗi thiết bị', 'Lỗi khác'
+]
+
+const STORAGE_LOCATIONS = ['Khu A', 'Khu B', 'Khu C']
+const STORAGE_LINES = ['line 1', 'line 2', 'line 3', 'line 4', 'line 5', 'line 6', 'line 7']
+const COLOR_TAGS = ['xanh', 'đỏ', 'vàng', 'đen']
 
 interface PourFormProps {
   plan: ProductionPlan
@@ -37,12 +47,27 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     operator_name: '',
     actual_bun_poured: plan.sl_bun_can_do || 0,
     lot_no: '',
-    ng_bun_qty: 0,
-    error_type: '',
+    ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
+    storage_location: STORAGE_LOCATIONS[0],
+    storage_line: STORAGE_LINES[0],
+    color_tag: COLOR_TAGS[0],
     cleaning_agent_kg: 0,
     waste_kg: 0,
     note: '',
   })
+
+  const storageCarts = Math.ceil(formData.actual_bun_poured / 6)
+
+  const addNGItem = () => setFormData({ ...formData, ng_items: [...formData.ng_items, { qty: 0, type: ERROR_TYPES[0] }] })
+  const removeNGItem = (i: number) => {
+    if (formData.ng_items.length <= 1) return
+    setFormData({ ...formData, ng_items: formData.ng_items.filter((_, idx) => idx !== i) })
+  }
+  const updateNGItem = (i: number, field: 'qty' | 'type', value: any) => {
+    const items = [...formData.ng_items]
+    items[i] = { ...items[i], [field]: value }
+    setFormData({ ...formData, ng_items: items })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,6 +75,10 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     setMessage(null)
 
     try {
+      const totalNG = formData.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
+      const combinedError = formData.ng_items
+        .filter(x => x.qty > 0).map(x => `${x.type} (${x.qty})`).join(', ')
+
       const { error } = await supabase.from('foaming_pour_reports').insert({
         firm_plan: plan.firm_plan,
         shift: formData.shift,
@@ -57,8 +86,12 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         operator_name: formData.operator_name,
         actual_bun_poured: Number(formData.actual_bun_poured),
         lot_no: formData.lot_no,
-        ng_bun_qty: Number(formData.ng_bun_qty),
-        error_type: formData.error_type,
+        ng_bun_qty: totalNG,
+        error_type: combinedError || '',
+        storage_location: formData.storage_location,
+        storage_line: formData.storage_line,
+        color_tag: formData.color_tag,
+        storage_carts: storageCarts,
         cleaning_agent_kg: Number(formData.cleaning_agent_kg),
         waste_kg: Number(formData.waste_kg),
         note: formData.note.trim() || null,
@@ -126,14 +159,60 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Số bun thực tế Đổ</label>
+            <div className="flex items-center justify-between ml-1">
+              <label className="text-xs font-bold text-[var(--text-2)] uppercase">Số bun thực tế Đổ</label>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-blue-500/10 rounded-md">
+                <Truck size={10} className="text-blue-500" />
+                <span className="text-[10px] font-bold text-blue-600">Dự kiến: {storageCarts} xe</span>
+              </div>
+            </div>
             <input
               type="number"
               value={formData.actual_bun_poured}
               onChange={(e) => setFormData({ ...formData, actual_bun_poured: Number(e.target.value) })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
-                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+                text-[var(--text-1)] font-bold focus:border-blue-500 outline-none transition-all font-mono"
             />
+          </div>
+        </div>
+
+        {/* --- Phần lưu trữ (Mới) --- */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-blue-500/5 p-4 rounded-xl border border-blue-500/10">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-blue-600 uppercase ml-1 flex items-center gap-1.5">
+              <MapPin size={12} /> Nơi lưu trữ
+            </label>
+            <select
+              value={formData.storage_location}
+              onChange={(e) => setFormData({ ...formData, storage_location: e.target.value })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+            >
+              {STORAGE_LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-blue-600 uppercase ml-1 flex items-center gap-1.5">
+              <Package size={12} /> Line lưu trữ
+            </label>
+            <select
+              value={formData.storage_line}
+              onChange={(e) => setFormData({ ...formData, storage_line: e.target.value })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+            >
+              {STORAGE_LINES.map(line => <option key={line} value={line}>{line}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-blue-600 uppercase ml-1 flex items-center gap-1.5">
+              <Palette size={12} /> Thẻ màu
+            </label>
+            <select
+              value={formData.color_tag}
+              onChange={(e) => setFormData({ ...formData, color_tag: e.target.value })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+            >
+              {COLOR_TAGS.map(color => <option key={color} value={color}>{color.toUpperCase()}</option>)}
+            </select>
           </div>
         </div>
 
@@ -166,28 +245,39 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           </div>
         </div>
 
-        {/* --- Phần báo cáo NG --- */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-red-600 uppercase ml-1">Số lượng Bun NG (nếu có)</label>
-            <input
-              type="number"
-              value={formData.ng_bun_qty}
-              onChange={(e) => setFormData({ ...formData, ng_bun_qty: Number(e.target.value) })}
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
-                text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
-            />
+        {/* --- Phần báo cáo NG (Cập nhật giống báo cáo tách) --- */}
+        <div className="space-y-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-bold text-red-600 uppercase">Ghi nhận phế phẩm (NG)</h4>
+            <button type="button" onClick={addNGItem}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg text-[10px] font-bold hover:bg-red-700 transition-all shadow-sm">
+              <Plus size={14} /> THÊM LỖI
+            </button>
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-red-600 uppercase ml-1">Loại lỗi</label>
-            <input
-              type="text"
-              value={formData.error_type}
-              onChange={(e) => setFormData({ ...formData, error_type: e.target.value })}
-              placeholder="VD: Bọt khí, thiếu liệu..."
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
-                text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all"
-            />
+          <div className="space-y-3">
+            {formData.ng_items.map((item, index) => (
+              <div key={index} className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+                <div className="flex-1 w-full space-y-1.5">
+                  <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Số lượng (Bun)</label>
+                  <input type="number" value={item.qty}
+                    onChange={e => updateNGItem(index, 'qty', Number(e.target.value))}
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm" />
+                </div>
+                <div className="flex-[2] w-full space-y-1.5">
+                  <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Loại lỗi</label>
+                  <select value={item.type} onChange={e => updateNGItem(index, 'type', e.target.value)}
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm">
+                    {ERROR_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                {formData.ng_items.length > 1 && (
+                  <button type="button" onClick={() => removeNGItem(index)}
+                    className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all">
+                    <Trash2 size={18} />
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 

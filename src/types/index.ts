@@ -115,6 +115,10 @@ export interface FoamingPourReport {
   error_type: string | null;
   cleaning_agent_kg?: number;
   waste_kg?: number;
+  storage_location?: string;
+  storage_line?: string;
+  color_tag?: string;
+  storage_carts?: number;
   note?: string | null;
   recorder_id: string;
   created_at: string;

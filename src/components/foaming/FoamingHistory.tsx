@@ -133,7 +133,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     
     // Header dựa trên stage
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
-    if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Ghi chú")
+    if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
     if (activeStage === 'separate') {
       headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
       headers.push(...ERROR_TYPES)
@@ -156,7 +156,21 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       ]
       
       let specific: any[] = []
-      if (activeStage === 'pour') specific = [row.shift, row.machine_id || '---', row.operator_name || '---', row.actual_bun_poured, row.lot_no, row.cleaning_agent_kg || 0, row.waste_kg || 0, `"${(row.note || '').replace(/"/g, '""')}"`]
+      if (activeStage === 'pour') specific = [
+        row.shift, 
+        row.machine_id || '---', 
+        row.operator_name || '---', 
+        row.actual_bun_poured, 
+        row.lot_no, 
+        row.cleaning_agent_kg || 0, 
+        row.waste_kg || 0,
+        row.storage_location || '---',
+        row.storage_line || '---',
+        row.color_tag || '---',
+        row.storage_carts || 0,
+        `"${(row.note || '').replace(/"/g, '""')}"`,
+        `"${row.error_type || ''}"`
+      ]
       if (activeStage === 'separate') {
         const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
         const std = standards.find(s => s.thickness_mm === thickness)
@@ -443,13 +457,29 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Lot No</p>
                             <p className="text-sm font-bold text-[var(--text-1)]">{row.lot_no || '---'}</p>
                           </div>
-                          <div>
-                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Chất rửa / Rác (kg)</p>
-                            <p className="text-sm font-bold text-teal-600">{row.cleaning_agent_kg || 0} / {row.waste_kg || 0}</p>
+                          <div className="col-span-2 sm:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-blue-500/5 p-3 rounded-xl border border-blue-500/10 mb-2">
+                            <div>
+                              <p className="text-[10px] text-blue-600 font-bold uppercase">Lưu trữ</p>
+                              <p className="text-xs font-bold text-[var(--text-1)]">{row.storage_location || '---'} / {row.storage_line || '---'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-blue-600 font-bold uppercase">Thẻ màu</p>
+                              <p className="text-xs font-bold text-[var(--text-1)] uppercase">{row.color_tag || '---'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-blue-600 font-bold uppercase">Số xe</p>
+                              <p className="text-xs font-bold text-[var(--text-1)]">{row.storage_carts || 0} xe</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-red-600 font-bold uppercase">Phế phẩm (NG)</p>
+                              <p className={`text-xs font-bold ${row.ng_bun_qty > 0 ? 'text-red-500' : 'text-[var(--text-1)]'}`}>
+                                {row.ng_bun_qty} {row.error_type ? `(${row.error_type})` : ''}
+                              </p>
+                            </div>
                           </div>
                           {row.note && (
-                            <div className="col-span-2 sm:col-span-3 bg-blue-500/5 p-2 rounded-lg border border-blue-500/10">
-                              <p className="text-[10px] text-blue-600 font-bold uppercase mb-0.5">Ghi chú</p>
+                            <div className="col-span-2 sm:col-span-3 bg-gray-500/5 p-2 rounded-lg border border-gray-500/10">
+                              <p className="text-[10px] text-gray-600 font-bold uppercase mb-0.5">Ghi chú</p>
                               <p className="text-xs text-[var(--text-2)] italic">"{row.note}"</p>
                             </div>
                           )}
