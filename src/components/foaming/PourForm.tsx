@@ -8,8 +8,10 @@ import { ProductionPlan, SessionUser, User } from '@/types'
 import { Plus, Trash2, Info, Package, MapPin, Palette, Truck } from 'lucide-react'
 
 const ERROR_TYPES = [
-  'Bọt khí', 'Loang màu', 'Thiếu liệu', 'Dính khuôn',
-  'Biến dạng', 'Lỗi thiết bị', 'Lỗi khác'
+  'Bọt khí', 'Loang trắng', 'Loang đen', 'Lõm mặt',
+  'Xốp biên', 'Cứng đáy', 'NG màu', 'Sọc dao',
+  'mm không đều', 'Mỏng dày', 'Cong, biến dạng', 'Nứt rách', 'Lỗi khác',
+  'Lỗi độ cứng TRÊN chuẩn', 'Lỗi độ cứng DƯỚI chuẩn'
 ]
 
 const STORAGE_LOCATIONS = ['Khu A', 'Khu B', 'Khu C']
