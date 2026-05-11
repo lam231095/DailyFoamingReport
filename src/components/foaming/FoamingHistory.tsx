@@ -26,8 +26,7 @@ const STAGE_CONFIG = {
 const ERROR_TYPES = [
   'Bọt khí', 'Loang trắng', 'Loang đen', 'Lõm mặt',
   'Xốp biên', 'Cứng đáy', 'NG màu', 'Sọc dao',
-  'mm không đều', 'Mỏng dày', 'Cong, biến dạng', 'Nứt rách', 'Lỗi khác',
-  'Độ cứng vượt chuẩn', 'Độ cứng dưới chuẩn'
+  'mm không đều', 'Mỏng dày', 'Cong, biến dạng', 'Nứt rách', 'Lỗi khác'
 ]
 
 export default function FoamingHistory({ user }: FoamingHistoryProps) {
@@ -135,7 +134,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Ghi chú")
     if (activeStage === 'separate') {
-      headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
+      headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG")
       headers.push(...ERROR_TYPES)
     }
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
@@ -190,8 +189,6 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           `${perf}%`,
           row.lot_no, 
           row.ng_qty, 
-          row.error_hardness_above || 0,
-          row.error_hardness_below || 0,
           ...errorDetails
         ]
       }
@@ -490,20 +487,6 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                               <p className={`text-sm font-bold ${row.ng_qty > 0 ? 'text-red-500' : 'text-[var(--text-1)]'}`}>
                                 {row.ng_qty} {row.error_type ? `(${row.error_type})` : ''}
                               </p>
-                              {(row.error_hardness_above > 0 || row.error_hardness_below > 0) && (
-                                <div className="flex gap-2 mt-1">
-                                  {row.error_hardness_above > 0 && (
-                                    <span className="text-[9px] font-bold text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded">
-                                      CỨNG TRÊN: {row.error_hardness_above}
-                                    </span>
-                                  )}
-                                  {row.error_hardness_below > 0 && (
-                                    <span className="text-[9px] font-bold text-orange-600 bg-orange-500/10 px-1.5 py-0.5 rounded">
-                                      CỨNG DƯỚI: {row.error_hardness_below}
-                                    </span>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           </div>
                         </>

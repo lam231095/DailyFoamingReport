@@ -79,8 +79,6 @@ export interface DailyReport {
   shift: string;
   report_date: string;
   kpi_score: number;
-  error_hardness_above?: number;
-  error_hardness_below?: number;
   notes?: string;
   created_at?: string;
 }
@@ -141,8 +139,6 @@ export interface FoamingSeparateReport {
   ng_qty: number;
   ng_bun_qty: number;
   error_type: string | null;
-  error_hardness_above?: number;
-  error_hardness_below?: number;
   recorder_id: string;
   created_at: string;
   report_date?: string;
