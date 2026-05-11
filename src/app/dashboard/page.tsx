@@ -7,9 +7,6 @@ import { BarChart3, AlertOctagon, Calendar, Package, Factory } from 'lucide-reac
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
-import ProductionTab from '@/components/tabs/ProductionTab'
-import Changelog4MTab from '@/components/tabs/Changelog4MTab'
-import MonthlyStatsTab from '@/components/tabs/MonthlyStatsTab'
 import IssueAnalysisTab from '@/components/tabs/IssueAnalysisTab'
 import ResidualMaterialTab from '@/components/tabs/ResidualMaterialTab'
 import FoamingProcessTab from '@/components/tabs/FoamingProcessTab'
@@ -21,27 +18,6 @@ const TABS = [
     shortLabel: 'Foaming',
     icon: Factory,
     color: '#f43f5e',
-  },
-  {
-    id: 'production',
-    label: 'Sản Lượng & KPI',
-    shortLabel: 'Sản Lượng',
-    icon: BarChart3,
-    color: '#0052CC',
-  },
-  {
-    id: 'changelog',
-    label: 'Biến Động 4M & Sự Cố',
-    shortLabel: 'Biến Động 4M',
-    icon: AlertOctagon,
-    color: '#8b5cf6',
-  },
-  {
-    id: 'monthly',
-    label: 'Thống Kê Tháng',
-    shortLabel: 'Thống Kê',
-    icon: Calendar,
-    color: '#f59e0b',
   },
   {
     id: 'issues',
@@ -176,9 +152,6 @@ export default function DashboardPage() {
             animate="enter"
             exit="exit"
           >
-            {activeTab === 'production' && <ProductionTab user={user} />}
-            {activeTab === 'changelog'  && <Changelog4MTab user={user} />}
-            {activeTab === 'monthly'    && <MonthlyStatsTab user={user} />}
             {activeTab === 'issues'     && <IssueAnalysisTab user={user} />}
             {activeTab === 'residual'   && <ResidualMaterialTab user={user} />}
             {activeTab === 'foaming'    && <FoamingProcessTab user={user} />}
