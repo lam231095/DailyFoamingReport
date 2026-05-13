@@ -34,7 +34,7 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
       const { data, error: sbError } = await supabase
         .from('production_plan')
         .select('*')
-        .ilike('firm_plan', `%${searchVal}%`)
+        .or(`firm_plan.ilike.%${searchVal}%,no_order.ilike.%${searchVal}%`)
         .limit(1)
         .single()
 
@@ -107,7 +107,7 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Nhập mã FPRO hoặc RPRO..."
+          placeholder="Nhập mã FPRO, RPRO hoặc NO.ORDER..."
           className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl py-3.5 pl-20 pr-4 
             text-[var(--text-1)] placeholder-[var(--text-3)] text-base font-medium
             focus:border-brand-500 focus:ring-0 transition-all duration-300

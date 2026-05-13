@@ -99,9 +99,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         query = query.eq('shift', filters.shift)
       }
 
-      // Lọc theo Firm Plan
+      // Lọc theo Firm Plan hoặc No Order
       if (filters.firmPlan.trim()) {
-        query = query.ilike('firm_plan', `%${filters.firmPlan.trim()}%`)
+        const term = `%${filters.firmPlan.trim()}%`
+        query = query.or(`firm_plan.ilike.${term},production_plan.no_order.ilike.${term}`)
       }
 
       // Lọc theo PU Code (Join Production Plan)
@@ -283,11 +284,11 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1 flex items-center gap-1">
-                <Search size={12} /> Tra cứu Mã Firm Plan / FPRO
+                <Search size={12} /> Tra cứu Firm Plan / NO.ORDER
               </label>
               <input 
                 type="text" 
-                placeholder="Nhập mã FPRO (VD: FPRO-260...)"
+                placeholder="Nhập mã FPRO, RPRO hoặc NO.ORDER..."
                 value={filters.firmPlan}
                 onChange={(e) => setFilters({...filters, firmPlan: e.target.value})}
                 className="w-full bg-[var(--bg-input)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-1)] outline-none focus:border-brand-500 font-mono transition-all"
