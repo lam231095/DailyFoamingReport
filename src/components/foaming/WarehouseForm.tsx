@@ -5,6 +5,7 @@ import { Save, Loader2, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser } from '@/types'
+import { getReportDateISO } from '@/lib/dateUtils'
 
 interface WarehouseFormProps {
   plan: ProductionPlan
@@ -18,7 +19,7 @@ export default function WarehouseForm({ plan, user, onSuccess }: WarehouseFormPr
 
   const [formData, setFormData] = useState({
     qty_delivered_sheet: plan.sl_sheet || 0,
-    delivery_date: new Date().toISOString().split('T')[0],
+    delivery_date: getReportDateISO(new Date()),
     ng_bun_qty: 0,
     error_type: '',
   })

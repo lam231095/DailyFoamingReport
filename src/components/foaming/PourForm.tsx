@@ -43,8 +43,13 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     fetchOperators()
   }, [])
 
+  const hour = new Date().getHours()
+  let initialShift = 'Ca 1'
+  if (hour >= 14 && hour < 22) initialShift = 'Ca 2'
+  else if (hour >= 22 || hour < 6) initialShift = 'Ca 3'
+
   const [formData, setFormData] = useState({
-    shift: 'Ca 1',
+    shift: initialShift,
     machine_id: 'Máy 1',
     operator_name: '',
     actual_bun_poured: plan.sl_bun_can_do || 0,

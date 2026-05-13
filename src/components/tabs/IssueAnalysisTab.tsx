@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, ChangeLog } from '@/types'
+import { formatReportDate, getReportTimeRange } from '@/lib/dateUtils'
 
 interface IssueAnalysisTabProps {
   user: SessionUser
@@ -48,12 +49,17 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
   const fetchMonthlyLogs = useCallback(async () => {
     setLoading(true)
     
-    let queryStartDate = `${year}-${String(month).padStart(2, '0')}-01T00:00:00Z`
-    let queryEndDate = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}T23:59:59Z`
-
+    let queryStartDate, queryEndDate
     if (useFilters) {
-      queryStartDate = `${startDate}T00:00:00Z`
-      queryEndDate = `${endDate}T23:59:59Z`
+      const { start, end } = getReportTimeRange(startDate, endDate)
+      queryStartDate = start
+      queryEndDate = end
+    } else {
+      const startOfMonthStr = `${year}-${String(month).padStart(2, '0')}-01`
+      const endOfMonthStr = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}`
+      const { start, end } = getReportTimeRange(startOfMonthStr, endOfMonthStr)
+      queryStartDate = start
+      queryEndDate = end
     }
 
     let query = supabase
@@ -102,7 +108,7 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
     logs.forEach(l => {
       const dt = new Date(l.logged_at)
       const row = [
-        dt.toLocaleDateString('vi-VN'),
+        formatReportDate(l.logged_at),
         l.shift || '—',
         dt.toLocaleTimeString('vi-VN'),
         l.users?.msnv || '',
@@ -428,7 +434,7 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
                     <p className="text-xs text-[var(--text-2)] line-clamp-2">{l.description}</p>
                     <div className="mt-2 flex items-center justify-between">
                       <p className="text-[9px] text-[var(--text-3)]">Bởi: {l.users?.full_name}</p>
-                      <p className="text-[9px] text-[var(--text-3)]">{new Date(l.logged_at).toLocaleDateString('vi-VN')}</p>
+                      <p className="text-[9px] text-[var(--text-3)]">{formatReportDate(l.logged_at)}</p>
                     </div>
                   </div>
                 ))}

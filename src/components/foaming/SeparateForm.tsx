@@ -57,9 +57,14 @@ const defaultForm = (plan: ProductionPlan) => {
   const std = thickness ? THICKNESS_TABLE[thickness] : null
   const initialBunThickness = std ? std.bunRef : 144
 
-  return {
-    shift: 'Ca 1',
-    machine_id: 'Máy tách tự động 2',
+    const hour = new Date().getHours()
+    let initialShift = 'Ca 1'
+    if (hour >= 14 && hour < 22) initialShift = 'Ca 2'
+    else if (hour >= 22 || hour < 6) initialShift = 'Ca 3'
+
+    return {
+      shift: initialShift,
+      machine_id: 'Máy tách tự động 2',
     operator_name: '',
     bun_thickness_mm: initialBunThickness,
     sheet_thickness_mm: thickness || 0,

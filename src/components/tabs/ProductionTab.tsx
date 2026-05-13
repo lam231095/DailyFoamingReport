@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, SKU, ProductionReport } from '@/types'
+import { getReportDateISO } from '@/lib/dateUtils'
 import SuccessModal from '@/components/ui/SuccessModal'
 
 interface ProductionTabProps {
@@ -125,7 +126,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
 
   const fetchReports = useCallback(async () => {
     setLoadingReports(true)
-    const today = new Date().toISOString().split('T')[0]
+    const today = getReportDateISO(new Date())
     let query = supabase
       .from('production_reports')
       .select('*, skus(*), users(full_name)')
@@ -160,7 +161,7 @@ export default function ProductionTab({ user }: ProductionTabProps) {
         actual_quantity: parseFloat(actualQty),
         productivity_points: parseFloat(productivityPoints.toFixed(2)),
         note: note.trim() || null,
-        report_date: new Date().toISOString().split('T')[0],
+        report_date: getReportDateISO(new Date()),
         shift: shift,
       })
       if (error) throw error

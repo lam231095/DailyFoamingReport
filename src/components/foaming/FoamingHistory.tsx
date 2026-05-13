@@ -10,6 +10,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { SessionUser } from '@/types'
 import { calculateOptimalSheetsPerBun, calculateSuggestedSheets, calculateEfficiency } from '@/lib/calculations'
+import { formatReportDate, getReportTimeRange } from '@/lib/dateUtils'
 
 interface FoamingHistoryProps {
   user: SessionUser
@@ -89,7 +90,8 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       if (activeStage === 'warehouse') {
         query = query.gte('delivery_date', filters.startDate).lte('delivery_date', filters.endDate)
       } else {
-        query = query.gte('created_at', `${filters.startDate}T00:00:00Z`).lte('created_at', `${filters.endDate}T23:59:59Z`)
+        const { start, end } = getReportTimeRange(filters.startDate, filters.endDate)
+        query = query.gte('created_at', start).lt('created_at', end)
       }
 
       // Lọc theo Ca (không áp dụng cho Nhập kho)
@@ -142,10 +144,9 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
 
     const csvContentRaw = headers.join(",") + "\r\n" + data.map(row => {
       const dateTime = new Date(row.created_at).toLocaleString('vi-VN')
-      const dateOnly = row.delivery_date || new Date(row.created_at).toLocaleDateString('vi-VN')
       const common = [
         `"${dateTime}"`,
-        `"${dateOnly}"`,
+        `"${row.delivery_date ? new Date(row.delivery_date).toLocaleDateString('vi-VN') : formatReportDate(row.created_at)}"`,
         `"${row.production_plan?.week_label || '---'}"`,
         `"${row.production_plan?.no_order || '---'}"`,
         row.firm_plan,
@@ -573,7 +574,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                   
                   <div className="text-right shrink-0">
                     <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">
-                      {new Date(row.created_at).toLocaleDateString()}
+                      {row.delivery_date ? new Date(row.delivery_date).toLocaleDateString('vi-VN') : formatReportDate(row.created_at)}
                     </p>
                     <p className="text-[10px] text-[var(--text-3)]">
                       {new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
