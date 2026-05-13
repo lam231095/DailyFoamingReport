@@ -144,9 +144,13 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
     pourReports.forEach(r => {
       // Use report_date if available, otherwise created_at
-      const d = r.report_date 
-        ? r.report_date.split('-').reverse().join('/') // YYYY-MM-DD -> DD/MM/YYYY
+      let d = r.report_date 
+        ? r.report_date.split('-').reverse().join('/') 
         : formatReportDate(r.created_at)
+      
+      // Normalize DD/MM/YYYY to DD/M/YYYY to match dailyMap keys
+      const [dayPart, monthPart, yearPart] = d.split('/')
+      d = `${parseInt(dayPart)}/${parseInt(monthPart)}/${yearPart}`
       
       const day = dailyMap.get(d)
       if (day) {
@@ -157,15 +161,22 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     })
 
     separateReports.forEach(r => {
-      const d = r.report_date 
+      let d = r.report_date 
         ? r.report_date.split('-').reverse().join('/') 
         : formatReportDate(r.created_at)
 
+      const [dayPart, monthPart, yearPart] = d.split('/')
+      d = `${parseInt(dayPart)}/${parseInt(monthPart)}/${yearPart}`
+
       const day = dailyMap.get(d)
       if (day) {
-        day.separated += (r.actual_bun_separated || 0)
-        const s = r.shift || 'Ca 1'
-        day.separatedByShift[s] = (day.separatedByShift[s] || 0) + (r.actual_bun_separated || 0)
+        // Chỉ cộng vào separated nếu là Thành Phẩm (hoặc nếu user muốn cả hai thì bỏ filter này)
+        // Dựa trên yêu cầu: "số bun THÀNH PHẨM tách được"
+        if (!r.product_type || r.product_type === 'thanh_pham') {
+          day.separated += (r.actual_bun_separated || 0)
+          const s = r.shift || 'Ca 1'
+          day.separatedByShift[s] = (day.separatedByShift[s] || 0) + (r.actual_bun_separated || 0)
+        }
       }
     })
 

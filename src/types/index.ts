@@ -154,6 +154,7 @@ export interface FoamingSeparateReport {
   actual_quantity?: number;
   productivity_points?: number;
   note?: string | null;
+  product_type?: string;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;
