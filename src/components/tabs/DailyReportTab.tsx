@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   BarChart3, Calendar, ChevronLeft, ChevronRight, 
-  Droplets, Scissors, TrendingUp, Package, 
-  Target, Info, Download, Filter, Activity
+  Activity, Zap, Download, Filter, Info,
+  Factory, CheckCircle2, AlertTriangle, TrendingUp,
+  Clock, Sun, Moon, Sunrise
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, FoamingPourReport, FoamingSeparateReport } from '@/types'
-import { getReportTimeRange, formatReportDate } from '@/lib/dateUtils'
+import { getReportTimeRange, formatReportDate, getReportDateISO } from '@/lib/dateUtils'
 
 interface DailyReportTabProps {
   user: SessionUser
@@ -19,67 +20,11 @@ type AggregatedDay = {
   date: string
   poured: number
   separated: number
-  pouredByShift: { [key: string]: number }
-  separatedByShift: { [key: string]: number }
+  pouredByShift: Record<string, number>
+  separatedByShift: Record<string, number>
 }
 
-// ── Custom Grouped Bar Chart ───────────────────────────────
-function BunComparisonChart({ data }: { data: AggregatedDay[] }) {
-  const chartHeight = 220
-  const maxVal = Math.max(...data.map(d => Math.max(d.poured, d.separated)), 100) * 1.1
-
-  return (
-    <div className="relative w-full h-[280px] mt-8">
-      {/* Y-Axis Grid */}
-      <div className="absolute inset-0 flex flex-col justify-between text-[9px] text-[var(--text-3)] pointer-events-none border-l border-b border-[var(--border)]">
-        {[4, 3, 2, 1, 0].map(i => {
-          const val = Math.round((maxVal / 4) * i)
-          return (
-            <div key={i} className="relative w-full border-t border-[var(--border)] border-dashed">
-              <span className="absolute -left-10 -top-2 w-8 text-right">{val}</span>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Bars Container */}
-      <div className="absolute inset-0 flex items-end justify-around pl-2">
-        {data.map((d, i) => (
-          <div key={i} className="flex-1 flex items-end justify-center gap-1.5 h-full group relative">
-            {/* Poured Bar */}
-            <div className="relative flex flex-col items-center">
-               <motion.div 
-                initial={{ height: 0 }}
-                animate={{ height: `${(d.poured / maxVal) * chartHeight}px` }}
-                className="w-4 sm:w-6 bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-sm shadow-lg shadow-blue-500/20"
-              />
-              <div className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded transition-opacity whitespace-nowrap z-10">
-                Đổ: {d.poured}
-              </div>
-            </div>
-
-            {/* Separated Bar */}
-            <div className="relative flex flex-col items-center">
-              <motion.div 
-                initial={{ height: 0 }}
-                animate={{ height: `${(d.separated / maxVal) * chartHeight}px` }}
-                className="w-4 sm:w-6 bg-gradient-to-t from-purple-600 to-purple-400 rounded-t-sm shadow-lg shadow-purple-500/20"
-              />
-              <div className="opacity-0 group-hover:opacity-100 absolute -top-8 bg-purple-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded transition-opacity whitespace-nowrap z-10">
-                Tách: {d.separated}
-              </div>
-            </div>
-
-            {/* X-Axis Label (below) */}
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[8px] text-[var(--text-3)] whitespace-nowrap font-medium rotate-45 sm:rotate-0">
-              {d.date.split('/')[0]}/{d.date.split('/')[1]}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
+const SHIFTS = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca HC']
 
 export default function DailyReportTab({ user }: DailyReportTabProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -95,24 +40,16 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     setLoading(true)
     const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
     const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}`
-    const { start, end } = getReportTimeRange(startOfMonth, endOfMonth)
+    const { start } = getReportTimeRange(startOfMonth, endOfMonth)
 
-    // Fetch Pour Reports - Fetch by created_at as fallback if report_date is null
-    const { data: pourData } = await supabase
-      .from('foaming_pour_reports')
-      .select('*')
-      .or(`report_date.gte.${startOfMonth},created_at.gte.${start}`)
-      .order('created_at', { ascending: true })
+    // Fetch reports
+    const [pourRes, sepRes] = await Promise.all([
+      supabase.from('foaming_pour_reports').select('*').or(`report_date.gte.${startOfMonth},created_at.gte.${start}`),
+      supabase.from('foaming_separate_reports').select('*').or(`report_date.gte.${startOfMonth},created_at.gte.${start}`)
+    ])
 
-    // Fetch Separate Reports
-    const { data: sepData } = await supabase
-      .from('foaming_separate_reports')
-      .select('*')
-      .or(`report_date.gte.${startOfMonth},created_at.gte.${start}`)
-      .order('created_at', { ascending: true })
-
-    setPourReports((pourData as any) || [])
-    setSeparateReports((sepData as any) || [])
+    setPourReports((pourRes.data as any) || [])
+    setSeparateReports((sepRes.data as any) || [])
     setLoading(false)
   }, [month, year, daysInMonth])
 
@@ -126,32 +63,30 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     setCurrentDate(next)
   }
 
-  // ── Data Aggregation ──────────────────────────────────────
-  const stats = useMemo(() => {
+  // ── Processing ──────────────────────────────────────────
+  const aggregatedData = useMemo(() => {
     const dailyMap = new Map<string, AggregatedDay>()
     
-    // Helper to get array of all dates in month
+    // Initialize days
     for (let i = 1; i <= daysInMonth; i++) {
       const dateStr = `${i}/${month}/${year}`
       dailyMap.set(dateStr, {
         date: dateStr,
         poured: 0,
         separated: 0,
-        pouredByShift: { 'Ca 1': 0, 'Ca 2': 0, 'Ca 3': 0, 'Ca HC': 0 },
-        separatedByShift: { 'Ca 1': 0, 'Ca 2': 0, 'Ca 3': 0, 'Ca HC': 0 }
+        pouredByShift: {},
+        separatedByShift: {}
       })
     }
 
+    const normalizeDate = (dStr: string) => {
+      const [d, m, y] = dStr.split('/')
+      return `${parseInt(d)}/${parseInt(m)}/${y}`
+    }
+
     pourReports.forEach(r => {
-      // Use report_date if available, otherwise created_at
-      let d = r.report_date 
-        ? r.report_date.split('-').reverse().join('/') 
-        : formatReportDate(r.created_at)
-      
-      // Normalize DD/MM/YYYY to DD/M/YYYY to match dailyMap keys
-      const [dayPart, monthPart, yearPart] = d.split('/')
-      d = `${parseInt(dayPart)}/${parseInt(monthPart)}/${yearPart}`
-      
+      let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
+      d = normalizeDate(d)
       const day = dailyMap.get(d)
       if (day) {
         day.poured += (r.actual_bun_poured || 0)
@@ -161,229 +96,222 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     })
 
     separateReports.forEach(r => {
-      let d = r.report_date 
-        ? r.report_date.split('-').reverse().join('/') 
-        : formatReportDate(r.created_at)
+      if (r.product_type && r.product_type !== 'thanh_pham') return
 
-      const [dayPart, monthPart, yearPart] = d.split('/')
-      d = `${parseInt(dayPart)}/${parseInt(monthPart)}/${yearPart}`
-
+      let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
+      d = normalizeDate(d)
       const day = dailyMap.get(d)
       if (day) {
-        // Chỉ cộng vào separated nếu là Thành Phẩm (hoặc nếu user muốn cả hai thì bỏ filter này)
-        // Dựa trên yêu cầu: "số bun THÀNH PHẨM tách được"
-        if (!r.product_type || r.product_type === 'thanh_pham') {
-          day.separated += (r.actual_bun_separated || 0)
-          const s = r.shift || 'Ca 1'
-          day.separatedByShift[s] = (day.separatedByShift[s] || 0) + (r.actual_bun_separated || 0)
-        }
+        day.separated += (r.actual_bun_separated || 0)
+        const s = r.shift || 'Ca 1'
+        day.separatedByShift[s] = (day.separatedByShift[s] || 0) + (r.actual_bun_separated || 0)
       }
     })
 
-    const chartData = Array.from(dailyMap.values()).filter(d => d.poured > 0 || d.separated > 0)
-    
-    const totalPoured = pourReports.reduce((acc, r) => acc + (r.actual_bun_poured || 0), 0)
-    const totalSeparated = separateReports.reduce((acc, r) => acc + (r.actual_bun_separated || 0), 0)
-
-    return {
-      chartData,
-      totalPoured,
-      totalSeparated,
-      yieldRate: totalPoured > 0 ? (totalSeparated / totalPoured) * 100 : 0
-    }
+    return Array.from(dailyMap.values())
   }, [pourReports, separateReports, daysInMonth, month, year])
 
+  const totals = useMemo(() => {
+    return aggregatedData.reduce((acc, d) => ({
+      poured: acc.poured + d.poured,
+      separated: acc.separated + d.separated
+    }), { poured: 0, separated: 0 })
+  }, [aggregatedData])
+
+  const yieldRate = totals.poured > 0 ? (totals.separated / totals.poured) * 100 : 0
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 pb-20">
       {/* Month Selector */}
-      <div className="flex items-center justify-between card p-3 px-4">
-        <button onClick={() => changeMonth(-1)} className="btn-ghost p-2 rounded-full">
-          <ChevronLeft size={18} />
+      <div className="flex items-center justify-between card p-3 px-5 bg-gradient-to-r from-brand-500/5 to-purple-500/5">
+        <button onClick={() => changeMonth(-1)} className="btn-ghost p-2 rounded-full hover:bg-white shadow-sm transition-all active:scale-90">
+          <ChevronLeft size={20} />
         </button>
-        <div className="flex items-center gap-2">
-          <Calendar size={16} className="text-brand-500" />
-          <span className="text-sm font-bold uppercase tracking-tight">Tháng {month < 10 ? `0${month}` : month} / {year}</span>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-brand-500">
+            <Calendar size={20} />
+          </div>
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-tight">Tháng {month < 10 ? `0${month}` : month} / {year}</h2>
+            <p className="text-[10px] text-[var(--text-3)] font-bold">BÁO CÁO SẢN LƯỢNG TỔNG HỢP</p>
+          </div>
         </div>
-        <button onClick={() => changeMonth(1)} className="btn-ghost p-2 rounded-full">
-          <ChevronRight size={18} />
+        <button onClick={() => changeMonth(1)} className="btn-ghost p-2 rounded-full hover:bg-white shadow-sm transition-all active:scale-90">
+          <ChevronRight size={20} />
         </button>
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[var(--text-3)] font-medium">Đang tổng hợp báo cáo...</p>
+        <div className="flex flex-col items-center justify-center py-32 gap-4">
+          <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-[var(--text-3)] font-bold animate-pulse">Đang tổng hợp dữ liệu sản xuất...</p>
         </div>
-      ) : stats.chartData.length === 0 ? (
-        <div className="card p-20 flex flex-col items-center gap-4 text-center opacity-60">
-          <Activity size={48} className="text-[var(--text-3)]" />
+      ) : totals.poured === 0 && totals.separated === 0 ? (
+        <div className="card p-20 flex flex-col items-center gap-4 text-center border-2 border-dashed">
+          <Activity size={48} className="text-[var(--text-3)] opacity-20" />
           <div>
-            <p className="text-sm font-bold text-[var(--text-2)]">Không có dữ liệu báo cáo</p>
-            <p className="text-[10px] text-[var(--text-3)] mt-1">Vui lòng chọn tháng khác hoặc ghi nhận sản lượng</p>
+            <h3 className="text-lg font-bold text-[var(--text-2)]">Không có dữ liệu báo cáo</h3>
+            <p className="text-sm text-[var(--text-3)] max-w-xs mx-auto">Vui lòng chọn tháng khác hoặc ghi nhận sản lượng tại tab Quy trình Foaming.</p>
           </div>
         </div>
       ) : (
-        <>
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 gap-3">
-            <motion.div 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="card p-4 relative overflow-hidden bg-gradient-to-br from-blue-500/5 to-transparent border-blue-500/10"
-            >
-              <div className="relative z-10">
-                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase tracking-widest mb-1">Tổng Bun Máy Đổ</p>
-                <h4 className="text-3xl font-black text-blue-600">{stats.totalPoured.toLocaleString()}</h4>
-                <div className="flex items-center gap-1.5 mt-1 text-blue-500/60 font-bold text-[9px]">
-                  <Droplets size={10} />
-                  <span>Khu vực Đổ ( ICT )</span>
-                </div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+          {/* Top KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="card p-5 relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white border-none shadow-blue-500/20 shadow-xl">
+              <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Đổ (Poured)</p>
+              <h4 className="text-4xl font-black">{totals.poured.toLocaleString()}</h4>
+              <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
+                <Factory size={10} /> Toàn bộ máy đổ
               </div>
-              <Droplets size={54} className="absolute -right-2 -bottom-2 text-blue-500/10 -rotate-12" />
-            </motion.div>
-
-            <motion.div 
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="card p-4 relative overflow-hidden bg-gradient-to-br from-purple-500/5 to-transparent border-purple-500/10"
-            >
-              <div className="relative z-10">
-                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase tracking-widest mb-1">Thành Phẩm Tách</p>
-                <h4 className="text-3xl font-black text-purple-600">{stats.totalSeparated.toLocaleString()}</h4>
-                <div className="flex items-center gap-1.5 mt-1 text-purple-500/60 font-bold text-[9px]">
-                  <Scissors size={10} />
-                  <span>Khu vực Tách</span>
-                </div>
-              </div>
-              <Scissors size={54} className="absolute -right-2 -bottom-2 text-purple-500/10 12" />
-            </motion.div>
-          </div>
-
-          {/* Efficiency Card */}
-          <div className="card p-3 flex items-center justify-between bg-brand-500/5 border-brand-500/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center">
-                <TrendingUp size={20} className="text-brand-500" />
-              </div>
-              <div>
-                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Hiệu suất Tách/Đổ</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-black text-[var(--text-1)]">{stats.yieldRate.toFixed(1)}%</span>
-                  <div className="h-1.5 w-24 bg-[var(--bg-input)] rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${stats.yieldRate}%` }}
-                      className="h-full bg-brand-500"
-                    />
-                  </div>
-                </div>
-              </div>
+              <Activity size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
             </div>
-            <div className="text-right">
-              <p className="text-[10px] text-[var(--text-3)] font-medium">Hao hụt ước tính</p>
-              <p className="text-sm font-bold text-red-500">{(100 - stats.yieldRate).toFixed(1)}%</p>
+            
+            <div className="card p-5 relative overflow-hidden bg-gradient-to-br from-purple-600 to-purple-700 text-white border-none shadow-purple-500/20 shadow-xl">
+              <p className="text-[10px] font-black uppercase opacity-80 mb-1">Bun Thành Phẩm (Separated)</p>
+              <h4 className="text-4xl font-black">{totals.separated.toLocaleString()}</h4>
+              <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
+                <CheckCircle2 size={10} /> Đã tách thành phẩm
+              </div>
+              <Zap size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
+            </div>
+
+            <div className={`card p-5 relative overflow-hidden border-none shadow-xl ${yieldRate >= 95 ? 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-emerald-500/20' : 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-500/20'}`}>
+              <p className="text-[10px] font-black uppercase opacity-80 mb-1">Hiệu Suất Thành Phẩm</p>
+              <h4 className="text-4xl font-black">{yieldRate.toFixed(1)}%</h4>
+              <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
+                <TrendingUp size={10} /> {yieldRate >= 95 ? 'Đạt mục tiêu' : 'Cần cải thiện'}
+              </div>
+              <BarChart3 size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
             </div>
           </div>
 
-          {/* Main Comparison Chart */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card p-6"
-          >
-            <div className="flex items-center justify-between mb-4">
+          {/* Productivity Chart */}
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-2">
-                <BarChart3 size={18} className="text-brand-500" />
-                <h3 className="text-sm font-bold tracking-tight text-[var(--text-1)]">So Sánh Sản Lượng Đổ vs Tách</h3>
+                <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-500">
+                  <BarChart3 size={18} />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-tight">Biểu đồ sản lượng hàng ngày</h3>
               </div>
               <div className="flex gap-4">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                  <span className="text-[10px] font-bold text-[var(--text-3)] uppercase">Đổ</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-sm bg-blue-500" />
+                  <span className="text-[10px] font-bold text-[var(--text-3)] uppercase">Tổng Đổ</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                  <span className="text-[10px] font-bold text-[var(--text-3)] uppercase">Tách</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-sm bg-purple-500" />
+                  <span className="text-[10px] font-bold text-[var(--text-3)] uppercase">Thành Phẩm</span>
                 </div>
               </div>
             </div>
 
-            <BunComparisonChart data={stats.chartData} />
-
-            <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <div className="p-3 rounded-xl bg-blue-500/5 border border-blue-500/10 flex items-start gap-3">
-                  <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-[var(--text-2)] leading-relaxed">
-                    Dữ liệu được lấy từ báo cáo thực tế tại khu vực Đổ (Bun thô). Phân bổ theo từng ca làm việc để quản lý hiệu quả máy móc.
-                  </p>
-               </div>
-               <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/10 flex items-start gap-3">
-                  <Activity size={14} className="text-purple-500 shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-[var(--text-2)] leading-relaxed">
-                    Sản lượng Tách thể hiện số lượng Bun thành phẩm thực tế nhập kho. Chênh lệch giữa Đổ và Tách là tỷ lệ hao hụt/phế phẩm.
-                  </p>
-               </div>
+            <div className="h-[280px] w-full flex items-end justify-between gap-1 px-2 border-b border-[var(--border)] relative">
+              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="w-full border-t border-[var(--border)] border-dashed h-0" />
+                ))}
+              </div>
+              
+              {aggregatedData.map((day) => {
+                const maxVal = Math.max(...aggregatedData.map(d => Math.max(d.poured, d.separated))) || 100
+                const pouredHeight = (day.poured / maxVal) * 100
+                const separatedHeight = (day.separated / maxVal) * 100
+                
+                return (
+                  <div key={day.date} className="flex-1 flex flex-col items-center group relative h-full justify-end pb-8">
+                    <div className="flex items-end gap-0.5 w-full justify-center px-0.5">
+                      <motion.div 
+                        initial={{ height: 0 }} 
+                        animate={{ height: `${pouredHeight}%` }} 
+                        className="w-full max-w-[8px] bg-blue-500 rounded-t-sm shadow-sm relative"
+                      >
+                        {day.poured > 0 && (
+                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-bold py-0.5 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-20 whitespace-nowrap">
+                            {day.poured}
+                          </div>
+                        )}
+                      </motion.div>
+                      <motion.div 
+                        initial={{ height: 0 }} 
+                        animate={{ height: `${separatedHeight}%` }} 
+                        className="w-full max-w-[8px] bg-purple-500 rounded-t-sm shadow-sm relative"
+                      >
+                        {day.separated > 0 && (
+                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[8px] font-bold py-0.5 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity z-20 whitespace-nowrap">
+                            {day.separated}
+                          </div>
+                        )}
+                      </motion.div>
+                    </div>
+                    <div className="absolute bottom-0 text-[8px] font-bold text-[var(--text-3)] rotate-45 origin-left whitespace-nowrap">
+                      {day.date.split('/')[0]}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
-          </motion.div>
+          </div>
 
-          {/* Shift Detail breakdown Table */}
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="card p-5 overflow-hidden"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-[var(--text-1)]">Chi Tiết Theo Ca (Tháng {month})</h3>
-              <button className="text-[10px] font-bold text-brand-500 flex items-center gap-1 hover:underline">
-                <Download size={12} /> XUẤT EXCEL
-              </button>
+          {/* Detail Breakdown Table */}
+          <div className="card overflow-hidden shadow-xl border-none">
+            <div className="p-5 bg-gradient-to-r from-gray-50 to-white dark:from-white/5 dark:to-transparent border-b border-[var(--border)] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock size={18} className="text-brand-500" />
+                <h3 className="text-sm font-black uppercase tracking-tight">Chi tiết sản lượng theo ngày & ca</h3>
+              </div>
             </div>
-
-            <div className="overflow-x-auto -mx-1">
-              <table className="w-full text-left text-xs min-w-[320px]">
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-[var(--border)] text-[var(--text-3)] uppercase text-[9px] font-black tracking-widest">
-                    <th className="pb-3 px-1">Ngày</th>
-                    <th className="pb-3 px-1">Ca 1</th>
-                    <th className="pb-3 px-1">Ca 2</th>
-                    <th className="pb-3 px-1">Ca 3</th>
-                    <th className="pb-3 px-1">Ca HC</th>
-                    <th className="pb-3 px-1 text-right">Tổng</th>
+                  <tr className="bg-gray-50 dark:bg-black/20 text-[10px] font-black uppercase text-[var(--text-3)] border-b border-[var(--border)]">
+                    <th className="p-4 w-32">Ngày</th>
+                    {SHIFTS.map(s => (
+                      <th key={s} className="p-4 text-center border-l border-[var(--border)] min-w-[120px]">
+                        <div className="flex flex-col items-center gap-1">
+                          {s === 'Ca 1' && <Sunrise size={14} className="text-orange-500" />}
+                          {s === 'Ca 2' && <Sun size={14} className="text-yellow-500" />}
+                          {s === 'Ca 3' && <Moon size={14} className="text-blue-500" />}
+                          {s === 'Ca HC' && <Clock size={14} className="text-purple-500" />}
+                          <span>{s}</span>
+                        </div>
+                      </th>
+                    ))}
+                    <th className="p-4 text-center border-l border-[var(--border)] bg-gray-100 dark:bg-white/5 w-32">TỔNG NGÀY</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
-                  {stats.chartData.slice(-10).reverse().map((d, i) => (
-                    <tr key={i} className="group hover:bg-[var(--bg-input)]/50 transition-colors">
-                      <td className="py-3 px-1 font-bold text-[var(--text-1)]">{d.date.split('/')[0]}/{d.date.split('/')[1]}</td>
-                      <td className="py-3 px-1">
-                        <div className="flex flex-col">
-                          <span className="text-blue-500 font-bold">{d.pouredByShift['Ca 1'] || 0}</span>
-                          <span className="text-purple-500 text-[10px] font-medium">{d.separatedByShift['Ca 1'] || 0}</span>
-                        </div>
+                  {aggregatedData.slice().reverse().filter(d => d.poured > 0 || d.separated > 0).map(day => (
+                    <tr key={day.date} className="text-xs hover:bg-brand-500/5 transition-colors">
+                      <td className="p-4 font-black text-[var(--text-1)] bg-gray-50/50 dark:bg-white/5">
+                        {day.date}
                       </td>
-                      <td className="py-3 px-1">
-                        <div className="flex flex-col">
-                          <span className="text-blue-500 font-bold">{d.pouredByShift['Ca 2'] || 0}</span>
-                          <span className="text-purple-500 text-[10px] font-medium">{d.separatedByShift['Ca 2'] || 0}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-1">
-                        <div className="flex flex-col">
-                          <span className="text-blue-500 font-bold">{d.pouredByShift['Ca 3'] || 0}</span>
-                          <span className="text-purple-500 text-[10px] font-medium">{d.separatedByShift['Ca 3'] || 0}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-1">
-                        <div className="flex flex-col">
-                          <span className="text-blue-500 font-bold">{d.pouredByShift['Ca HC'] || 0}</span>
-                          <span className="text-purple-500 text-[10px] font-medium">{d.separatedByShift['Ca HC'] || 0}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-1 text-right font-black">
-                        <div className="flex flex-col">
-                          <span className="text-[var(--text-1)]">{d.poured}</span>
-                          <span className="text-brand-500 text-[9px]">{d.separated}</span>
+                      {SHIFTS.map(s => (
+                        <td key={s} className="p-4 text-center border-l border-[var(--border)]">
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600">Đổ</span>
+                              <span className="font-mono font-bold text-sm">{(day.pouredByShift[s] || 0).toLocaleString()}</span>
+                            </div>
+                            <div className="flex items-center justify-center gap-2">
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-600">Tách</span>
+                              <span className="font-mono font-bold text-sm">{(day.separatedByShift[s] || 0).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </td>
+                      ))}
+                      <td className="p-4 text-center border-l border-[var(--border)] bg-gray-100/50 dark:bg-white/10">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex flex-col">
+                            <span className="text-[8px] font-black uppercase text-blue-600">Tổng Đổ</span>
+                            <span className="text-lg font-black text-blue-700 leading-none">{day.poured.toLocaleString()}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[8px] font-black uppercase text-purple-600">Tổng Tách</span>
+                            <span className="text-lg font-black text-purple-700 leading-none">{day.separated.toLocaleString()}</span>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -391,11 +319,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                 </tbody>
               </table>
             </div>
-            <p className="mt-4 text-[9px] text-[var(--text-3)] italic text-center font-medium">
-              * Hàng trên (Xanh): Số Bun Đổ | Hàng dưới (Tím): Số Bun Tách
-            </p>
-          </motion.div>
-        </>
+          </div>
+        </motion.div>
       )}
     </div>
   )
