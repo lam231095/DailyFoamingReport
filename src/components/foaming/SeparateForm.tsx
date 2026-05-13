@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
 import { calculateSuggestedSheets, calculateEfficiency } from '@/lib/calculations'
+import { getReportDateISO } from '@/lib/dateUtils'
 
 interface SeparateFormProps {
   plan: ProductionPlan
@@ -146,6 +147,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         actual_bun_separated: Number(formData.actual_bun_separated),
         actual_sheet_received: Number(formData.actual_sheet_received),
         lot_no: formData.lot_no,
+        report_date: getReportDateISO(new Date()),
         ng_qty: totalNG,
         ng_bun_qty: 0,
         error_type: combinedError || '',

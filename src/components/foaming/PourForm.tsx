@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
 import { Plus, Trash2, Info, Package, MapPin, Palette, Truck } from 'lucide-react'
+import { getReportDateISO } from '@/lib/dateUtils'
 
 const ERROR_TYPES = [
   'Bọt khí', 'Loang trắng', 'Loang đen', 'Lõm mặt',
@@ -93,6 +94,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         operator_name: formData.operator_name,
         actual_bun_poured: Number(formData.actual_bun_poured),
         lot_no: formData.lot_no,
+        report_date: getReportDateISO(new Date()),
         ng_bun_qty: totalNG,
         error_type: combinedError || '',
         storage_location: formData.storage_location,

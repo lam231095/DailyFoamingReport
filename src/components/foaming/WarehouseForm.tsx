@@ -34,6 +34,7 @@ export default function WarehouseForm({ plan, user, onSuccess }: WarehouseFormPr
         firm_plan: plan.firm_plan,
         qty_delivered_sheet: Number(formData.qty_delivered_sheet),
         delivery_date: formData.delivery_date,
+        report_date: getReportDateISO(new Date()),
         ng_bun_qty: Number(formData.ng_bun_qty),
         error_type: formData.error_type,
         deliverer_id: user.id

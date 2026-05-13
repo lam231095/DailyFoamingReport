@@ -95,22 +95,21 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     setLoading(true)
     const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`
     const endOfMonth = `${year}-${String(month).padStart(2, '0')}-${daysInMonth}`
+    const { start, end } = getReportTimeRange(startOfMonth, endOfMonth)
 
-    // Fetch Pour Reports
+    // Fetch Pour Reports - Fetch by created_at as fallback if report_date is null
     const { data: pourData } = await supabase
       .from('foaming_pour_reports')
       .select('*')
-      .gte('report_date', startOfMonth)
-      .lte('report_date', endOfMonth)
-      .order('report_date', { ascending: true })
+      .or(`report_date.gte.${startOfMonth},created_at.gte.${start}`)
+      .order('created_at', { ascending: true })
 
     // Fetch Separate Reports
     const { data: sepData } = await supabase
       .from('foaming_separate_reports')
       .select('*')
-      .gte('report_date', startOfMonth)
-      .lte('report_date', endOfMonth)
-      .order('report_date', { ascending: true })
+      .or(`report_date.gte.${startOfMonth},created_at.gte.${start}`)
+      .order('created_at', { ascending: true })
 
     setPourReports((pourData as any) || [])
     setSeparateReports((sepData as any) || [])
@@ -144,7 +143,11 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     }
 
     pourReports.forEach(r => {
-      const d = formatReportDate(r.report_date || r.created_at)
+      // Use report_date if available, otherwise created_at
+      const d = r.report_date 
+        ? r.report_date.split('-').reverse().join('/') // YYYY-MM-DD -> DD/MM/YYYY
+        : formatReportDate(r.created_at)
+      
       const day = dailyMap.get(d)
       if (day) {
         day.poured += (r.actual_bun_poured || 0)
@@ -154,7 +157,10 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     })
 
     separateReports.forEach(r => {
-      const d = formatReportDate(r.report_date || r.created_at)
+      const d = r.report_date 
+        ? r.report_date.split('-').reverse().join('/') 
+        : formatReportDate(r.created_at)
+
       const day = dailyMap.get(d)
       if (day) {
         day.separated += (r.actual_bun_separated || 0)
