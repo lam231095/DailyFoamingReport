@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { BarChart3, AlertOctagon, Calendar, Package, Factory } from 'lucide-react'
+import { BarChart3, AlertOctagon, Calendar, Package, Factory, TrendingUp } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
 import IssueAnalysisTab from '@/components/tabs/IssueAnalysisTab'
+import UtilizationAnalysisTab from '@/components/tabs/UtilizationAnalysisTab'
+import DailyReportTab from '@/components/tabs/DailyReportTab'
 import ResidualMaterialTab from '@/components/tabs/ResidualMaterialTab'
 import FoamingProcessTab from '@/components/tabs/FoamingProcessTab'
 
@@ -20,9 +22,23 @@ const TABS = [
     color: '#f43f5e',
   },
   {
+    id: 'daily-report',
+    label: 'Daily report',
+    shortLabel: 'Báo cáo',
+    icon: BarChart3,
+    color: '#3b82f6',
+  },
+  {
+    id: 'utilization',
+    label: 'Hiệu Suất & 4M',
+    shortLabel: 'Hiệu Suất',
+    icon: TrendingUp,
+    color: '#8b5cf6',
+  },
+  {
     id: 'issues',
-    label: 'Phân Tích 4M',
-    shortLabel: 'Phân Tích',
+    label: 'Biến Động 4M',
+    shortLabel: 'Sự Cố',
     icon: AlertOctagon,
     color: '#ef4444',
   },
@@ -152,9 +168,11 @@ export default function DashboardPage() {
             animate="enter"
             exit="exit"
           >
-            {activeTab === 'issues'     && <IssueAnalysisTab user={user} />}
-            {activeTab === 'residual'   && <ResidualMaterialTab user={user} />}
-            {activeTab === 'foaming'    && <FoamingProcessTab user={user} />}
+            {activeTab === 'daily-report' && <DailyReportTab user={user} />}
+            {activeTab === 'utilization' && <UtilizationAnalysisTab user={user} />}
+            {activeTab === 'issues'      && <IssueAnalysisTab user={user} />}
+            {activeTab === 'residual'    && <ResidualMaterialTab user={user} />}
+            {activeTab === 'foaming'     && <FoamingProcessTab user={user} />}
           </motion.div>
         </AnimatePresence>
       </div>
