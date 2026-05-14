@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
-import { BarChart3, AlertOctagon, Calendar, Package, Factory, TrendingUp } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { BarChart3, AlertOctagon, Package, Factory, TrendingUp } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
@@ -55,7 +55,6 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<SessionUser | null>(null)
   const [activeTab, setActiveTab] = useState('foaming')
-  const [direction, setDirection] = useState(1) // 1=right, -1=left
 
   useEffect(() => {
     const session = getSession()
@@ -67,9 +66,6 @@ export default function DashboardPage() {
   }, [router])
 
   const switchTab = (tabId: string) => {
-    const currentIdx = TABS.findIndex((t) => t.id === activeTab)
-    const nextIdx = TABS.findIndex((t) => t.id === tabId)
-    setDirection(nextIdx > currentIdx ? 1 : -1)
     setActiveTab(tabId)
   }
 
@@ -143,38 +139,23 @@ export default function DashboardPage() {
           </span>
         </motion.div>
 
-        {/* Animated tab panels */}
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={activeTab}
-            custom={direction}
-            variants={{
-              initial: (dir: number) => ({
-                x: dir * 40,
-                opacity: 0,
-              }),
-              enter: {
-                x: 0,
-                opacity: 1,
-                transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] },
-              },
-              exit: (dir: number) => ({
-                x: dir * -40,
-                opacity: 0,
-                transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] },
-              }),
-            }}
-            initial="initial"
-            animate="enter"
-            exit="exit"
-          >
-            {activeTab === 'daily-report' && <DailyReportTab user={user} />}
-            {activeTab === 'utilization' && <UtilizationAnalysisTab user={user} />}
-            {activeTab === 'issues'      && <IssueAnalysisTab user={user} />}
-            {activeTab === 'residual'    && <ResidualMaterialTab user={user} />}
-            {activeTab === 'foaming'     && <FoamingProcessTab user={user} />}
-          </motion.div>
-        </AnimatePresence>
+        {/* Tab panels — always mounted, shown/hidden via CSS to avoid blank flash */}
+        <div className="relative">
+          {TABS.map((tab) => (
+            <div
+              key={tab.id}
+              style={{
+                display: activeTab === tab.id ? 'block' : 'none',
+              }}
+            >
+              {tab.id === 'daily-report' && <DailyReportTab user={user} />}
+              {tab.id === 'utilization'  && <UtilizationAnalysisTab user={user} />}
+              {tab.id === 'issues'       && <IssueAnalysisTab user={user} />}
+              {tab.id === 'residual'     && <ResidualMaterialTab user={user} />}
+              {tab.id === 'foaming'      && <FoamingProcessTab user={user} />}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ── Bottom Nav (mobile) ───────────────────── */}
