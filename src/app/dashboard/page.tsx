@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BarChart3, AlertOctagon, Package, Factory, TrendingUp } from 'lucide-react'
+import { BarChart3, Package, Factory, TrendingUp } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
-import IssueAnalysisTab from '@/components/tabs/IssueAnalysisTab'
+
 import UtilizationAnalysisTab from '@/components/tabs/UtilizationAnalysisTab'
 import DailyReportTab from '@/components/tabs/DailyReportTab'
 import ResidualMaterialTab from '@/components/tabs/ResidualMaterialTab'
@@ -35,13 +35,7 @@ const TABS = [
     icon: TrendingUp,
     color: '#8b5cf6',
   },
-  {
-    id: 'issues',
-    label: 'Biến Động 4M',
-    shortLabel: 'Sự Cố',
-    icon: AlertOctagon,
-    color: '#ef4444',
-  },
+
   {
     id: 'residual',
     label: 'Quản Lý Liệu Tồn',
@@ -150,7 +144,7 @@ export default function DashboardPage() {
             >
               {tab.id === 'daily-report' && <DailyReportTab user={user} />}
               {tab.id === 'utilization'  && <UtilizationAnalysisTab user={user} />}
-              {tab.id === 'issues'       && <IssueAnalysisTab user={user} />}
+
               {tab.id === 'residual'     && <ResidualMaterialTab user={user} />}
               {tab.id === 'foaming'      && <FoamingProcessTab user={user} />}
             </div>
