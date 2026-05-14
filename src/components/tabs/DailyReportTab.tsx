@@ -267,7 +267,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
     if (areaFilter !== 'pour') {
       separateReports.forEach(r => {
-        if (r.product_type && r.product_type !== 'thanh_pham') return
+        // Tính TẤT CẢ loại sản phẩm (TP + BTP) để khớp với báo cáo
         if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return
         let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
         d = norm(d)
@@ -437,10 +437,10 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
             )}
             {areaFilter !== 'pour' && (
               <div className="card p-5 relative overflow-hidden bg-gradient-to-br from-purple-600 to-purple-700 text-white border-none shadow-purple-500/20 shadow-xl">
-                <p className="text-[10px] font-black uppercase opacity-80 mb-1">Bun Thành Phẩm</p>
+                <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Tách (TP+BTP)</p>
                 <h4 className="text-4xl font-black">{totals.separated.toLocaleString()}</h4>
                 <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
-                  <CheckCircle2 size={10} /> Đã tách TP
+                  <CheckCircle2 size={10} /> Tất cả loại sản phẩm
                 </div>
                 <Zap size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
               </div>
