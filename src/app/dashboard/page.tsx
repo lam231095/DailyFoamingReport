@@ -82,27 +82,26 @@ export default function DashboardPage() {
 
       {/* ── Tab Bar ──────────────────────────────────── */}
       <div className="sticky top-16 z-30 bg-[var(--bg-card)]/95 backdrop-blur-md border-b border-[var(--border)]">
-        <div className="max-w-2xl mx-auto px-4">
-          <div className="relative flex">
+        <div className="max-w-2xl mx-auto px-3">
+          <div className="relative flex gap-0.5">
             {TABS.map((tab) => {
               const active = activeTab === tab.id
               return (
                 <button
                   key={tab.id}
                   onClick={() => switchTab(tab.id)}
-                  className="relative flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-medium transition-colors duration-200"
+                  className="relative flex-1 flex items-center justify-center gap-1.5 py-3.5 text-[11px] font-bold uppercase tracking-wide transition-all duration-200 rounded-none"
                   style={{ color: active ? tab.color : 'var(--text-3)' }}
                 >
-                  <tab.icon size={15} />
+                  <tab.icon size={14} className="shrink-0" />
                   <span className="hidden sm:inline">{tab.label}</span>
                   <span className="sm:hidden">{tab.shortLabel}</span>
-                  {/* Active indicator */}
                   {active && (
                     <motion.div
                       layoutId="tab-indicator"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                      className="absolute bottom-0 left-2 right-2 h-[3px] rounded-t-full"
                       style={{ background: tab.color }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                      transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                     />
                   )}
                 </button>
@@ -115,23 +114,30 @@ export default function DashboardPage() {
       {/* ── Tab Content ──────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-4 py-4 pb-20">
         {/* Welcome bar */}
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-4 px-4 py-2.5 rounded-xl
-            bg-brand-500/6 dark:bg-brand-500/8 border border-brand-500/15"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <p className="text-xs font-medium text-[var(--text-2)]">
-              Xin chào, <span className="text-brand-500 font-bold">{user.full_name}</span>
-              {user.department && <span className="text-[var(--text-3)]"> · {user.department}</span>}
-            </p>
+        <div className="flex items-center justify-between mb-5 px-4 py-3 rounded-2xl"
+          style={{
+            background: 'linear-gradient(135deg, rgba(79,70,229,0.07), rgba(124,58,237,0.04))',
+            border: '1px solid rgba(79,70,229,0.14)',
+          }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-sm shrink-0"
+              style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}>
+              {user.full_name.split(' ').slice(-1)[0]?.[0] ?? 'U'}
+            </div>
+            <div>
+              <p className="text-xs font-bold" style={{ color: 'var(--text-1)' }}>
+                Xin chào, <span style={{ color: '#4f46e5' }}>{user.full_name}</span>
+                {user.department && <span style={{ color: 'var(--text-3)' }}> · {user.department}</span>}
+              </p>
+              <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>Quản lý sản xuất Foaming · OVN</p>
+            </div>
           </div>
-          <span className="text-[10px] text-[var(--text-3)] bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full text-green-600 dark:text-green-400 font-medium">
-            ● Online
-          </span>
-        </motion.div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)' }}>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-bold text-emerald-600">Online</span>
+          </div>
+        </div>
 
         {/* Tab panels — always mounted, shown/hidden via CSS to avoid blank flash */}
         <div className="relative">
@@ -167,9 +173,9 @@ export default function DashboardPage() {
                 {active && (
                   <motion.div
                     layoutId="bottom-nav-bg"
-                    className="absolute inset-x-3 inset-y-1.5 rounded-xl"
-                    style={{ background: `${tab.color}12` }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                    className="absolute inset-x-2 inset-y-1 rounded-xl"
+                    style={{ background: `${tab.color}15` }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                   />
                 )}
                 <tab.icon
