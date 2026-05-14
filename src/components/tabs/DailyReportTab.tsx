@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   BarChart3, Calendar, ChevronLeft, ChevronRight,
-  Activity, Zap, Factory, CheckCircle2, TrendingUp,
+  Activity, Zap, Factory, CheckCircle2,
   Clock, Sun, Moon, Sunrise, Filter, X, ArrowRight
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -288,7 +288,6 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     { poured: 0, separated: 0 }
   ), [aggregatedData])
 
-  const yieldRate = totals.poured > 0 ? (totals.separated / totals.poured) * 100 : 0
 
   const activeFiltersCount = [
     shiftFilter !== 'Tất cả',
@@ -423,7 +422,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {areaFilter !== 'separate' && (
               <div className="card p-5 relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white border-none shadow-blue-500/20 shadow-xl">
                 <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Đổ</p>
@@ -443,16 +442,6 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   <CheckCircle2 size={10} /> Tất cả loại sản phẩm
                 </div>
                 <Zap size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
-              </div>
-            )}
-            {areaFilter === 'all' && (
-              <div className={`card p-5 relative overflow-hidden border-none shadow-xl ${yieldRate >= 95 ? 'bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-emerald-500/20' : 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-orange-500/20'}`}>
-                <p className="text-[10px] font-black uppercase opacity-80 mb-1">Hiệu Suất TP</p>
-                <h4 className="text-4xl font-black">{yieldRate.toFixed(1)}%</h4>
-                <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
-                  <TrendingUp size={10} /> {yieldRate >= 95 ? 'Đạt mục tiêu' : 'Cần cải thiện'}
-                </div>
-                <BarChart3 size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
               </div>
             )}
           </div>
