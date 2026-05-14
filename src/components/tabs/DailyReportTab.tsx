@@ -34,7 +34,172 @@ function firstDayOfMonth() {
   return d.toISOString().split('T')[0]
 }
 
+function SvgBarChart({
+  data, maxVal, showPour, showSep
+}: {
+  data: AggregatedDay[]
+  maxVal: number
+  showPour: boolean
+  showSep: boolean
+}) {
+  const W = 800
+  const H = 280
+  const PAD_L = 44
+  const PAD_R = 8
+  const PAD_T = 20
+  const PAD_B = 48
+  const chartW = W - PAD_L - PAD_R
+  const chartH = H - PAD_T - PAD_B
+  const n = data.length
+  const groupW = chartW / Math.max(n, 1)
+  const barCount = (showPour ? 1 : 0) + (showSep ? 1 : 0)
+  const barW = Math.max(4, Math.min(18, groupW / (barCount + 1)))
+  const gridLines = 5
+  const yTick = (i: number) => PAD_T + (chartH / gridLines) * i
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <style>{`
+        .svg-bar { transition: opacity 0.15s; }
+        .svg-bar-group:hover .svg-bar { opacity: 0.4; }
+        .svg-bar-group:hover .svg-bar-hovered { opacity: 1; }
+        .svg-tooltip { display: none; }
+        .svg-bar-group:hover .svg-tooltip { display: block; }
+      `}</style>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: '100%', height: 'auto', minWidth: Math.max(W, n * 22) }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="gPour" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3b82f6" />
+            <stop offset="100%" stopColor="#1d4ed8" />
+          </linearGradient>
+          <linearGradient id="gSep" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#a855f7" />
+            <stop offset="100%" stopColor="#7c3aed" />
+          </linearGradient>
+          <linearGradient id="gPourH" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#93c5fd" />
+            <stop offset="100%" stopColor="#3b82f6" />
+          </linearGradient>
+          <linearGradient id="gSepH" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#d8b4fe" />
+            <stop offset="100%" stopColor="#a855f7" />
+          </linearGradient>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#0004" />
+          </filter>
+        </defs>
+
+        {/* Y-axis grid */}
+        {[...Array(gridLines + 1)].map((_, i) => {
+          const y = yTick(i)
+          const val = Math.round(maxVal * (1 - i / gridLines))
+          return (
+            <g key={i}>
+              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y}
+                stroke={i === gridLines ? '#cbd5e1' : '#e2e8f0'}
+                strokeWidth={i === gridLines ? 1.5 : 1}
+                strokeDasharray={i === gridLines ? '0' : '4 4'}
+              />
+              <text x={PAD_L - 6} y={y + 4} textAnchor="end"
+                fontSize="9" fill="#94a3b8" fontWeight="600">
+                {val > 0 ? val.toLocaleString() : '0'}
+              </text>
+            </g>
+          )
+        })}
+
+        {/* Bars */}
+        {data.map((day, idx) => {
+          const cx = PAD_L + groupW * idx + groupW / 2
+          const totalBars = (showPour ? 1 : 0) + (showSep ? 1 : 0)
+          const offset = totalBars === 2 ? barW / 2 + 1 : 0
+          const pourX = cx - offset - barW / 2
+          const sepX = totalBars === 2 ? cx + offset - barW / 2 : cx - barW / 2
+
+          const pourH = maxVal > 0 ? (day.poured / maxVal) * chartH : 0
+          const sepH = maxVal > 0 ? (day.separated / maxVal) * chartH : 0
+          const pourY = PAD_T + chartH - pourH
+          const sepY = PAD_T + chartH - sepH
+
+          const labelX = cx
+          const labelY = PAD_T + chartH + 14
+
+          return (
+            <g key={day.date} className="svg-bar-group" style={{ cursor: 'default' }}>
+              {/* Pour bar */}
+              {showPour && pourH > 0 && (
+                <>
+                  <rect
+                    className="svg-bar svg-bar-hovered"
+                    x={pourX} y={pourY} width={barW} height={pourH}
+                    rx="3" fill="url(#gPour)" filter="url(#shadow)"
+                  />
+                  {pourH > 16 && (
+                    <text x={pourX + barW / 2} y={pourY - 4} textAnchor="middle"
+                      fontSize="8" fill="#3b82f6" fontWeight="800" className="svg-bar svg-bar-hovered">
+                      {day.poured}
+                    </text>
+                  )}
+                </>
+              )}
+              {/* Sep bar */}
+              {showSep && sepH > 0 && (
+                <>
+                  <rect
+                    className="svg-bar svg-bar-hovered"
+                    x={sepX} y={sepY} width={barW} height={sepH}
+                    rx="3" fill="url(#gSep)" filter="url(#shadow)"
+                  />
+                  {sepH > 16 && (
+                    <text x={sepX + barW / 2} y={sepY - 4} textAnchor="middle"
+                      fontSize="8" fill="#a855f7" fontWeight="800" className="svg-bar svg-bar-hovered">
+                      {day.separated}
+                    </text>
+                  )}
+                </>
+              )}
+
+              {/* Tooltip on hover */}
+              {(day.poured > 0 || day.separated > 0) && (
+                <g className="svg-tooltip">
+                  <rect x={cx - 38} y={PAD_T - 4} width={76} height={showPour && showSep ? 38 : 22}
+                    rx="6" fill="#1e293b" opacity="0.92" />
+                  {showPour && (
+                    <text x={cx} y={PAD_T + 11} textAnchor="middle" fontSize="9" fill="#93c5fd" fontWeight="700">
+                      Đổ: {day.poured.toLocaleString()}
+                    </text>
+                  )}
+                  {showSep && (
+                    <text x={cx} y={PAD_T + (showPour ? 25 : 11)} textAnchor="middle" fontSize="9" fill="#c4b5fd" fontWeight="700">
+                      Tách: {day.separated.toLocaleString()}
+                    </text>
+                  )}
+                </g>
+              )}
+
+              {/* X-axis label */}
+              <text x={labelX} y={labelY} textAnchor="middle"
+                fontSize="9" fill="#94a3b8" fontWeight="700">
+                {day.date.split('/')[0]}/{day.date.split('/')[1]}
+              </text>
+            </g>
+          )
+        })}
+
+        {/* Y-axis line */}
+        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + chartH}
+          stroke="#cbd5e1" strokeWidth="1.5" />
+      </svg>
+    </div>
+  )
+}
+
 export default function DailyReportTab({ user }: DailyReportTabProps) {
+
   const [loading, setLoading] = useState(true)
   const [pourReports, setPourReports] = useState<FoamingPourReport[]>([])
   const [separateReports, setSeparateReports] = useState<FoamingSeparateReport[]>([])
@@ -330,51 +495,12 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                 <p className="text-sm font-medium">Không có dữ liệu trong khoảng thời gian này</p>
               </div>
             ) : (
-              <div className="h-[260px] w-full flex items-end gap-0.5 border-b border-[var(--border)] relative overflow-x-auto pb-7">
-                {/* Grid lines */}
-                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-7">
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="w-full border-t border-[var(--border)] border-dashed h-0" />
-                  ))}
-                </div>
-                {aggregatedData.map(day => {
-                  const ph = (day.poured / maxVal) * 100
-                  const sh = (day.separated / maxVal) * 100
-                  return (
-                    <div key={day.date} className="flex-1 min-w-[18px] flex flex-col items-center group relative h-full justify-end">
-                      <div className="flex items-end gap-0.5 w-full justify-center px-0.5">
-                        {areaFilter !== 'separate' && (
-                          <motion.div
-                            initial={{ height: 0 }} animate={{ height: `${ph}%` }}
-                            className="w-full max-w-[10px] bg-blue-500 rounded-t-sm relative"
-                          >
-                            {day.poured > 0 && (
-                              <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-bold py-0.5 px-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 whitespace-nowrap pointer-events-none">
-                                Đổ: {day.poured}
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-                        {areaFilter !== 'pour' && (
-                          <motion.div
-                            initial={{ height: 0 }} animate={{ height: `${sh}%` }}
-                            className="w-full max-w-[10px] bg-purple-500 rounded-t-sm relative"
-                          >
-                            {day.separated > 0 && (
-                              <div className="absolute -top-7 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-[8px] font-bold py-0.5 px-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 whitespace-nowrap pointer-events-none">
-                                Tách: {day.separated}
-                              </div>
-                            )}
-                          </motion.div>
-                        )}
-                      </div>
-                      <div className="absolute bottom-0 text-[8px] font-bold text-[var(--text-3)] rotate-45 origin-left whitespace-nowrap">
-                        {day.date.split('/')[0]}/{day.date.split('/')[1]}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+              <SvgBarChart
+                data={aggregatedData}
+                maxVal={maxVal}
+                showPour={areaFilter !== 'separate'}
+                showSep={areaFilter !== 'pour'}
+              />
             )}
           </div>
 
