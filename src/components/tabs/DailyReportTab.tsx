@@ -598,10 +598,6 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
             )}
           </div>
 
-          {/* Chart */}
-            </div>
-          </div>
-
           {/* Performance Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
@@ -704,6 +700,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           </div>
 
           {/* Chart */}
+          <div className="card p-5">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-500">
