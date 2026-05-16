@@ -8,8 +8,17 @@ import {
   Clock, Sun, Moon, Sunrise, Filter, X, ArrowRight
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { SessionUser, FoamingPourReport, FoamingSeparateReport } from '@/types'
 import { getReportTimeRange, formatReportDate } from '@/lib/dateUtils'
+import { TrendingUp, Award, UserCheck } from 'lucide-react'
+
+const TARGET_POUR = 320
+const TARGET_SEPARATE = 300
+const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh']
+const MANAGER_COLORS: Record<string, string> = {
+  'Linh': '#3b82f6',
+  'Thảo': '#a855f7',
+  'Tuấn Anh': '#10b981'
+}
 
 interface DailyReportTabProps { user: SessionUser }
 
@@ -19,6 +28,8 @@ type AggregatedDay = {
   separated: number
   pouredByShift: Record<string, number>
   separatedByShift: Record<string, number>
+  pouredByManager: Record<string, { actual: number; shifts: Set<string> }>
+  separatedByManager: Record<string, { actual: number; shifts: Set<string> }>
 }
 
 type AreaFilter = 'all' | 'pour' | 'separate'
@@ -198,6 +209,110 @@ function SvgBarChart({
   )
 }
 
+function SvgPerformanceChart({
+  data, dateList, managers, managerFilter, areaFilter
+}: {
+  data: AggregatedDay[]
+  dateList: string[]
+  managers: string[]
+  managerFilter: string
+  areaFilter: AreaFilter
+}) {
+  const W = 800
+  const H = 240
+  const PAD_L = 44
+  const PAD_R = 120
+  const PAD_T = 20
+  const PAD_B = 40
+  const chartW = W - PAD_L - PAD_R
+  const chartH = H - PAD_T - PAD_B
+  const n = dateList.length
+  const stepX = chartW / Math.max(n - 1, 1)
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: '100%', height: 'auto', minWidth: Math.max(W, n * 30) }}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Y-axis grid (0% to 125%) */}
+        {[0, 25, 50, 75, 100, 125].map((val, i) => {
+          const y = PAD_T + chartH - (val / 125) * chartH
+          return (
+            <g key={val}>
+              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y}
+                stroke={val === 100 ? '#10b981' : '#e2e8f0'}
+                strokeWidth={val === 100 ? 1.5 : 1}
+                strokeDasharray={val === 100 ? '0' : '4 4'}
+              />
+              <text x={PAD_L - 6} y={y + 4} textAnchor="end" fontSize="9" fill="#94a3b8" fontWeight="600">
+                {val}%
+              </text>
+            </g>
+          )
+        })}
+
+        {/* X-axis labels */}
+        {dateList.map((date, idx) => {
+          if (n > 15 && idx % 2 !== 0) return null
+          const x = PAD_L + idx * stepX
+          return (
+            <text key={date} x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="#94a3b8" fontWeight="600">
+              {date.split('/')[0]}/{date.split('/')[1]}
+            </text>
+          )
+        })}
+
+        {/* Lines for each manager */}
+        {managers.map(manager => {
+          if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
+          
+          const points = dateList.map((date, idx) => {
+            const day = data.find(d => d.date === date)
+            if (!day) return null
+            
+            let totalActual = 0
+            let compositeTarget = 0
+            if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
+              totalActual += day.pouredByManager[manager].actual
+              compositeTarget += day.pouredByManager[manager].shifts.size * TARGET_POUR
+            }
+            if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
+              totalActual += day.separatedByManager[manager].actual
+              compositeTarget += day.separatedByManager[manager].shifts.size * TARGET_SEPARATE
+            }
+
+            if (compositeTarget === 0) return null
+            const perf = (totalActual / compositeTarget) * 100
+            const x = PAD_L + idx * stepX
+            const y = PAD_T + chartH - (Math.min(125, perf) / 125) * chartH
+            return { x, y, perf }
+          }).filter(p => p !== null) as { x: number; y: number; perf: number }[]
+
+          if (points.length < 1) return null
+
+          const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+          const color = MANAGER_COLORS[manager]
+
+          return (
+            <g key={manager}>
+              <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              {points.map((p, i) => (
+                <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="white" stroke={color} strokeWidth="2" />
+              ))}
+              <text x={points[points.length-1].x + 8} y={points[points.length-1].y + 4} 
+                fontSize="10" fontWeight="bold" fill={color}>
+                {manager} ({Math.round(points[points.length-1].perf)}%)
+              </text>
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
 export default function DailyReportTab({ user }: DailyReportTabProps) {
 
   const [loading, setLoading] = useState(true)
@@ -208,6 +323,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   const [startDate, setStartDate] = useState(firstDayOfMonth())
   const [endDate, setEndDate] = useState(todayStr())
   const [shiftFilter, setShiftFilter] = useState<string>('Tất cả')
+  const [managerFilter, setManagerFilter] = useState<string>('Tất cả')
   const [areaFilter, setAreaFilter] = useState<AreaFilter>('all')
   const [showFilters, setShowFilters] = useState(false)
 
@@ -243,7 +359,15 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   const aggregatedData = useMemo(() => {
     const dailyMap = new Map<string, AggregatedDay>()
     dateList.forEach(dateStr => {
-      dailyMap.set(dateStr, { date: dateStr, poured: 0, separated: 0, pouredByShift: {}, separatedByShift: {} })
+      dailyMap.set(dateStr, { 
+        date: dateStr, 
+        poured: 0, 
+        separated: 0, 
+        pouredByShift: {}, 
+        separatedByShift: {},
+        pouredByManager: {},
+        separatedByManager: {}
+      })
     })
 
     const norm = (dStr: string) => {
@@ -261,6 +385,11 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           day.poured += (r.actual_bun_poured || 0)
           const s = r.shift || 'Ca 1'
           day.pouredByShift[s] = (day.pouredByShift[s] || 0) + (r.actual_bun_poured || 0)
+          
+          const m = r.manager_name || 'Khác'
+          if (!day.pouredByManager[m]) day.pouredByManager[m] = { actual: 0, shifts: new Set() }
+          day.pouredByManager[m].actual += (r.actual_bun_poured || 0)
+          day.pouredByManager[m].shifts.add(s)
         }
       })
     }
@@ -276,6 +405,11 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           day.separated += (r.actual_bun_separated || 0)
           const s = r.shift || 'Ca 1'
           day.separatedByShift[s] = (day.separatedByShift[s] || 0) + (r.actual_bun_separated || 0)
+          
+          const m = r.manager_name || 'Khác'
+          if (!day.separatedByManager[m]) day.separatedByManager[m] = { actual: 0, shifts: new Set() }
+          day.separatedByManager[m].actual += (r.actual_bun_separated || 0)
+          day.separatedByManager[m].shifts.add(s)
         }
       })
     }
@@ -297,6 +431,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
   const resetFilters = () => {
     setShiftFilter('Tất cả')
+    setManagerFilter('Tất cả')
     setAreaFilter('all')
     setStartDate(firstDayOfMonth())
     setEndDate(todayStr())
@@ -391,6 +526,23 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                 ))}
               </div>
             </div>
+
+            {/* Manager filter */}
+            <div>
+              <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1">Quản lý</p>
+              <div className="flex flex-wrap gap-1.5">
+                {['Tất cả', ...MANAGERS].map(m => (
+                  <button key={m} onClick={() => setManagerFilter(m)}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                      managerFilter === m
+                        ? 'bg-brand-500 text-white shadow-md'
+                        : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-brand-500/10'
+                    }`}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -447,7 +599,111 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           </div>
 
           {/* Chart */}
-          <div className="card p-5">
+            </div>
+          </div>
+
+          {/* Performance Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500">
+                <Award size={18} />
+              </div>
+              <h3 className="text-sm font-black uppercase tracking-tight">Hiệu suất theo Quản lý (%)</h3>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {MANAGERS.map(manager => {
+                if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
+                
+                const managerData = aggregatedData.map(d => {
+                  let totalActual = 0
+                  let totalShifts = 0
+                  
+                  if (areaFilter !== 'separate' && d.pouredByManager[manager]) {
+                    totalActual += d.pouredByManager[manager].actual
+                    totalShifts += d.pouredByManager[manager].shifts.size
+                  }
+                  if (areaFilter !== 'pour' && d.separatedByManager[manager]) {
+                    totalActual += d.separatedByManager[manager].actual
+                    totalShifts += d.separatedByManager[manager].shifts.size
+                  }
+                  
+                  const target = (areaFilter === 'pour' ? TARGET_POUR : 
+                                 areaFilter === 'separate' ? TARGET_SEPARATE : 
+                                 (TARGET_POUR + TARGET_SEPARATE) / 2) * (totalShifts || 1)
+                  
+                  // Nếu filter 'all', ta tính trung bình target? 
+                  // Thực tế user nói "tổng / target". Nếu đổ tách riêng thì dễ. 
+                  // Nếu gộp, ta lấy tổng thực tế / tổng target của các ca đó.
+                  let compositeTarget = 0
+                  if (areaFilter !== 'separate' && d.pouredByManager[manager]) {
+                    compositeTarget += d.pouredByManager[manager].shifts.size * TARGET_POUR
+                  }
+                  if (areaFilter !== 'pour' && d.separatedByManager[manager]) {
+                    compositeTarget += d.separatedByManager[manager].shifts.size * TARGET_SEPARATE
+                  }
+
+                  const perf = compositeTarget > 0 ? (totalActual / compositeTarget) * 100 : 0
+                  return { date: d.date, perf }
+                }).filter(d => d.perf > 0)
+
+                if (managerData.length === 0) return null
+
+                const avgPerf = Math.round(managerData.reduce((s, x) => s + x.perf, 0) / managerData.length)
+
+                return (
+                  <div key={manager} className="card p-4 border-l-4" style={{ borderLeftColor: MANAGER_COLORS[manager] }}>
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" 
+                          style={{ backgroundColor: MANAGER_COLORS[manager] }}>
+                          {manager[0]}
+                        </div>
+                        <span className="text-xs font-bold text-[var(--text-1)]">{manager}</span>
+                      </div>
+                      <span className={`text-lg font-black ${avgPerf >= 100 ? 'text-green-500' : 'text-orange-500'}`}>
+                        {avgPerf}%
+                      </span>
+                    </div>
+                    
+                    {/* Mini Sparkline using CSS */}
+                    <div className="flex items-end gap-0.5 h-12 bg-gray-50 dark:bg-black/10 rounded-lg p-1">
+                      {managerData.slice(-15).map((d, i) => (
+                        <div key={i} className="flex-1 rounded-t-sm transition-all hover:opacity-80"
+                          style={{ 
+                            height: `${Math.min(100, d.perf)}%`, 
+                            backgroundColor: MANAGER_COLORS[manager],
+                            opacity: 0.6 + (d.perf / 200)
+                          }}
+                          title={`${d.date}: ${Math.round(d.perf)}%`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-[var(--text-3)] mt-2 font-bold uppercase text-center">Xu hướng 15 ngày gần nhất</p>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Performance Trend Chart */}
+            <div className="card p-5 mt-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xs font-black uppercase text-[var(--text-2)] flex items-center gap-2">
+                  <TrendingUp size={14} className="text-brand-500" />
+                  Biểu đồ diễn biến hiệu suất theo ngày
+                </h4>
+              </div>
+              <SvgPerformanceChart 
+                data={aggregatedData} 
+                dateList={dateList}
+                managers={MANAGERS}
+                managerFilter={managerFilter}
+                areaFilter={areaFilter}
+              />
+            </div>
+          </div>
+
+          {/* Chart */}
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-500">
