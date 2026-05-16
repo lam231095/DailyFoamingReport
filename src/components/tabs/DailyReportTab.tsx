@@ -8,6 +8,7 @@ import {
   Clock, Sun, Moon, Sunrise, Filter, X, ArrowRight
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { SessionUser, FoamingPourReport, FoamingSeparateReport } from '@/types'
 import { getReportTimeRange, formatReportDate } from '@/lib/dateUtils'
 import { TrendingUp, Award, UserCheck } from 'lucide-react'
 
