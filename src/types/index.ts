@@ -111,6 +111,7 @@ export interface FoamingPourReport {
   machine_id: string | null;
   operator_name: string | null;
   actual_bun_poured: number;
+  manager_name?: string | null;
   ng_bun_qty: number;
   error_type: string | null;
   cleaning_agent_kg?: number;
@@ -141,6 +142,7 @@ export interface FoamingSeparateReport {
   sheet_thickness_mm: number | null;
   actual_bun_separated: number;
   actual_sheet_received: number;
+  manager_name?: string | null;
   lot_no: string | null;
   ng_qty: number;
   ng_bun_qty: number;

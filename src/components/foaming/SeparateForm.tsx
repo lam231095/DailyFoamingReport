@@ -72,6 +72,7 @@ const defaultForm = (plan: ProductionPlan) => {
     actual_bun_separated: plan.sl_bun_can_tach || 0,
     actual_sheet_received: plan.sl_sheet || 0,
     lot_no: '',
+    manager_name: '',
     ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
   }
 }
@@ -151,6 +152,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         ng_qty: totalNG,
         ng_bun_qty: 0,
         error_type: combinedError || '',
+        manager_name: formData.manager_name,
         product_type: productType,
         recorder_id: user.id,
       })
@@ -218,13 +220,14 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Ca làm việc</label>
             <select value={formData.shift} onChange={e => setFormData({ ...formData, shift: e.target.value })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`}>
-              <option>Ca 1</option><option>Ca 2</option><option>Ca 3</option><option>Ca HC</option>
+              <option value="Ca 1">Ca 1</option><option value="Ca 2">Ca 2</option><option value="Ca 3">Ca 3</option><option value="Ca HC">Ca HC</option>
             </select>
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Máy tách</label>
-            <select value={formData.machine_id} onChange={e => setFormData({ ...formData, machine_id: e.target.value })}
+            <select value={formData.machine_id} required onChange={e => setFormData({ ...formData, machine_id: e.target.value })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`}>
+              <option value="">-- Chọn máy tách --</option>
               <option>Máy tách tự động 2</option>
               <option>Máy tách tự động 3</option>
               <option>Máy tách bán tự động 1</option>
@@ -237,19 +240,29 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           </div>
         </div>
 
-        {/* Operator + Lot */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Operator + Lot + Manager */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Người vận hành (Operator)</label>
-            <select value={formData.operator_name} onChange={e => setFormData({ ...formData, operator_name: e.target.value })}
+            <select value={formData.operator_name} required onChange={e => setFormData({ ...formData, operator_name: e.target.value })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`}>
               <option value="">-- Chọn người vận hành --</option>
               {operators.map(op => <option key={op.id} value={op.full_name}>{op.full_name} ({op.msnv})</option>)}
             </select>
           </div>
           <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Quản lý (Manager)</label>
+            <select value={formData.manager_name} required onChange={e => setFormData({ ...formData, manager_name: e.target.value })}
+              className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`}>
+              <option value="">-- Chọn quản lý --</option>
+              <option value="Linh">Linh</option>
+              <option value="Thảo">Thảo</option>
+              <option value="Tuấn Anh">Tuấn Anh</option>
+            </select>
+          </div>
+          <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Lot No (Số lô)</label>
-            <input type="text" value={formData.lot_no} onChange={e => setFormData({ ...formData, lot_no: e.target.value })}
+            <input type="text" value={formData.lot_no} required onChange={e => setFormData({ ...formData, lot_no: e.target.value })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`} />
           </div>
         </div>
@@ -278,6 +291,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               type="number" 
               step="0.1" 
               value={formData.sheet_thickness_mm}
+              required
               onChange={e => setFormData({ ...formData, sheet_thickness_mm: Number(e.target.value) })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} 
             />
@@ -289,12 +303,15 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Số bun thực tế Tách</label>
             <input type="number" value={formData.actual_bun_separated}
+              required
+              min="1"
               onChange={e => setFormData({ ...formData, actual_bun_separated: Number(e.target.value) })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} />
           </div>
           <div className="space-y-2">
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Số sheet thực tế nhận</label>
             <input type="number" value={formData.actual_sheet_received}
+              required
               onChange={e => setFormData({ ...formData, actual_sheet_received: Number(e.target.value) })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} />
           </div>

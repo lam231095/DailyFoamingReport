@@ -56,11 +56,12 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     actual_bun_poured: plan.sl_bun_can_do || 0,
     lot_no: '',
     ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
-    storage_location: STORAGE_LOCATIONS[0],
-    storage_line: STORAGE_LINES[0],
-    color_tag: COLOR_TAGS[0],
+    storage_location: '',
+    storage_line: '',
+    color_tag: '',
     cleaning_agent_kg: 0,
     waste_kg: 0,
+    manager_name: '',
     note: '',
   })
 
@@ -103,6 +104,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         storage_carts: storageCarts,
         cleaning_agent_kg: Number(formData.cleaning_agent_kg),
         waste_kg: Number(formData.waste_kg),
+        manager_name: formData.manager_name,
         note: formData.note.trim() || null,
         recorder_id: user.id
       })
@@ -157,10 +159,12 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Máy làm việc</label>
             <select
               value={formData.machine_id}
+              required
               onChange={(e) => setFormData({ ...formData, machine_id: e.target.value })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
             >
+              <option value="">-- Chọn máy --</option>
               <option>Máy 1</option>
               <option>Máy 2</option>
               <option>Máy 3</option>
@@ -178,10 +182,28 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
             <input
               type="number"
               value={formData.actual_bun_poured}
+              required
+              min="1"
               onChange={(e) => setFormData({ ...formData, actual_bun_poured: Number(e.target.value) })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-bold focus:border-blue-500 outline-none transition-all font-mono"
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Quản lý (Manager)</label>
+            <select
+              value={formData.manager_name}
+              required
+              onChange={(e) => setFormData({ ...formData, manager_name: e.target.value })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+            >
+              <option value="">-- Chọn quản lý --</option>
+              <option value="Linh">Linh</option>
+              <option value="Thảo">Thảo</option>
+              <option value="Tuấn Anh">Tuấn Anh</option>
+            </select>
           </div>
         </div>
 
@@ -193,9 +215,11 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
             </label>
             <select
               value={formData.storage_location}
+              required
               onChange={(e) => setFormData({ ...formData, storage_location: e.target.value })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
             >
+              <option value="">-- Chọn khu vực --</option>
               {STORAGE_LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
             </select>
           </div>
@@ -205,9 +229,11 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
             </label>
             <select
               value={formData.storage_line}
+              required
               onChange={(e) => setFormData({ ...formData, storage_line: e.target.value })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
             >
+              <option value="">-- Chọn line --</option>
               {STORAGE_LINES.map(line => <option key={line} value={line}>{line}</option>)}
             </select>
           </div>
@@ -217,9 +243,11 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
             </label>
             <select
               value={formData.color_tag}
+              required
               onChange={(e) => setFormData({ ...formData, color_tag: e.target.value })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
             >
+              <option value="">-- Chọn thẻ --</option>
               {COLOR_TAGS.map(color => <option key={color} value={color}>{color.toUpperCase()}</option>)}
             </select>
           </div>
@@ -230,6 +258,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
             <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Người vận hành (Operator)</label>
             <select
               value={formData.operator_name}
+              required
               onChange={(e) => setFormData({ ...formData, operator_name: e.target.value })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
@@ -248,6 +277,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               value={formData.lot_no}
               onChange={(e) => setFormData({ ...formData, lot_no: e.target.value })}
               placeholder="VD: L04-2304..."
+              required
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
             />
@@ -297,6 +327,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               type="number"
               step="0.1"
               value={formData.cleaning_agent_kg}
+              required
               onChange={(e) => setFormData({ ...formData, cleaning_agent_kg: Number(e.target.value) })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
@@ -308,6 +339,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               type="number"
               step="0.1"
               value={formData.waste_kg}
+              required
               onChange={(e) => setFormData({ ...formData, waste_kg: Number(e.target.value) })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
                 text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
