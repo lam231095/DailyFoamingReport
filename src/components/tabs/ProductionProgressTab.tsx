@@ -396,15 +396,21 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
     return ['Tất cả', ...Array.from(set).sort((a, b) => b!.localeCompare(a!))] as string[]
   }, [plans])
 
-  // Filtered
+  // Filtered — hỗ trợ tìm kiếm nhiều đơn phân cách bởi |
   const filtered = useMemo(() => {
+    // Tách các token từ chuỗi search (dấu | hoặc xuống dòng), bỏ token rỗng
+    const rawTokens = search
+      .split(/[|\n]/)
+      .map(t => t.trim().toLowerCase())
+      .filter(Boolean)
+
     return orders.filter(o => {
-      const q = search.toLowerCase()
-      const matchSearch = !q
-        || (o.plan.firm_plan ?? '').toLowerCase().includes(q)
-        || (o.plan.ten_san_pham ?? '').toLowerCase().includes(q)
-        || (o.plan.bun_code ?? '').toLowerCase().includes(q)
-        || (o.plan.no_order ?? '').toLowerCase().includes(q)
+      // —— Nếu có token tìm kiếm: match NO.ORDER hoặc Firm Plan chính xác (includes)
+      const matchSearch = rawTokens.length === 0
+        || rawTokens.some(tok =>
+          (o.plan.no_order ?? '').toLowerCase().includes(tok) ||
+          (o.plan.firm_plan ?? '').toLowerCase().includes(tok)
+        )
       const matchWeek = weekFilter === 'Tất cả' || o.plan.week_label === weekFilter
       const matchStatus = statusFilter === 'all' || o.overallStatus === statusFilter
       return matchSearch && matchWeek && matchStatus
@@ -463,16 +469,53 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
 
       {/* ── Filters ────────────────────────────────────── */}
       <div className="card p-4 space-y-3">
-        {/* Search */}
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]" />
-          <input
-            type="text"
-            placeholder="Tìm đơn hàng, tên SP, bun code..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="input-field pl-8 text-xs py-2"
-          />
+        {/* ── Multi-search: NO.ORDER / Firm Plan ── */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Search size={11} className="text-[#6366f1]" />
+            <p className="text-[10px] font-black uppercase text-[#6366f1]">Tìm theo NO.ORDER / Firm Plan</p>
+            <span className="text-[9px] text-[var(--text-3)] font-medium italic ml-auto">
+              Dùng <code className="bg-[var(--bg-input)] px-1 py-0.5 rounded text-[10px] font-black">|</code> để tra nhiều đơn
+            </span>
+          </div>
+
+          <div className="relative">
+            <textarea
+              rows={2}
+              placeholder={`VD: F-2026-05-101 | FPRO-260504-0002\nHoặc: F-2026-04-217 | F-2026-05-51 | F-2026-05-52`}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="input-field w-full text-xs py-2 px-3 resize-none font-mono leading-relaxed"
+              style={{ minHeight: 60 }}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute top-2 right-2 p-1 rounded-full bg-[var(--bg-input)] hover:bg-red-500/10 text-[var(--text-3)] hover:text-red-500 transition-all"
+                title="Xóa"
+              >
+                <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            )}
+          </div>
+
+          {/* Active token badges */}
+          {search.split(/[|\n]/).map(t => t.trim()).filter(Boolean).length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {search.split(/[|\n]/).map(t => t.trim()).filter(Boolean).map((tok, i) => (
+                <span key={i}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                  style={{ background: 'rgba(99,102,241,0.12)', color: '#6366f1', border: '1px solid rgba(99,102,241,0.3)' }}
+                >
+                  <svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}><circle cx={11} cy={11} r={8}/><path d="m21 21-4.35-4.35"/></svg>
+                  {tok}
+                </span>
+              ))}
+              <span className="text-[9px] text-[var(--text-3)] self-center">
+                → {filtered.length} kết quả
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Week filter */}
