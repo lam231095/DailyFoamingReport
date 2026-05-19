@@ -290,7 +290,7 @@ function OrderRow({ order }: { order: OrderProgress }) {
         {/* Tên sản phẩm */}
         <td className="py-3 px-4">
           <div className="flex flex-col max-w-[320px]">
-            <span className="text-xs text-[var(--text-1)] font-bold truncate" title={plan.ten_san_pham}>
+            <span className="text-xs text-[var(--text-1)] font-bold truncate" title={plan.ten_san_pham ?? undefined}>
               {plan.ten_san_pham || '—'}
             </span>
             <span className="text-[9px] text-[var(--text-3)]">
