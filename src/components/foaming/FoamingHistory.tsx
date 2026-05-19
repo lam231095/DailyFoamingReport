@@ -138,7 +138,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
     if (activeStage === 'separate') {
-      headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
+      headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
       headers.push(...ERROR_TYPES)
     }
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
@@ -192,6 +192,8 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           return match ? parseInt(match[1]) : 0
         })
 
+        const noInfoSheets = Math.max(0, suggested - (row.actual_sheet_received || 0) - (row.ng_qty || 0))
+
         specific = [
           row.shift, 
           row.machine_id || '---',
@@ -205,6 +207,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           suggested, 
           `${perf}%`,
           row.lot_no, 
+          noInfoSheets,
           row.ng_qty, 
           row.error_hardness_above || 0,
           row.error_hardness_below || 0,
@@ -537,6 +540,26 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                                 </div>
                               )}
                             </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Không có thông tin</p>
+                            <p className={(() => {
+                              const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
+                              const std = standards.find(s => s.thickness_mm === thickness)
+                              const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
+                              const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
+                              const noInfo = Math.max(0, suggested - (row.actual_sheet_received || 0) - (row.ng_qty || 0))
+                              return `text-sm font-bold ${noInfo > 0 ? 'text-red-500 font-black animate-pulse' : 'text-[var(--text-1)]'}`
+                            })()}>
+                              {(() => {
+                                const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
+                                const std = standards.find(s => s.thickness_mm === thickness)
+                                const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
+                                const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
+                                const noInfo = Math.max(0, suggested - (row.actual_sheet_received || 0) - (row.ng_qty || 0))
+                                return `${noInfo} Sheet`
+                              })()}
+                            </p>
                           </div>
                         </>
                       )}

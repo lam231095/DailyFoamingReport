@@ -135,6 +135,18 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     setMessage(null)
     try {
       const totalNG = formData.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
+      const noInfoSheets = suggestedSheets - formData.actual_sheet_received - totalNG
+
+      if (suggestedSheets > 0 && noInfoSheets > 0) {
+        const confirmSave = window.confirm(
+          `Cảnh báo: Hiện tại vẫn còn ${noInfoSheets} sheet chưa có thông tin, bạn có muốn lưu dữ liệu báo cáo này hay không?`
+        )
+        if (!confirmSave) {
+          setLoading(false)
+          return
+        }
+      }
+
       const combinedError = formData.ng_items
         .filter(x => x.qty > 0).map(x => `${x.type} (${x.qty})`).join(', ')
 
