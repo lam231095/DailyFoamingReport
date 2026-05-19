@@ -59,6 +59,24 @@ function isWeekAllowed(label: string | null | undefined): boolean {
   return true
 }
 
+// Generate list of active week labels starting from W19-2026 up to W52-2028
+function generateAllowedWeeks(): string[] {
+  const list: string[] = []
+  // 2026: W19 -> W52
+  for (let i = 19; i <= 52; i++) {
+    list.push(`W${i}-2026`)
+  }
+  // 2027: W1 -> W52
+  for (let i = 1; i <= 52; i++) {
+    list.push(`W${i}-2027`)
+  }
+  // 2028: W1 -> W52
+  for (let i = 1; i <= 52; i++) {
+    list.push(`W${i}-2028`)
+  }
+  return list
+}
+
 // ─── Sub-types ──────────────────────────────────────────────
 type ShiftEntry = {
   date: string      // YYYY-MM-DD
@@ -332,22 +350,46 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
-    const [planRes, pourRes, sepRes] = await Promise.all([
-      supabase
+    try {
+      const weeksList = generateAllowedWeeks()
+      const { data: plansData, error: plansErr } = await supabase
         .from('production_plan')
         .select('*')
-        // Bỏ luôn năm 2025 ở DB level để giảm lượng dữ liệu tải về
-        .not('week_label', 'ilike', '%2025%')
-        .order('week_label', { ascending: false }),
-      supabase.from('foaming_pour_reports').select('id,firm_plan,shift,actual_bun_poured,report_date,created_at'),
-      supabase.from('foaming_separate_reports').select('id,firm_plan,shift,actual_bun_separated,report_date,created_at'),
-    ])
-    // Lọc client-side: chỉ giữ W19-2026 trở đi
-    const allPlans = (planRes.data as ProductionPlan[]) ?? []
-    setPlans(allPlans.filter(p => isWeekAllowed(p.week_label)))
-    setPourReports((pourRes.data as FoamingPourReport[]) ?? [])
-    setSepReports((sepRes.data as FoamingSeparateReport[]) ?? [])
-    setLoading(false)
+        .in('week_label', weeksList)
+        .order('week_label', { ascending: false })
+
+      if (plansErr) throw plansErr
+
+      const allPlans = (plansData as ProductionPlan[]) ?? []
+      const allowedFirmPlans = allPlans.map(p => p.firm_plan?.trim()).filter(Boolean) as string[]
+
+      if (allowedFirmPlans.length === 0) {
+        setPlans([])
+        setPourReports([])
+        setSepReports([])
+        return
+      }
+
+      // Fetch reports matching only the current active firm plans
+      const [pourRes, sepRes] = await Promise.all([
+        supabase
+          .from('foaming_pour_reports')
+          .select('id,firm_plan,shift,actual_bun_poured,report_date,created_at')
+          .in('firm_plan', allowedFirmPlans),
+        supabase
+          .from('foaming_separate_reports')
+          .select('id,firm_plan,shift,actual_bun_separated,report_date,created_at')
+          .in('firm_plan', allowedFirmPlans),
+      ])
+
+      setPlans(allPlans)
+      setPourReports((pourRes.data as FoamingPourReport[]) ?? [])
+      setSepReports((sepRes.data as FoamingSeparateReport[]) ?? [])
+    } catch (err) {
+      console.error('Error fetching production progress data:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { fetchAll() }, [fetchAll])
