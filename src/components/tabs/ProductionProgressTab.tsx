@@ -59,6 +59,80 @@ function isWeekAllowed(label: string | null | undefined): boolean {
   return true
 }
 
+// Parse completion date (e.g. "16/May", "22/Dec", "2026-05-19") into Date object
+function parseDeadlineDate(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null
+  const clean = dateStr.trim()
+  if (!clean) return null
+
+  // If standard ISO: YYYY-MM-DD
+  if (clean.includes('-') && !clean.includes('/')) {
+    const d = new Date(clean)
+    if (!isNaN(d.getTime())) return d
+  }
+
+  // Format: "15/Dec", "6/May", "20/Apr", etc.
+  const parts = clean.split('/')
+  if (parts.length === 2) {
+    const day = parseInt(parts[0], 10)
+    const monthStr = parts[1].trim().toLowerCase()
+    
+    const months: Record<string, number> = {
+      jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
+      jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
+    }
+    
+    if (months[monthStr] !== undefined && !isNaN(day)) {
+      // Default to 2026 since we filtered out 2025
+      return new Date(2026, months[monthStr], day)
+    }
+  }
+  
+  const fallback = new Date(clean)
+  return isNaN(fallback.getTime()) ? null : fallback
+}
+
+// Get deadline text, status color and badge class
+function getDeadlineStatus(dateStr: string | null | undefined, isCompleted: boolean) {
+  if (!dateStr) return { text: '—', badgeBg: 'bg-transparent text-[var(--text-3)]' }
+  const d = parseDeadlineDate(dateStr)
+  if (!d) return { text: dateStr, badgeBg: 'bg-transparent text-[var(--text-3)]' }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  d.setHours(0, 0, 0, 0)
+
+  const diffTime = d.getTime() - today.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  const formattedDate = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`
+
+  if (isCompleted) {
+    return { 
+      text: formattedDate, 
+      badgeBg: 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30' 
+    }
+  }
+
+  if (diffDays < 0) {
+    const absDays = Math.abs(diffDays)
+    return { 
+      text: `${formattedDate} (Trễ ${absDays}n)`, 
+      badgeBg: 'bg-red-500/15 text-red-500 border border-red-500/40 font-black animate-pulse' 
+    }
+  } else if (diffDays === 0) {
+    return { 
+      text: `${formattedDate} (Hôm nay)`, 
+      badgeBg: 'bg-amber-500/15 text-amber-500 border border-amber-500/40 font-bold' 
+    }
+  } else {
+    return { 
+      text: formattedDate, 
+      badgeBg: 'bg-[var(--bg-input)] text-[var(--text-2)] border border-[var(--border-color)]' 
+    }
+  }
+}
+
 // Generate list of active week labels starting from W19-2026 up to W52-2028
 function generateAllowedWeeks(): string[] {
   const list: string[] = []
@@ -167,8 +241,8 @@ function ShiftTable({ entries, color }: { entries: ShiftEntry[]; color: string }
   )
 }
 
-// ─── Order Card ──────────────────────────────────────────────
-function OrderCard({ order }: { order: OrderProgress }) {
+// ─── Order Row (Airport Board Style) ─────────────────────────
+function OrderRow({ order }: { order: OrderProgress }) {
   const [open, setOpen] = useState(false)
   const { plan } = order
 
@@ -177,164 +251,140 @@ function OrderCard({ order }: { order: OrderProgress }) {
   const sepPct = plan.sl_bun_can_tach && plan.sl_bun_can_tach > 0
     ? Math.min((order.sepTotal / plan.sl_bun_can_tach) * 100, 100) : 0
 
+  const isCompleted = order.overallStatus === 'completed'
+  const dlStatus = getDeadlineStatus(plan.completion_date, isCompleted)
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="card overflow-hidden"
-    >
-      {/* ── Header row ──────────────────────────────── */}
-      <button
-        className="w-full text-left p-4 flex items-start gap-3"
+    <>
+      <tr 
+        className={`hover:bg-[var(--bg-input)]/45 transition-colors cursor-pointer text-xs font-semibold ${
+          open ? 'bg-[var(--bg-input)]/25' : ''
+        }`}
         onClick={() => setOpen(o => !o)}
       >
-        {/* Status stripe */}
-        <div className="w-1 self-stretch rounded-full shrink-0"
-          style={{
-            background: order.overallStatus === 'completed' ? '#22c55e'
-              : order.overallStatus === 'in_progress' ? '#f59e0b' : '#e2e8f0'
-          }}
-        />
+        {/* Trạng thái */}
+        <td className="py-3 px-4 text-center">
+          <StatusBadge status={order.overallStatus} />
+        </td>
 
-        <div className="flex-1 min-w-0">
-          {/* Row 1: firm_plan + status */}
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-[10px] font-black uppercase tracking-wider text-[var(--text-3)]">
-                {plan.week_label || 'N/A'}
-              </span>
-              <span className="text-xs font-black text-[var(--text-1)] truncate">
-                {plan.firm_plan || '—'}
-              </span>
-            </div>
-            <div className="shrink-0 flex items-center gap-1.5">
-              <StatusBadge status={order.overallStatus} />
-              {open ? <ChevronUp size={14} className="text-[var(--text-3)]" />
-                : <ChevronDown size={14} className="text-[var(--text-3)]" />}
-            </div>
+        {/* Hạn HT */}
+        <td className="py-3 px-4">
+          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-extrabold ${dlStatus.badgeBg}`}>
+            {dlStatus.text}
+          </span>
+        </td>
+
+        {/* Tuần / No.Order */}
+        <td className="py-3 px-4">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[var(--text-3)] font-black uppercase tracking-wider">{plan.week_label || 'N/A'}</span>
+            <span className="text-xs font-bold text-[var(--text-1)]">{plan.no_order || '—'}</span>
           </div>
+        </td>
 
-          {/* Row 2: product name */}
-          <p className="text-sm font-bold text-[var(--text-1)] mb-2 truncate">
-            {plan.ten_san_pham || '—'}
-          </p>
+        {/* Firm Plan */}
+        <td className="py-3 px-4 font-mono font-bold text-[var(--text-2)]">
+          {plan.firm_plan || '—'}
+        </td>
 
-          {/* Row 3: Plan info pills */}
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            {plan.sl_bun_can_do != null && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600">
-                <Droplets size={9} />
-                Đổ: {plan.sl_bun_can_do.toLocaleString('vi-VN')} bun
-              </span>
-            )}
-            {plan.sl_bun_can_tach != null && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600">
-                <Scissors size={9} />
-                Tách: {plan.sl_bun_can_tach.toLocaleString('vi-VN')} bun
-              </span>
-            )}
-            {plan.sl_sheet != null && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
-                <Layers size={9} />
-                {plan.sl_sheet.toLocaleString('vi-VN')} sheet
-              </span>
-            )}
-            {plan.completion_date && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600">
-                <Target size={9} />
-                Deadline: {fmtDatePlan(plan.completion_date)}
-              </span>
-            )}
+        {/* Tên sản phẩm */}
+        <td className="py-3 px-4">
+          <div className="flex flex-col max-w-[320px]">
+            <span className="text-xs text-[var(--text-1)] font-bold truncate" title={plan.ten_san_pham}>
+              {plan.ten_san_pham || '—'}
+            </span>
+            <span className="text-[9px] text-[var(--text-3)]">
+              {plan.bun_code ? `Bun: ${plan.bun_code}` : ''} {plan.pu_code ? ` | PU: ${plan.pu_code}` : ''}
+            </span>
           </div>
+        </td>
 
-          {/* Row 4: Mini progress bars */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[9px] font-bold text-blue-600 uppercase flex items-center gap-1">
-                  <Droplets size={8} /> Đổ
-                </span>
-                <span className="text-[9px] font-black text-blue-700">
-                  {order.pourTotal.toLocaleString('vi-VN')}/{(plan.sl_bun_can_do ?? 0).toLocaleString('vi-VN')}
-                  <span className="ml-1 text-blue-500">({pourPct.toFixed(0)}%)</span>
-                </span>
-              </div>
-              <ProgressBar value={order.pourTotal} max={plan.sl_bun_can_do ?? 0} color="#3b82f6" />
+        {/* Tiến độ Đổ */}
+        <td className="py-3 px-4">
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-[10px] mb-0.5">
+              <span className="text-blue-500 font-black">
+                {order.pourTotal.toLocaleString('vi-VN')} / {(plan.sl_bun_can_do ?? 0).toLocaleString('vi-VN')}
+              </span>
+              <span className="font-extrabold text-blue-600">({pourPct.toFixed(0)}%)</span>
             </div>
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-[9px] font-bold text-purple-600 uppercase flex items-center gap-1">
-                  <Scissors size={8} /> Tách
-                </span>
-                <span className="text-[9px] font-black text-purple-700">
-                  {order.sepTotal.toLocaleString('vi-VN')}/{(plan.sl_bun_can_tach ?? 0).toLocaleString('vi-VN')}
-                  <span className="ml-1 text-purple-500">({sepPct.toFixed(0)}%)</span>
-                </span>
-              </div>
-              <ProgressBar value={order.sepTotal} max={plan.sl_bun_can_tach ?? 0} color="#a855f7" />
-            </div>
+            <ProgressBar value={order.pourTotal} max={plan.sl_bun_can_do ?? 0} color="#3b82f6" />
           </div>
-        </div>
-      </button>
+        </td>
 
-      {/* ── Expanded detail ──────────────────────────── */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 pt-0 border-t border-[var(--border)] space-y-4">
+        {/* Tiến độ Tách */}
+        <td className="py-3 px-4">
+          <div className="space-y-1">
+            <div className="flex justify-between items-center text-[10px] mb-0.5">
+              <span className="text-purple-500 font-black">
+                {order.sepTotal.toLocaleString('vi-VN')} / {(plan.sl_bun_can_tach ?? 0).toLocaleString('vi-VN')}
+              </span>
+              <span className="font-extrabold text-purple-600">({sepPct.toFixed(0)}%)</span>
+            </div>
+            <ProgressBar value={order.sepTotal} max={plan.sl_bun_can_tach ?? 0} color="#a855f7" />
+          </div>
+        </td>
 
-              {/* Plan detail */}
-              <div className="mt-3 p-3 rounded-xl bg-[var(--bg-input)] space-y-1.5">
-                <p className="text-[10px] font-black uppercase text-[var(--text-3)] mb-2 flex items-center gap-1">
-                  <Package size={10} /> Thông tin kế hoạch
+        {/* Action Toggle */}
+        <td className="py-3 px-2 text-center" onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}>
+          <button className="p-1 rounded hover:bg-[var(--bg-input)] text-[var(--text-3)]">
+            {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </td>
+      </tr>
+
+      {/* Expanded Details Row */}
+      {open && (
+        <tr className="bg-[var(--bg-input)]/10">
+          <td colSpan={8} className="p-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
+              {/* Cột 1: Thông tin kế hoạch */}
+              <div className="p-3.5 rounded-xl bg-[var(--bg-input)]/45 border border-[var(--border-color)] space-y-2">
+                <p className="text-[10px] font-black uppercase text-[var(--text-3)] flex items-center gap-1">
+                  <Package size={10} /> Chi tiết đơn hàng
                 </p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+                <div className="space-y-1.5 text-xs">
                   {[
-                    { label: 'Tên SP', val: plan.ten_san_pham },
+                    { label: 'Tên sản phẩm', val: plan.ten_san_pham },
                     { label: 'Bun Code', val: plan.bun_code },
                     { label: 'PU Code', val: plan.pu_code },
-                    { label: 'No. Order', val: plan.no_order },
-                    { label: 'Số Sheet', val: plan.sl_sheet != null ? `${plan.sl_sheet.toLocaleString('vi-VN')} sheet` : null },
-                    { label: 'Bun cần đổ', val: plan.sl_bun_can_do != null ? `${plan.sl_bun_can_do.toLocaleString('vi-VN')} bun` : null },
-                    { label: 'Bun cần tách', val: plan.sl_bun_can_tach != null ? `${plan.sl_bun_can_tach.toLocaleString('vi-VN')} bun` : null },
-                    { label: 'Deadline', val: plan.completion_date ? fmtDate(plan.completion_date) : null },
+                    { label: 'Số Sheet cần', val: plan.sl_sheet != null ? `${plan.sl_sheet.toLocaleString('vi-VN')} sheet` : null },
+                    { label: 'Yêu cầu Đổ', val: plan.sl_bun_can_do != null ? `${plan.sl_bun_can_do.toLocaleString('vi-VN')} bun` : null },
+                    { label: 'Yêu cầu Tách', val: plan.sl_bun_can_tach != null ? `${plan.sl_bun_can_tach.toLocaleString('vi-VN')} bun` : null },
+                    { label: 'Hạn hoàn thành', val: plan.completion_date ? fmtDate(plan.completion_date) : null },
                   ].map(row => row.val ? (
-                    <div key={row.label}>
-                      <span className="text-[var(--text-3)] font-medium">{row.label}: </span>
-                      <span className="font-bold text-[var(--text-1)]">{row.val}</span>
+                    <div key={row.label} className="flex justify-between border-b border-[var(--border-color)]/30 pb-1">
+                      <span className="text-[var(--text-3)] font-medium">{row.label}</span>
+                      <span className="font-bold text-[var(--text-1)] text-right max-w-[200px] truncate" title={row.val.toString()}>{row.val}</span>
                     </div>
                   ) : null)}
                 </div>
               </div>
 
-              {/* Đổ detail */}
-              <div>
-                <p className="text-[11px] font-black uppercase text-blue-600 mb-2 flex items-center gap-1.5">
-                  <Droplets size={12} />
-                  Công đoạn Đổ · Đã hoàn thành: <span className="text-blue-700">{order.pourTotal.toLocaleString('vi-VN')} bun</span>
+              {/* Cột 2: Lịch sử Đổ */}
+              <div className="p-3.5 rounded-xl bg-[var(--bg-input)]/45 border border-[var(--border-color)] space-y-2">
+                <p className="text-[10px] font-black uppercase text-blue-600 flex items-center gap-1.5 border-b border-[var(--border-color)]/30 pb-1">
+                  <Droplets size={11} /> Lịch sử công đoạn Đổ
                 </p>
-                <ShiftTable entries={order.pourEntries} color="#3b82f6" />
+                <div className="max-h-[160px] overflow-y-auto pr-1">
+                  <ShiftTable entries={order.pourEntries} color="#3b82f6" />
+                </div>
               </div>
 
-              {/* Tách detail */}
-              <div>
-                <p className="text-[11px] font-black uppercase text-purple-600 mb-2 flex items-center gap-1.5">
-                  <Scissors size={12} />
-                  Công đoạn Tách · Đã hoàn thành: <span className="text-purple-700">{order.sepTotal.toLocaleString('vi-VN')} bun</span>
+              {/* Cột 3: Lịch sử Tách */}
+              <div className="p-3.5 rounded-xl bg-[var(--bg-input)]/45 border border-[var(--border-color)] space-y-2">
+                <p className="text-[10px] font-black uppercase text-purple-600 flex items-center gap-1.5 border-b border-[var(--border-color)]/30 pb-1">
+                  <Scissors size={11} /> Lịch sử công đoạn Tách
                 </p>
-                <ShiftTable entries={order.sepEntries} color="#a855f7" />
+                <div className="max-h-[160px] overflow-y-auto pr-1">
+                  <ShiftTable entries={order.sepEntries} color="#a855f7" />
+                </div>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }
 
@@ -438,16 +488,14 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
     return ['Tất cả', ...Array.from(set).sort((a, b) => b!.localeCompare(a!))] as string[]
   }, [plans])
 
-  // Filtered — hỗ trợ tìm kiếm nhiều đơn phân cách bởi |
+  // Filtered — hỗ trợ tìm kiếm nhiều đơn phân cách bởi | + Sắp xếp theo deadline tăng dần
   const filtered = useMemo(() => {
-    // Tách các token từ chuỗi search (dấu | hoặc xuống dòng), bỏ token rỗng
     const rawTokens = search
       .split(/[|\n]/)
       .map(t => t.trim().toLowerCase())
       .filter(Boolean)
 
-    return orders.filter(o => {
-      // —— Nếu có token tìm kiếm: match NO.ORDER hoặc Firm Plan chính xác (includes)
+    const matched = orders.filter(o => {
       const matchSearch = rawTokens.length === 0
         || rawTokens.some(tok =>
           (o.plan.no_order ?? '').toLowerCase().includes(tok) ||
@@ -456,6 +504,18 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
       const matchWeek = weekFilter === 'Tất cả' || o.plan.week_label === weekFilter
       const matchStatus = statusFilter === 'all' || o.overallStatus === statusFilter
       return matchSearch && matchWeek && matchStatus
+    })
+
+    // Sắp xếp: Deadline trễ nhất (gần nhất) lên đầu, đơn không deadline ở cuối
+    return matched.sort((a, b) => {
+      const dateA = parseDeadlineDate(a.plan.completion_date)
+      const dateB = parseDeadlineDate(b.plan.completion_date)
+      
+      if (!dateA && !dateB) return 0
+      if (!dateA) return 1
+      if (!dateB) return -1
+      
+      return dateA.getTime() - dateB.getTime()
     })
   }, [orders, search, weekFilter, statusFilter])
 
@@ -612,10 +672,26 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
           <p className="text-xs text-[var(--text-3)]">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map(order => (
-            <OrderCard key={order.plan.id} order={order} />
-          ))}
+        <div className="overflow-x-auto rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] shadow-lg">
+          <table className="w-full text-left border-collapse min-w-[1100px]">
+            <thead>
+              <tr className="bg-[var(--bg-input)] border-b border-[var(--border-color)] text-[10px] uppercase font-black text-[var(--text-3)] tracking-wider">
+                <th className="py-3 px-4 w-28 text-center">Trạng thái</th>
+                <th className="py-3 px-4 w-32">Hạn HT (Deadline)</th>
+                <th className="py-3 px-4 w-36">Tuần / No.Order</th>
+                <th className="py-3 px-4 w-40">Firm Plan</th>
+                <th className="py-3 px-4">Tên Sản Phẩm</th>
+                <th className="py-3 px-4 w-48">Tiến độ Đổ</th>
+                <th className="py-3 px-4 w-48">Tiến độ Tách</th>
+                <th className="py-3 px-2 w-10 text-center"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-color)]">
+              {filtered.map(order => (
+                <OrderRow key={order.plan.id} order={order} />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
