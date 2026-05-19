@@ -14,10 +14,14 @@ interface ProductionProgressTabProps {
   user: SessionUser
 }
 
+// ─── Constants ──────────────────────────────────────────────
+// Chỉ hiển thị đơn từ W19-2026 trở đi
+const MIN_WEEK = 19
+const MIN_YEAR = 2026
+
 // ─── Helper ─────────────────────────────────────────────────
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—'
-  // report_date: YYYY-MM-DD or created_at: ISO
   const d = new Date(iso)
   if (isNaN(d.getTime())) return iso
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`
@@ -36,6 +40,23 @@ function getRecordDate(r: { report_date?: string; created_at: string }): string 
   const d = new Date(r.created_at)
   if (d.getHours() < 6) d.setDate(d.getDate() - 1)
   return d.toISOString().split('T')[0]
+}
+
+// Parse "W19-2026" or "W20-2026 - L1" → { week: 19, year: 2026 }
+function parseWeekLabel(label: string | null | undefined): { week: number; year: number } | null {
+  if (!label) return null
+  const m = label.match(/W(\d+)-(\d{4})/)
+  if (!m) return null
+  return { week: parseInt(m[1]), year: parseInt(m[2]) }
+}
+
+// Returns true if plan is >= W19-2026
+function isWeekAllowed(label: string | null | undefined): boolean {
+  const parsed = parseWeekLabel(label)
+  if (!parsed) return false
+  if (parsed.year < MIN_YEAR) return false
+  if (parsed.year === MIN_YEAR && parsed.week < MIN_WEEK) return false
+  return true
 }
 
 // ─── Sub-types ──────────────────────────────────────────────
@@ -312,11 +333,18 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const [planRes, pourRes, sepRes] = await Promise.all([
-      supabase.from('production_plan').select('*').order('week_label', { ascending: false }),
+      supabase
+        .from('production_plan')
+        .select('*')
+        // Bỏ luôn năm 2025 ở DB level để giảm lượng dữ liệu tải về
+        .not('week_label', 'ilike', '%2025%')
+        .order('week_label', { ascending: false }),
       supabase.from('foaming_pour_reports').select('id,firm_plan,shift,actual_bun_poured,report_date,created_at'),
       supabase.from('foaming_separate_reports').select('id,firm_plan,shift,actual_bun_separated,report_date,created_at'),
     ])
-    setPlans((planRes.data as ProductionPlan[]) ?? [])
+    // Lọc client-side: chỉ giữ W19-2026 trở đi
+    const allPlans = (planRes.data as ProductionPlan[]) ?? []
+    setPlans(allPlans.filter(p => isWeekAllowed(p.week_label)))
     setPourReports((pourRes.data as FoamingPourReport[]) ?? [])
     setSepReports((sepRes.data as FoamingSeparateReport[]) ?? [])
     setLoading(false)
