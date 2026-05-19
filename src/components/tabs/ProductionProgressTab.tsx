@@ -312,7 +312,7 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
   const fetchAll = useCallback(async () => {
     setLoading(true)
     const [planRes, pourRes, sepRes] = await Promise.all([
-      supabase.from('production_plans').select('*').order('week_label', { ascending: false }),
+      supabase.from('production_plan').select('*').order('week_label', { ascending: false }),
       supabase.from('foaming_pour_reports').select('id,firm_plan,shift,actual_bun_poured,report_date,created_at'),
       supabase.from('foaming_separate_reports').select('id,firm_plan,shift,actual_bun_separated,report_date,created_at'),
     ])
