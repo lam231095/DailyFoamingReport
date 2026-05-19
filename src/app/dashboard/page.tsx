@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BarChart3, Package, Factory, TrendingUp } from 'lucide-react'
+import { BarChart3, Package, Factory, TrendingUp, ClipboardList } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
@@ -12,6 +12,7 @@ import UtilizationAnalysisTab from '@/components/tabs/UtilizationAnalysisTab'
 import DailyReportTab from '@/components/tabs/DailyReportTab'
 import ResidualMaterialTab from '@/components/tabs/ResidualMaterialTab'
 import FoamingProcessTab from '@/components/tabs/FoamingProcessTab'
+import ProductionProgressTab from '@/components/tabs/ProductionProgressTab'
 
 const TABS = [
   {
@@ -35,7 +36,13 @@ const TABS = [
     icon: TrendingUp,
     color: '#8b5cf6',
   },
-
+  {
+    id: 'production-progress',
+    label: 'Tiến Độ SX',
+    shortLabel: 'Tiến Độ',
+    icon: ClipboardList,
+    color: '#0ea5e9',
+  },
   {
     id: 'residual',
     label: 'Quản Lý Liệu Tồn',
@@ -148,11 +155,11 @@ export default function DashboardPage() {
                 display: activeTab === tab.id ? 'block' : 'none',
               }}
             >
-              {tab.id === 'daily-report' && <DailyReportTab user={user} />}
-              {tab.id === 'utilization'  && <UtilizationAnalysisTab user={user} />}
-
-              {tab.id === 'residual'     && <ResidualMaterialTab user={user} />}
-              {tab.id === 'foaming'      && <FoamingProcessTab user={user} />}
+              {tab.id === 'daily-report'          && <DailyReportTab user={user} />}
+              {tab.id === 'utilization'             && <UtilizationAnalysisTab user={user} />}
+              {tab.id === 'production-progress'     && <ProductionProgressTab user={user} />}
+              {tab.id === 'residual'                && <ResidualMaterialTab user={user} />}
+              {tab.id === 'foaming'                 && <FoamingProcessTab user={user} />}
             </div>
           ))}
         </div>
