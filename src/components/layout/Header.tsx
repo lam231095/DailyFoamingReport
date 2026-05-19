@@ -10,9 +10,10 @@ import { useState } from 'react'
 
 interface HeaderProps {
   user: SessionUser
+  activeTab?: string
 }
 
-export default function Header({ user }: HeaderProps) {
+export default function Header({ user, activeTab }: HeaderProps) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -46,7 +47,9 @@ export default function Header({ user }: HeaderProps) {
       {/* Top accent line */}
       <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #4f46e5, #7c3aed, #a855f7)' }} />
 
-      <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+      <div className={`mx-auto px-4 h-14 flex items-center justify-between gap-3 transition-all duration-300 ${
+        activeTab === 'production-progress' ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
+      }`}>
 
         {/* Logo */}
         <div className="flex items-center gap-3 shrink-0">
