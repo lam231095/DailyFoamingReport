@@ -134,6 +134,15 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
   const exportCSV = () => {
     if (data.length === 0) return
     
+    const escapeCSV = (val: any) => {
+      if (val === null || val === undefined) return '""'
+      let str = String(val)
+      if (str.startsWith('"') && str.endsWith('"')) {
+        str = str.slice(1, -1)
+      }
+      return `"${str.replace(/"/g, '""')}"`
+    }
+
     // Header dựa trên stage
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
@@ -143,17 +152,17 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     }
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
 
-    const csvContentRaw = headers.join(",") + "\r\n" + data.map(row => {
+    const csvContentRaw = headers.map(escapeCSV).join(",") + "\r\n" + data.map(row => {
       const dateTime = new Date(row.created_at).toLocaleString('vi-VN')
       const common = [
-        `"${dateTime}"`,
-        `"${row.delivery_date ? new Date(row.delivery_date).toLocaleDateString('vi-VN') : formatReportDate(row.created_at)}"`,
-        `"${row.production_plan?.week_label || '---'}"`,
-        `"${row.production_plan?.no_order || '---'}"`,
+        dateTime,
+        row.delivery_date ? new Date(row.delivery_date).toLocaleDateString('vi-VN') : formatReportDate(row.created_at),
+        row.production_plan?.week_label || '---',
+        row.production_plan?.no_order || '---',
         row.firm_plan,
-        `"${row.production_plan?.pu_code}"`,
-        `"${row.production_plan?.ten_san_pham}"`,
-        `"${row.users?.full_name}"`,
+        row.production_plan?.pu_code,
+        row.production_plan?.ten_san_pham,
+        row.users?.full_name,
         row.users?.msnv
       ]
       
@@ -170,13 +179,16 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         row.storage_line || '---',
         row.color_tag || '---',
         row.storage_carts || 0,
-        `"${(row.note || '').replace(/"/g, '""')}"`,
-        `"${row.error_type || ''}"`
+        row.note || '',
+        row.error_type || ''
       ]
       if (activeStage === 'separate') {
         const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
         const std = standards.find(s => s.thickness_mm === thickness)
-        const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
+        let optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
+        if (row.product_type === 'ban_thanh_pham') {
+          optimalSheetsPerBun = optimalSheetsPerBun / 2
+        }
         
         const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
         const perf = calculateEfficiency(row.actual_sheet_received, suggested)
@@ -216,7 +228,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       }
       if (activeStage === 'warehouse') specific = [row.qty_delivered_sheet, row.delivery_date, row.users?.full_name || '---']
       
-      return [...common, ...specific].join(",")
+      return [...common, ...specific].map(escapeCSV).join(",")
     }).join("\r\n")
 
     // Thêm BOM (Byte Order Mark) để Excel nhận diện đúng UTF-8 (Tiếng Việt)
@@ -417,13 +429,29 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
               </p>
             </div>
             
-            {data.map((row) => (
-              <motion.div 
-                key={row.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-[var(--bg-card)] rounded-2xl p-4 border border-[var(--border)] shadow-sm hover:border-brand-500/30 transition-all group"
-              >
+            {data.map((row) => {
+              // Precalculate separate stage metrics if activeStage === 'separate'
+              let separateMetrics = null;
+              if (activeStage === 'separate') {
+                const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0");
+                const std = standards.find(s => s.thickness_mm === thickness);
+                let optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0);
+                if (row.product_type === 'ban_thanh_pham') {
+                  optimalSheetsPerBun = optimalSheetsPerBun / 2;
+                }
+                const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun);
+                const perf = calculateEfficiency(row.actual_sheet_received, suggested);
+                const noInfo = Math.max(0, suggested - (row.actual_sheet_received || 0) - (row.ng_qty || 0));
+                separateMetrics = { optimalSheetsPerBun, suggested, perf, noInfo };
+              }
+
+              return (
+                <motion.div 
+                  key={row.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-[var(--bg-card)] rounded-2xl p-4 border border-[var(--border)] shadow-sm hover:border-brand-500/30 transition-all group"
+                >
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2">
@@ -500,23 +528,12 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                           <div>
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Hiệu suất (%)</p>
                             <p className={(() => {
-                              const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
-                              const std = standards.find(s => s.thickness_mm === thickness)
-                              const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
-                               
-                              const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
-                              const perf = calculateEfficiency(row.actual_sheet_received, suggested)
+                              const perf = separateMetrics ? separateMetrics.perf : 0;
                               return `text-sm font-bold ${perf >= 95 ? 'text-green-600' : perf >= 85 ? 'text-orange-500' : 'text-red-500'}`
                             })()}>
-                              {(() => {
-                                const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
-                                const std = standards.find(s => s.thickness_mm === thickness)
-                                const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
-                                 
-                                const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
-                                const perf = calculateEfficiency(row.actual_sheet_received, suggested)
-                                return optimalSheetsPerBun > 0 ? `${perf}% (${suggested} tấm tối ưu)` : 'N/A'
-                              })()}
+                              {separateMetrics && separateMetrics.optimalSheetsPerBun > 0 
+                                ? `${separateMetrics.perf}% (${separateMetrics.suggested} tấm tối ưu)` 
+                                : 'N/A'}
                             </p>
                           </div>
                           <div>
@@ -544,21 +561,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                           <div>
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Không có thông tin</p>
                             <p className={(() => {
-                              const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
-                              const std = standards.find(s => s.thickness_mm === thickness)
-                              const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
-                              const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
-                              const noInfo = Math.max(0, suggested - (row.actual_sheet_received || 0) - (row.ng_qty || 0))
+                              const noInfo = separateMetrics ? separateMetrics.noInfo : 0;
                               return `text-sm font-bold ${noInfo > 0 ? 'text-red-500 font-black animate-pulse' : 'text-[var(--text-1)]'}`
                             })()}>
-                              {(() => {
-                                const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
-                                const std = standards.find(s => s.thickness_mm === thickness)
-                                const optimalSheetsPerBun = std ? std.optimal_sheets_per_bun : (thickness > 0 ? calculateOptimalSheetsPerBun(thickness) : 0)
-                                const suggested = calculateSuggestedSheets(row.actual_bun_separated, optimalSheetsPerBun)
-                                const noInfo = Math.max(0, suggested - (row.actual_sheet_received || 0) - (row.ng_qty || 0))
-                                return `${noInfo} Sheet`
-                              })()}
+                              {separateMetrics ? `${separateMetrics.noInfo} Sheet` : '0 Sheet'}
                             </p>
                           </div>
                         </>
@@ -606,7 +612,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                   </div>
                 </div>
               </motion.div>
-            ))}
+            )})}
           </>
         )}
       </div>

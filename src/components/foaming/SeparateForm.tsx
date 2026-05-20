@@ -56,7 +56,10 @@ const defaultForm = (plan: ProductionPlan) => {
   const match = plan.ten_san_pham?.match(/([0-9.]+)\s*mm/i)
   const thickness = match ? parseFloat(match[1]) : null
   const std = thickness ? THICKNESS_TABLE[thickness] : null
-  const initialBunThickness = std ? std.bunRef : 144
+  
+  const hasStd = thickness !== null && std !== undefined && std !== null
+  const finalThickness = thickness !== null ? thickness : 14
+  const initialBunThickness = hasStd ? std.bunRef : 144
 
   const hour = new Date().getHours()
   let initialShift = 'Ca 1'
@@ -68,7 +71,7 @@ const defaultForm = (plan: ProductionPlan) => {
     machine_id: 'Máy tách tự động 2',
     operator_name: '',
     bun_thickness_mm: initialBunThickness,
-    sheet_thickness_mm: thickness || 0,
+    sheet_thickness_mm: finalThickness,
     actual_bun_separated: plan.sl_bun_can_tach || 0,
     actual_sheet_received: plan.sl_sheet || 0,
     lot_no: '',
@@ -82,6 +85,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [operators, setOperators] = useState<User[]>([])
+  const [standards, setStandards] = useState<any[]>([])
   const [formData, setFormData] = useState(defaultForm(plan))
 
   useEffect(() => {
@@ -90,14 +94,10 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       .in('position', ['team leader', 'Operator', 'Team Leader', 'operator', 'Team leader'])
       .order('full_name')
       .then(({ data }) => setOperators(data || []))
-  }, [])
 
-  // Reset form khi đổi tab
-  const handleTabChange = (tab: ProductType) => {
-    setProductType(tab)
-    setMessage(null)
-    setFormData(defaultForm(plan))
-  }
+    supabase.from('thickness_standards').select('*')
+      .then(({ data }) => setStandards(data || []))
+  }, [])
 
   // Xác định độ dày từ tên sản phẩm
   const identifiedThickness = (() => {
@@ -105,7 +105,66 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     return match ? parseFloat(match[1]) : null
   })()
 
-  const standard = identifiedThickness ? THICKNESS_TABLE[identifiedThickness] : null
+  const dbStd = identifiedThickness !== null ? standards.find(s => s.thickness_mm === identifiedThickness) : null
+  const localStd = identifiedThickness !== null ? THICKNESS_TABLE[identifiedThickness] : null
+  const hasStandard = !!(dbStd || localStd)
+
+  const standard = dbStd 
+    ? {
+        bunRef: dbStd.total_bun_thickness_mm || 144,
+        tolerance: dbStd.tolerance_mm || 0,
+        tp: dbStd.optimal_sheets_per_bun || 0,
+        btp: Math.round((dbStd.optimal_sheets_per_bun || 0) / 2)
+      }
+    : (localStd 
+        ? localStd 
+        : {
+            bunRef: 144,
+            tolerance: 0,
+            tp: THICKNESS_TABLE[14].tp,
+            btp: THICKNESS_TABLE[14].btp
+          }
+      )
+
+  // Đồng bộ hóa dữ liệu form khi plan hoặc danh sách tiêu chuẩn thay đổi
+  useEffect(() => {
+    let initialBunThickness = 144
+    if (dbStd) {
+      initialBunThickness = dbStd.total_bun_thickness_mm || 144
+    } else if (localStd) {
+      initialBunThickness = localStd.bunRef
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      bun_thickness_mm: initialBunThickness,
+      sheet_thickness_mm: identifiedThickness !== null ? identifiedThickness : 14,
+      actual_bun_separated: plan.sl_bun_can_tach || 0,
+      actual_sheet_received: plan.sl_sheet || 0,
+    }))
+  }, [plan, standards, identifiedThickness, dbStd, localStd])
+
+  // Reset form khi đổi tab
+  const handleTabChange = (tab: ProductType) => {
+    setProductType(tab)
+    setMessage(null)
+    
+    let initialBunThickness = 144
+    if (dbStd) {
+      initialBunThickness = dbStd.total_bun_thickness_mm || 144
+    } else if (localStd) {
+      initialBunThickness = localStd.bunRef
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      bun_thickness_mm: initialBunThickness,
+      sheet_thickness_mm: identifiedThickness !== null ? identifiedThickness : 14,
+      actual_bun_separated: plan.sl_bun_can_tach || 0,
+      actual_sheet_received: plan.sl_sheet || 0,
+      ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
+    }))
+  }
   const isTP = productType === 'thanh_pham'
 
   // Số sheet/bun tối ưu theo loại
@@ -331,11 +390,25 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
         {/* Phân tích hiệu suất */}
         <AnimatePresence>
-          {identifiedThickness && (
+          {plan && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="overflow-hidden">
               {standard ? (
                 <div className={`rounded-2xl border-2 border-dashed p-4 space-y-4
                   ${isTP ? 'bg-purple-500/5 border-purple-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+                  
+                  {!hasStandard && (
+                    <div className="flex items-start gap-2.5 text-xs text-amber-700 bg-amber-500/5 border border-amber-500/20 p-3 rounded-xl mb-1">
+                      <Info size={16} className="mt-0.5 shrink-0 text-amber-600" />
+                      <div>
+                        <p className="font-bold text-amber-800">Độ dày chưa cập nhật tiêu chuẩn</p>
+                        <p className="text-[11px] mt-0.5 text-amber-700 opacity-90">
+                          Sản phẩm này có độ dày {identifiedThickness ? `${identifiedThickness}mm` : 'chưa xác định'} chưa được cấu hình tiêu chuẩn trên hệ thống. 
+                          Hệ thống đã tự động áp dụng tiêu chuẩn đề xuất là <strong>14mm</strong>.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <TrendingUp size={16} className={isTP ? 'text-purple-500' : 'text-amber-500'} />
@@ -346,7 +419,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-[10px] font-bold
                       ${isTP ? 'bg-purple-500' : 'bg-amber-500'}`}>
                       <Zap size={10} fill="white" />
-                      {isTP ? 'THÀNH PHẨM' : 'BÁN THÀNH PHẨM'} {identifiedThickness}MM
+                      {isTP ? 'THÀNH PHẨM' : 'BÁN THÀNH PHẨM'} {hasStandard ? identifiedThickness : 14}MM
                     </div>
                   </div>
 
