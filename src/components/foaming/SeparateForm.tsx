@@ -5,37 +5,13 @@ import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info, Plus, Trash2, Alert
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
-import { calculateSuggestedSheets, calculateEfficiency } from '@/lib/calculations'
+import { calculateSuggestedSheets, calculateEfficiency, getOptimalSheetsPerBun, THICKNESS_TABLE } from '@/lib/calculations'
 import { getReportDateISO } from '@/lib/dateUtils'
 
 interface SeparateFormProps {
   plan: ProductionPlan
   user: SessionUser
   onSuccess: () => void
-}
-
-// Bảng tiêu chuẩn từ file "độ dày - số tấm.xlsx"
-const THICKNESS_TABLE: Record<number, { bunRef: number; tolerance: number; tp: number; btp: number }> = {
-  2: { bunRef: 144, tolerance: 0, tp: 72, btp: 36 },
-  2.5: { bunRef: 145, tolerance: 0, tp: 58, btp: 29 },
-  3: { bunRef: 144, tolerance: 0, tp: 48, btp: 24 },
-  3.5: { bunRef: 144, tolerance: 0, tp: 41, btp: 20.5 },
-  4: { bunRef: 144, tolerance: 0.1, tp: 37, btp: 18.5 },
-  4.2: { bunRef: 144, tolerance: 0.1, tp: 35, btp: 17.5 },
-  4.5: { bunRef: 144, tolerance: 0, tp: 32, btp: 16 },
-  5: { bunRef: 145, tolerance: 0, tp: 29, btp: 14.5 },
-  5.2: { bunRef: 145, tolerance: 0.1, tp: 29, btp: 14.5 },
-  5.5: { bunRef: 145, tolerance: 0, tp: 26, btp: 13 },
-  6: { bunRef: 144, tolerance: 0, tp: 24, btp: 12 },
-  7: { bunRef: 146, tolerance: 0.1, tp: 21, btp: 10.5 },
-  8: { bunRef: 144, tolerance: 0, tp: 18, btp: 9 },
-  8.2: { bunRef: 144, tolerance: 0.2, tp: 18, btp: 9 },
-  10: { bunRef: 140, tolerance: 0, tp: 14, btp: 7 },
-  11: { bunRef: 143, tolerance: 0, tp: 13, btp: 6.5 },
-  12: { bunRef: 144, tolerance: 0, tp: 12, btp: 6 },
-  13: { bunRef: 143, tolerance: 0, tp: 11, btp: 5.5 },
-  13.5: { bunRef: 135, tolerance: 0, tp: 10, btp: 5 },
-  14: { bunRef: 140, tolerance: 0, tp: 10, btp: 5 },
 }
 
 const ERROR_TYPES = [
@@ -195,6 +171,30 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     try {
       const totalNG = formData.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
       const noInfoSheets = suggestedSheets - formData.actual_sheet_received - totalNG
+
+      // Fetch all previous reports for this order (firm_plan) and product_type
+      const { data: prevReports, error: prevErr } = await supabase
+        .from('foaming_separate_reports')
+        .select('actual_sheet_received')
+        .eq('firm_plan', plan.firm_plan)
+        .eq('product_type', productType)
+
+      if (prevErr) throw prevErr
+
+      const previousSheets = prevReports?.reduce((sum, r) => sum + (r.actual_sheet_received || 0), 0) || 0
+      const currentInputSheets = Number(formData.actual_sheet_received)
+      const totalInputSheets = previousSheets + currentInputSheets
+
+      let maxOptimalSheets = (plan.sl_bun_can_tach || 0) * optimalPerBun
+      if (maxOptimalSheets === 0) {
+        maxOptimalSheets = plan.sl_sheet || 0
+      }
+
+      if (totalInputSheets > maxOptimalSheets) {
+        throw new Error(
+          `Số lượng sheet nhận vượt quá giới hạn tối ưu của đơn hàng này. (Lũy kế đã nhập trước đó: ${previousSheets} sheet, Nhập lần này: ${currentInputSheets} sheet, Số lượng tối ưu tối đa cho phép: ${maxOptimalSheets} sheet). Vui lòng điều chỉnh lại.`
+        )
+      }
 
       if (suggestedSheets > 0 && noInfoSheets > 0) {
         const confirmSave = window.confirm(

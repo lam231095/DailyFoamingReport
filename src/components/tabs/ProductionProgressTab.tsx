@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, ProductionPlan, FoamingPourReport, FoamingSeparateReport } from '@/types'
+import { getOptimalSheetsPerBun } from '@/lib/calculations'
 
 interface ProductionProgressTabProps {
   user: SessionUser
@@ -167,7 +168,9 @@ type OrderProgress = {
   pourDone: boolean
   // Tách
   sepTotal: number
-  sepEntries: ShiftEntry[]
+  sepTotalSheets: number
+  plannedOptimalSheets: number
+  sepEntries: any[]
   sepDone: boolean
   // Overall
   overallStatus: 'completed' | 'in_progress' | 'pending'
@@ -207,13 +210,13 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
 }
 
 // ─── Shift Entries Table ─────────────────────────────────────
-function ShiftTable({ entries, color }: { entries: ShiftEntry[]; color: string }) {
+function ShiftTable({ entries, color, isSeparate = false }: { entries: any[]; color: string; isSeparate?: boolean }) {
   if (entries.length === 0) return (
     <p className="text-[10px] text-[var(--text-3)] italic">Chưa có dữ liệu</p>
   )
 
   // Group by date, then list shifts
-  const grouped = entries.reduce<Record<string, ShiftEntry[]>>((acc, e) => {
+  const grouped = entries.reduce<Record<string, any[]>>((acc, e) => {
     if (!acc[e.date]) acc[e.date] = []
     acc[e.date].push(e)
     return acc
@@ -232,7 +235,8 @@ function ShiftTable({ entries, color }: { entries: ShiftEntry[]; color: string }
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
                 style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}
               >
-                {r.shift}: <strong>{r.qty.toLocaleString('vi-VN')}</strong> bun
+                {r.shift}: <strong>{isSeparate ? r.sheets.toLocaleString('vi-VN') : r.qty.toLocaleString('vi-VN')}</strong> {isSeparate ? 'sheet' : 'bun'}
+                {isSeparate && <span className="opacity-65">({r.qty} bun)</span>}
               </span>
             ))}
           </div>
@@ -249,8 +253,8 @@ function OrderRow({ order }: { order: OrderProgress }) {
 
   const pourPct = plan.sl_bun_can_do && plan.sl_bun_can_do > 0
     ? Math.min((order.pourTotal / plan.sl_bun_can_do) * 100, 100) : 0
-  const sepPct = plan.sl_bun_can_tach && plan.sl_bun_can_tach > 0
-    ? Math.min((order.sepTotal / plan.sl_bun_can_tach) * 100, 100) : 0
+  const sepPct = order.plannedOptimalSheets && order.plannedOptimalSheets > 0
+    ? Math.min((order.sepTotalSheets / order.plannedOptimalSheets) * 100, 100) : 0
 
   const isCompleted = order.overallStatus === 'completed'
   const dlStatus = getDeadlineStatus(plan.completion_date, isCompleted)
@@ -318,11 +322,14 @@ function OrderRow({ order }: { order: OrderProgress }) {
           <div className="space-y-1">
             <div className="flex justify-between items-center text-[10px] mb-0.5">
               <span className="text-purple-500 font-black">
-                {order.sepTotal.toLocaleString('vi-VN')} / {(plan.sl_bun_can_tach ?? 0).toLocaleString('vi-VN')}
+                {order.sepTotalSheets.toLocaleString('vi-VN')} / {order.plannedOptimalSheets.toLocaleString('vi-VN')} sheet
               </span>
               <span className="font-extrabold text-purple-600">({sepPct.toFixed(0)}%)</span>
             </div>
-            <ProgressBar value={order.sepTotal} max={plan.sl_bun_can_tach ?? 0} color="#a855f7" />
+            <ProgressBar value={order.sepTotalSheets} max={order.plannedOptimalSheets} color="#a855f7" />
+            <p className="text-[9px] text-[var(--text-3)] text-right mt-0.5">
+              (Đã tách {order.sepTotal} bun)
+            </p>
           </div>
         </td>
 
@@ -378,7 +385,7 @@ function OrderRow({ order }: { order: OrderProgress }) {
                   <Scissors size={11} /> Lịch sử công đoạn Tách
                 </p>
                 <div className="max-h-[160px] overflow-y-auto pr-1">
-                  <ShiftTable entries={order.sepEntries} color="#a855f7" />
+                  <ShiftTable entries={order.sepEntries} color="#a855f7" isSeparate={true} />
                 </div>
               </div>
             </div>
@@ -394,6 +401,7 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
   const [plans, setPlans] = useState<ProductionPlan[]>([])
   const [pourReports, setPourReports] = useState<FoamingPourReport[]>([])
   const [sepReports, setSepReports] = useState<FoamingSeparateReport[]>([])
+  const [standards, setStandards] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [weekFilter, setWeekFilter] = useState<string>('Tất cả')
@@ -421,21 +429,25 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
         return
       }
 
-      // Fetch reports matching only the current active firm plans
-      const [pourRes, sepRes] = await Promise.all([
+      // Fetch reports matching only the current active firm plans and thickness standards
+      const [pourRes, sepRes, standardsRes] = await Promise.all([
         supabase
           .from('foaming_pour_reports')
           .select('id,firm_plan,shift,actual_bun_poured,report_date,created_at')
           .in('firm_plan', allowedFirmPlans),
         supabase
           .from('foaming_separate_reports')
-          .select('id,firm_plan,shift,actual_bun_separated,report_date,created_at')
+          .select('id,firm_plan,shift,actual_bun_separated,actual_sheet_received,product_type,report_date,created_at')
           .in('firm_plan', allowedFirmPlans),
+        supabase
+          .from('thickness_standards')
+          .select('*')
       ])
 
       setPlans(allPlans)
       setPourReports((pourRes.data as FoamingPourReport[]) ?? [])
       setSepReports((sepRes.data as FoamingSeparateReport[]) ?? [])
+      setStandards((standardsRes.data as any[]) ?? [])
     } catch (err) {
       console.error('Error fetching production progress data:', err)
     } finally {
@@ -461,27 +473,53 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
 
       // Sep entries for this plan
       const seps = sepReports.filter(r => r.firm_plan?.trim() === fp)
-      const sepEntries: ShiftEntry[] = seps.map(r => ({
+      const sepEntries = seps.map(r => ({
         date: getRecordDate(r),
         shift: r.shift || 'Ca ?',
         qty: r.actual_bun_separated || 0,
+        sheets: r.actual_sheet_received || 0,
+        productType: r.product_type || 'thanh_pham'
       }))
       const sepTotal = sepEntries.reduce((s, e) => s + e.qty, 0)
+      const sepTotalSheets = sepEntries.reduce((s, e) => s + e.sheets, 0)
+
+      // Identify thickness
+      const match = plan.ten_san_pham?.match(/([0-9.]+)\s*mm/i)
+      const thickness = match ? parseFloat(match[1]) : null
+
+      const firstSepType = seps.length > 0 ? (seps[0].product_type || 'thanh_pham') : 'thanh_pham'
+      const optimalPerBun = getOptimalSheetsPerBun(thickness, firstSepType === 'thanh_pham', standards)
+
+      let plannedOptimalSheets = (plan.sl_bun_can_tach || 0) * optimalPerBun
+      if (plannedOptimalSheets === 0) {
+        plannedOptimalSheets = plan.sl_sheet || 0
+      }
 
       // Sort entries by date asc
       pourEntries.sort((a, b) => a.date.localeCompare(b.date))
       sepEntries.sort((a, b) => a.date.localeCompare(b.date))
 
       const pourDone = (plan.sl_bun_can_do ?? 0) > 0 && pourTotal >= (plan.sl_bun_can_do ?? 0)
-      const sepDone = (plan.sl_bun_can_tach ?? 0) > 0 && sepTotal >= (plan.sl_bun_can_tach ?? 0)
+      const sepDone = plannedOptimalSheets > 0 && sepTotalSheets >= plannedOptimalSheets
 
       let overallStatus: OrderProgress['overallStatus'] = 'pending'
-      if (pourTotal > 0 || sepTotal > 0) overallStatus = 'in_progress'
+      if (pourTotal > 0 || sepTotalSheets > 0) overallStatus = 'in_progress'
       if (pourDone && sepDone) overallStatus = 'completed'
 
-      return { plan, pourTotal, pourEntries, pourDone, sepTotal, sepEntries, sepDone, overallStatus }
+      return {
+        plan,
+        pourTotal,
+        pourEntries,
+        pourDone,
+        sepTotal,
+        sepTotalSheets,
+        plannedOptimalSheets,
+        sepEntries,
+        sepDone,
+        overallStatus
+      }
     })
-  }, [plans, pourReports, sepReports])
+  }, [plans, pourReports, sepReports, standards])
 
   // Unique weeks
   const weekLabels = useMemo(() => {

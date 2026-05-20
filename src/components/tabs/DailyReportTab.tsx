@@ -27,10 +27,12 @@ type AggregatedDay = {
   date: string
   poured: number
   separated: number
+  separatedSheets: number
   pouredByShift: Record<string, number>
   separatedByShift: Record<string, number>
+  separatedByShiftSheets: Record<string, number>
   pouredByManager: Record<string, { actual: number; shifts: Set<string> }>
-  separatedByManager: Record<string, { actual: number; shifts: Set<string> }>
+  separatedByManager: Record<string, { actual: number; shifts: Set<string>; actualSheets: number }>
 }
 
 type AreaFilter = 'all' | 'pour' | 'separate'
@@ -364,8 +366,10 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
         date: dateStr, 
         poured: 0, 
         separated: 0, 
+        separatedSheets: 0,
         pouredByShift: {}, 
         separatedByShift: {},
+        separatedByShiftSheets: {},
         pouredByManager: {},
         separatedByManager: {}
       })
@@ -404,12 +408,15 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
         const day = dailyMap.get(d)
         if (day) {
           day.separated += (r.actual_bun_separated || 0)
+          day.separatedSheets += (r.actual_sheet_received || 0)
           const s = r.shift || 'Ca 1'
           day.separatedByShift[s] = (day.separatedByShift[s] || 0) + (r.actual_bun_separated || 0)
+          day.separatedByShiftSheets[s] = (day.separatedByShiftSheets[s] || 0) + (r.actual_sheet_received || 0)
           
           const m = r.manager_name || 'Khác'
-          if (!day.separatedByManager[m]) day.separatedByManager[m] = { actual: 0, shifts: new Set() }
+          if (!day.separatedByManager[m]) day.separatedByManager[m] = { actual: 0, actualSheets: 0, shifts: new Set() }
           day.separatedByManager[m].actual += (r.actual_bun_separated || 0)
+          day.separatedByManager[m].actualSheets += (r.actual_sheet_received || 0)
           day.separatedByManager[m].shifts.add(s)
         }
       })
@@ -419,8 +426,12 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   }, [pourReports, separateReports, dateList, shiftFilter, areaFilter])
 
   const totals = useMemo(() => aggregatedData.reduce(
-    (acc, d) => ({ poured: acc.poured + d.poured, separated: acc.separated + d.separated }),
-    { poured: 0, separated: 0 }
+    (acc, d) => ({ 
+      poured: acc.poured + d.poured, 
+      separated: acc.separated + d.separated,
+      separatedSheets: acc.separatedSheets + d.separatedSheets
+    }),
+    { poured: 0, separated: 0, separatedSheets: 0 }
   ), [aggregatedData])
 
 
@@ -589,8 +600,16 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
             )}
             {areaFilter !== 'pour' && (
               <div className="card p-5 relative overflow-hidden bg-gradient-to-br from-purple-600 to-purple-700 text-white border-none shadow-purple-500/20 shadow-xl">
-                <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Tách (TP+BTP)</p>
-                <h4 className="text-4xl font-black">{totals.separated.toLocaleString()}</h4>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Tách (TP+BTP)</p>
+                    <h4 className="text-4xl font-black">{totals.separated.toLocaleString()} <span className="text-sm font-normal opacity-85">bun</span></h4>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Sheet Tách</p>
+                    <h4 className="text-2xl font-black">{totals.separatedSheets.toLocaleString()} <span className="text-xs font-normal opacity-85">sheet</span></h4>
+                  </div>
+                </div>
                 <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
                   <CheckCircle2 size={10} /> Tất cả loại sản phẩm
                 </div>
@@ -796,7 +815,9 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                                 {areaFilter !== 'pour' && (
                                   <div className="flex items-center justify-center gap-1.5">
                                     <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-purple-500/10 text-purple-600">Tách</span>
-                                    <span className="font-mono font-bold">{(day.separatedByShift[s] || 0).toLocaleString()}</span>
+                                    <span className="font-mono font-bold">
+                                      {(day.separatedByShift[s] || 0).toLocaleString()} <span className="text-[10px] font-normal opacity-70">B</span> / {(day.separatedByShiftSheets[s] || 0).toLocaleString()} <span className="text-[10px] font-normal opacity-70">S</span>
+                                    </span>
                                   </div>
                                 )}
                               </div>
@@ -813,7 +834,9 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                               {areaFilter !== 'pour' && (
                                 <div>
                                   <span className="text-[8px] font-black uppercase text-purple-600 block">Tổng Tách</span>
-                                  <span className="text-base font-black text-purple-700">{day.separated.toLocaleString()}</span>
+                                  <span className="text-base font-black text-purple-700">
+                                    {day.separated.toLocaleString()} <span className="text-xs font-normal opacity-70">B</span> / {day.separatedSheets.toLocaleString()} <span className="text-xs font-normal opacity-70">S</span>
+                                  </span>
                                 </div>
                               )}
                             </div>
