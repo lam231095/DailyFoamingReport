@@ -16,26 +16,26 @@ interface SeparateFormProps {
 
 // Bảng tiêu chuẩn từ file "độ dày - số tấm.xlsx"
 const THICKNESS_TABLE: Record<number, { bunRef: number; tolerance: number; tp: number; btp: number }> = {
-  2:    { bunRef: 144, tolerance: 0,   tp: 72, btp: 36   },
-  2.5:  { bunRef: 145, tolerance: 0,   tp: 58, btp: 29   },
-  3:    { bunRef: 144, tolerance: 0,   tp: 48, btp: 24   },
-  3.5:  { bunRef: 144, tolerance: 0,   tp: 41, btp: 20.5 },
-  4:    { bunRef: 144, tolerance: 0.1, tp: 37, btp: 18.5 },
-  4.2:  { bunRef: 144, tolerance: 0.1, tp: 35, btp: 17.5 },
-  4.5:  { bunRef: 144, tolerance: 0,   tp: 32, btp: 16   },
-  5:    { bunRef: 145, tolerance: 0,   tp: 29, btp: 14.5 },
-  5.2:  { bunRef: 145, tolerance: 0.1, tp: 29, btp: 14.5 },
-  5.5:  { bunRef: 145, tolerance: 0,   tp: 26, btp: 13   },
-  6:    { bunRef: 144, tolerance: 0,   tp: 24, btp: 12   },
-  7:    { bunRef: 146, tolerance: 0.1, tp: 21, btp: 10.5 },
-  8:    { bunRef: 144, tolerance: 0,   tp: 18, btp: 9    },
-  8.2:  { bunRef: 144, tolerance: 0.2, tp: 18, btp: 9    },
-  10:   { bunRef: 140, tolerance: 0,   tp: 14, btp: 7    },
-  11:   { bunRef: 143, tolerance: 0,   tp: 13, btp: 6.5  },
-  12:   { bunRef: 144, tolerance: 0,   tp: 12, btp: 6    },
-  13:   { bunRef: 143, tolerance: 0,   tp: 11, btp: 5.5  },
-  13.5: { bunRef: 135, tolerance: 0,   tp: 10, btp: 5    },
-  14:   { bunRef: 140, tolerance: 0,   tp: 10, btp: 5    },
+  2: { bunRef: 144, tolerance: 0, tp: 72, btp: 36 },
+  2.5: { bunRef: 145, tolerance: 0, tp: 58, btp: 29 },
+  3: { bunRef: 144, tolerance: 0, tp: 48, btp: 24 },
+  3.5: { bunRef: 144, tolerance: 0, tp: 41, btp: 20.5 },
+  4: { bunRef: 144, tolerance: 0.1, tp: 37, btp: 18.5 },
+  4.2: { bunRef: 144, tolerance: 0.1, tp: 35, btp: 17.5 },
+  4.5: { bunRef: 144, tolerance: 0, tp: 32, btp: 16 },
+  5: { bunRef: 145, tolerance: 0, tp: 29, btp: 14.5 },
+  5.2: { bunRef: 145, tolerance: 0.1, tp: 29, btp: 14.5 },
+  5.5: { bunRef: 145, tolerance: 0, tp: 26, btp: 13 },
+  6: { bunRef: 144, tolerance: 0, tp: 24, btp: 12 },
+  7: { bunRef: 146, tolerance: 0.1, tp: 21, btp: 10.5 },
+  8: { bunRef: 144, tolerance: 0, tp: 18, btp: 9 },
+  8.2: { bunRef: 144, tolerance: 0.2, tp: 18, btp: 9 },
+  10: { bunRef: 140, tolerance: 0, tp: 14, btp: 7 },
+  11: { bunRef: 143, tolerance: 0, tp: 13, btp: 6.5 },
+  12: { bunRef: 144, tolerance: 0, tp: 12, btp: 6 },
+  13: { bunRef: 143, tolerance: 0, tp: 11, btp: 5.5 },
+  13.5: { bunRef: 135, tolerance: 0, tp: 10, btp: 5 },
+  14: { bunRef: 140, tolerance: 0, tp: 10, btp: 5 },
 }
 
 const ERROR_TYPES = [
@@ -48,8 +48,8 @@ const ERROR_TYPES = [
 type ProductType = 'thanh_pham' | 'ban_thanh_pham'
 
 const TABS: { id: ProductType; label: string; color: string; bg: string }[] = [
-  { id: 'thanh_pham',     label: '✅ Thành phẩm',     color: 'purple', bg: 'bg-purple-600' },
-  { id: 'ban_thanh_pham', label: '🔶 Bán thành phẩm', color: 'amber',  bg: 'bg-amber-500'  },
+  { id: 'thanh_pham', label: '✅ Thành phẩm', color: 'purple', bg: 'bg-purple-600' },
+  { id: 'ban_thanh_pham', label: '🔶 Bán thành phẩm', color: 'amber', bg: 'bg-amber-500' },
 ]
 
 const defaultForm = (plan: ProductionPlan) => {
@@ -58,14 +58,14 @@ const defaultForm = (plan: ProductionPlan) => {
   const std = thickness ? THICKNESS_TABLE[thickness] : null
   const initialBunThickness = std ? std.bunRef : 144
 
-    const hour = new Date().getHours()
-    let initialShift = 'Ca 1'
-    if (hour >= 14 && hour < 22) initialShift = 'Ca 2'
-    else if (hour >= 22 || hour < 6) initialShift = 'Ca 3'
+  const hour = new Date().getHours()
+  let initialShift = 'Ca 1'
+  if (hour >= 14 && hour < 22) initialShift = 'Ca 2'
+  else if (hour >= 22 || hour < 6) initialShift = 'Ca 3'
 
-    return {
-      shift: initialShift,
-      machine_id: 'Máy tách tự động 2',
+  return {
+    shift: initialShift,
+    machine_id: 'Máy tách tự động 2',
     operator_name: '',
     bun_thickness_mm: initialBunThickness,
     sheet_thickness_mm: thickness || 0,
@@ -286,12 +286,12 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               <label className="text-xs font-bold text-[var(--text-2)] uppercase">Độ dày bun sau tách da (mm)</label>
               <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">Tự động</span>
             </div>
-            <input 
-              type="number" 
-              step="0.1" 
+            <input
+              type="number"
+              step="0.1"
               value={formData.bun_thickness_mm}
               readOnly
-              className={`w-full bg-gray-50 dark:bg-black/10 border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-bold outline-none transition-all font-mono cursor-not-allowed`} 
+              className={`w-full bg-gray-50 dark:bg-black/10 border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-bold outline-none transition-all font-mono cursor-not-allowed`}
             />
           </div>
           <div className="space-y-2">
@@ -299,13 +299,13 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               <label className="text-xs font-bold text-[var(--text-2)] uppercase">Độ dày sheet thực tế (mm)</label>
               <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">Gợi ý</span>
             </div>
-            <input 
-              type="number" 
-              step="0.1" 
+            <input
+              type="number"
+              step="0.1"
               value={formData.sheet_thickness_mm}
               required
               onChange={e => setFormData({ ...formData, sheet_thickness_mm: Number(e.target.value) })}
-              className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} 
+              className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`}
             />
           </div>
         </div>
@@ -373,15 +373,13 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                       </p>
                     </div>
 
-                    <div className={`p-3 rounded-xl border ${
-                      efficiency >= 95 ? 'bg-green-500/10 border-green-500/20' :
-                      efficiency >= 85 ? 'bg-orange-500/10 border-orange-500/20' :
-                      'bg-red-500/10 border-red-500/20'}`}>
+                    <div className={`p-3 rounded-xl border ${efficiency >= 95 ? 'bg-green-500/10 border-green-500/20' :
+                        efficiency >= 85 ? 'bg-orange-500/10 border-orange-500/20' :
+                          'bg-red-500/10 border-red-500/20'}`}>
                       <p className="text-[10px] text-[var(--text-3)] font-bold uppercase mb-1">% Đạt tiêu chuẩn</p>
                       <div className="flex items-end gap-2">
-                        <p className={`text-2xl font-mono font-bold ${
-                          efficiency >= 95 ? 'text-green-600' :
-                          efficiency >= 85 ? 'text-orange-600' : 'text-red-600'}`}>
+                        <p className={`text-2xl font-mono font-bold ${efficiency >= 95 ? 'text-green-600' :
+                            efficiency >= 85 ? 'text-orange-600' : 'text-red-600'}`}>
                           {efficiency}%
                         </p>
                         <p className="text-[10px] font-bold mb-1.5 uppercase opacity-70">
@@ -452,8 +450,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
         {/* Message */}
         {message && (
-          <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${
-            message.type === 'success'
+          <div className={`p-4 rounded-xl text-sm font-medium flex items-center gap-2 ${message.type === 'success'
               ? 'bg-green-500/10 text-green-600 border border-green-500/20'
               : 'bg-red-500/10 text-red-600 border border-red-500/20'}`}>
             {message.type === 'success' && <CheckCircle2 size={16} />}

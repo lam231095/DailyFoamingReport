@@ -50,8 +50,9 @@ function parseWeekLabel(label: string | null | undefined): { week: number; year:
   return { week: parseInt(m[1]), year: parseInt(m[2]) }
 }
 
-// Returns true if plan is >= W19-2026
+// Returns true if plan is >= W19-2026 or is China CN
 function isWeekAllowed(label: string | null | undefined): boolean {
+  if (label === 'China CN') return true
   const parsed = parseWeekLabel(label)
   if (!parsed) return false
   if (parsed.year < MIN_YEAR) return false
@@ -133,9 +134,9 @@ function getDeadlineStatus(dateStr: string | null | undefined, isCompleted: bool
   }
 }
 
-// Generate list of active week labels starting from W19-2026 up to W52-2028
+// Generate list of active week labels starting from W19-2026 up to W52-2028, plus China CN
 function generateAllowedWeeks(): string[] {
-  const list: string[] = []
+  const list: string[] = ['China CN']
   // 2026: W19 -> W52
   for (let i = 19; i <= 52; i++) {
     list.push(`W${i}-2026`)
