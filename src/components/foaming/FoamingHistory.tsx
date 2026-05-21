@@ -147,7 +147,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
     if (activeStage === 'separate') {
-      headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
+      headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
       headers.push(...ERROR_TYPES)
     }
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
@@ -219,6 +219,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           suggested, 
           `${perf}%`,
           row.lot_no, 
+          row.note || '',
           noInfoSheets,
           row.ng_qty, 
           row.error_hardness_above || 0,
@@ -597,6 +598,12 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Dày Bun / Sheet</p>
                             <p className="text-xs font-bold text-[var(--text-1)]">{row.bun_thickness_mm || 0} / {row.sheet_thickness_mm || 0} mm</p>
                           </div>
+                          {row.note && (
+                            <div className="col-span-2 sm:col-span-3 bg-gray-500/5 p-2 rounded-lg border border-gray-500/10">
+                              <p className="text-[10px] text-gray-600 font-bold uppercase mb-0.5">Ghi chú</p>
+                              <p className="text-xs text-[var(--text-2)] italic">"{row.note}"</p>
+                            </div>
+                          )}
                         </>
                       )}
                     </div>

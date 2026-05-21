@@ -55,7 +55,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     operator_name: '',
     actual_bun_poured: plan.sl_bun_can_do || 0,
     lot_no: '',
-    ng_items: [{ qty: 0, type: ERROR_TYPES[0] }],
+    ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
     storage_location: '',
     storage_line: '',
     color_tag: '',
@@ -67,12 +67,12 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
 
   const storageCarts = Math.ceil(formData.actual_bun_poured / 6)
 
-  const addNGItem = () => setFormData({ ...formData, ng_items: [...formData.ng_items, { qty: 0, type: ERROR_TYPES[0] }] })
+  const addNGItem = () => setFormData({ ...formData, ng_items: [...formData.ng_items, { qty: 0, type: ERROR_TYPES[0], note: '' }] })
   const removeNGItem = (i: number) => {
     if (formData.ng_items.length <= 1) return
     setFormData({ ...formData, ng_items: formData.ng_items.filter((_, idx) => idx !== i) })
   }
-  const updateNGItem = (i: number, field: 'qty' | 'type', value: any) => {
+  const updateNGItem = (i: number, field: 'qty' | 'type' | 'note', value: any) => {
     const items = [...formData.ng_items]
     items[i] = { ...items[i], [field]: value }
     setFormData({ ...formData, ng_items: items })
@@ -86,7 +86,9 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     try {
       const totalNG = formData.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
       const combinedError = formData.ng_items
-        .filter(x => x.qty > 0).map(x => `${x.type} (${x.qty})`).join(', ')
+        .filter(x => x.qty > 0)
+        .map(x => x.type === 'Lỗi khác' && x.note ? `${x.type}: ${x.note.trim()} (${x.qty})` : `${x.type} (${x.qty})`)
+        .join(', ')
 
       const { error } = await supabase.from('foaming_pour_reports').insert({
         firm_plan: plan.firm_plan,
@@ -293,27 +295,41 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               <Plus size={14} /> THÊM LỖI
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {formData.ng_items.map((item, index) => (
-              <div key={index} className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
-                <div className="flex-1 w-full space-y-1.5">
-                  <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Số lượng (Bun)</label>
-                  <input type="number" value={item.qty}
-                    onChange={e => updateNGItem(index, 'qty', Number(e.target.value))}
-                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm" />
+              <div key={index} className="space-y-3 pb-3 border-b border-red-500/10 last:border-b-0 last:pb-0">
+                <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+                  <div className="flex-1 w-full space-y-1.5">
+                    <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Số lượng (Bun)</label>
+                    <input type="number" value={item.qty || ''}
+                      onChange={e => updateNGItem(index, 'qty', Number(e.target.value))}
+                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm" />
+                  </div>
+                  <div className="flex-[2] w-full space-y-1.5">
+                    <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Loại lỗi</label>
+                    <select value={item.type} onChange={e => updateNGItem(index, 'type', e.target.value)}
+                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm">
+                      {ERROR_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  {formData.ng_items.length > 1 && (
+                    <button type="button" onClick={() => removeNGItem(index)}
+                      className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all mb-0.5">
+                      <Trash2 size={18} />
+                    </button>
+                  )}
                 </div>
-                <div className="flex-[2] w-full space-y-1.5">
-                  <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Loại lỗi</label>
-                  <select value={item.type} onChange={e => updateNGItem(index, 'type', e.target.value)}
-                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm">
-                    {ERROR_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                {formData.ng_items.length > 1 && (
-                  <button type="button" onClick={() => removeNGItem(index)}
-                    className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all">
-                    <Trash2 size={18} />
-                  </button>
+                {item.type === 'Lỗi khác' && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-red-500/80 uppercase ml-1">Chi tiết lỗi khác</label>
+                    <input 
+                      type="text" 
+                      value={(item as any).note || ''}
+                      onChange={e => updateNGItem(index, 'note', e.target.value)}
+                      placeholder="Ghi chú chi tiết lỗi khác..."
+                      className="w-full bg-[var(--bg-card)] border-2 border-red-500/20 rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-xs" 
+                    />
+                  </div>
                 )}
               </div>
             ))}
