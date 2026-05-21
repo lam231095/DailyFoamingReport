@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, Filter, Calendar, Clock, User, 
   ChevronDown, FileText, Download, Loader2,
-  AlertCircle, ArrowRight
+  AlertCircle, ArrowRight, RotateCcw
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser } from '@/types'
@@ -31,12 +31,19 @@ const ERROR_TYPES = [
   'Lỗi độ cứng TRÊN chuẩn', 'Lỗi độ cứng DƯỚI chuẩn'
 ]
 
+const AUTHORIZED_REVERT_MSNVS = ['02075', '02603', '04820', '04127']
+
 export default function FoamingHistory({ user }: FoamingHistoryProps) {
   const [activeStage, setActiveStage] = useState<StageType>('pour')
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [standards, setStandards] = useState<any[]>([])
+  
+  const [revertingItem, setRevertingItem] = useState<any | null>(null)
+  const [revertLoading, setRevertLoading] = useState(false)
+
+  const isAuthorized = AUTHORIZED_REVERT_MSNVS.includes(user?.msnv || '')
 
   // Filters
   const [filters, setFilters] = useState({
@@ -130,6 +137,31 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  const handleRevertClick = (item: any) => {
+    setRevertingItem(item)
+  }
+
+  const handleConfirmRevert = async () => {
+    if (!revertingItem) return
+    setRevertLoading(true)
+    try {
+      const config = STAGE_CONFIG[activeStage]
+      const { error: deleteError } = await supabase
+        .from(config.table)
+        .delete()
+        .eq('id', revertingItem.id)
+
+      if (deleteError) throw deleteError
+
+      await fetchData()
+      setRevertingItem(null)
+    } catch (err: any) {
+      alert('Không thể hồi lại báo cáo: ' + err.message)
+    } finally {
+      setRevertLoading(false)
+    }
+  }
 
   const exportCSV = () => {
     if (data.length === 0) return
@@ -609,13 +641,23 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     </div>
                   </div>
                   
-                  <div className="text-right shrink-0">
-                    <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">
-                      {row.delivery_date ? new Date(row.delivery_date).toLocaleDateString('vi-VN') : formatReportDate(row.created_at)}
-                    </p>
-                    <p className="text-[10px] text-[var(--text-3)]">
-                      {new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+                  <div className="text-right shrink-0 flex flex-col items-end justify-between self-stretch">
+                    <div>
+                      <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">
+                        {row.delivery_date ? new Date(row.delivery_date).toLocaleDateString('vi-VN') : formatReportDate(row.created_at)}
+                      </p>
+                      <p className="text-[10px] text-[var(--text-3)]">
+                        {new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    {isAuthorized && (
+                      <button
+                        onClick={() => handleRevertClick(row)}
+                        className="mt-3 flex items-center gap-1 px-2 py-1 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-red-500/20 active:scale-95 cursor-pointer"
+                      >
+                        <RotateCcw size={12} /> Hồi lại
+                      </button>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -623,6 +665,81 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           </>
         )}
       </div>
+
+      {/* ── Confirmation Modal ──────────────────────── */}
+      <AnimatePresence>
+        {revertingItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !revertLoading && setRevertingItem(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-md bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 shadow-2xl z-10 space-y-6"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 shrink-0">
+                  <AlertCircle size={20} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold text-[var(--text-1)]">
+                    Xác nhận hồi lại báo cáo?
+                  </h3>
+                  <p className="text-xs text-[var(--text-3)]">
+                    Bạn đang thực hiện hồi lại (xóa) báo cáo đã lưu cho đơn:
+                  </p>
+                  <div className="bg-red-500/5 border border-red-500/10 p-2.5 rounded-xl text-xs space-y-1 mt-2 text-[var(--text-2)] font-semibold font-mono">
+                    <p>• Firm Plan: <span className="text-red-500 font-bold">{revertingItem.firm_plan}</span></p>
+                    <p>• Sản phẩm: {revertingItem.production_plan?.ten_san_pham}</p>
+                    <p>• Ca: {revertingItem.shift || 'Warehouse'} {revertingItem.machine_id ? `· ${revertingItem.machine_id}` : ''}</p>
+                    {activeStage === 'pour' && <p>• SL Đổ: <span className="text-blue-500 font-bold">{revertingItem.actual_bun_poured} Bun</span></p>}
+                    {activeStage === 'separate' && <p>• SL Tách: <span className="text-purple-500 font-bold">{revertingItem.actual_bun_separated} Bun</span></p>}
+                    {activeStage === 'warehouse' && <p>• SL Giao: <span className="text-green-500 font-bold">{revertingItem.qty_delivered_sheet} Sheet</span></p>}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  type="button"
+                  disabled={revertLoading}
+                  onClick={() => setRevertingItem(null)}
+                  className="px-4 py-2 bg-gray-500/10 hover:bg-gray-500/20 text-[var(--text-2)] rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="button"
+                  disabled={revertLoading}
+                  onClick={handleConfirmRevert}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-red-600/10 flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  {revertLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={14} />
+                      Đang xử lý...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw size={14} />
+                      Đồng ý Hồi lại
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
