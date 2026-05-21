@@ -121,6 +121,7 @@ export interface FoamingPourReport {
   color_tag?: string;
   storage_carts?: number;
   note?: string | null;
+  is_compensation?: boolean;
   recorder_id: string;
   created_at: string;
   report_date?: string;
@@ -157,6 +158,7 @@ export interface FoamingSeparateReport {
   productivity_points?: number;
   note?: string | null;
   product_type?: string;
+  is_compensation?: boolean;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;

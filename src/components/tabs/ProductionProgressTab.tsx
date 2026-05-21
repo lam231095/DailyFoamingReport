@@ -158,6 +158,7 @@ type ShiftEntry = {
   date: string      // YYYY-MM-DD
   shift: string
   qty: number
+  isCompensation?: boolean
 }
 
 type OrderProgress = {
@@ -233,10 +234,20 @@ function ShiftTable({ entries, color, isSeparate = false }: { entries: any[]; co
             {rows.map((r, i) => (
               <span key={i}
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-                style={{ background: `${color}15`, color, border: `1px solid ${color}30` }}
+                style={{
+                  background: r.isCompensation ? 'rgba(245,158,11,0.12)' : `${color}15`,
+                  color: r.isCompensation ? '#f59e0b' : color,
+                  border: `1px solid ${r.isCompensation ? 'rgba(245,158,11,0.3)' : `${color}30`}`
+                }}
+                title={r.isCompensation ? 'Đơn bù (Hàng bù NG)' : undefined}
               >
                 {r.shift}: <strong>{isSeparate ? r.sheets.toLocaleString('vi-VN') : r.qty.toLocaleString('vi-VN')}</strong> {isSeparate ? 'sheet' : 'bun'}
                 {isSeparate && <span className="opacity-65">({r.qty} bun)</span>}
+                {r.isCompensation && (
+                  <span className="text-[8px] uppercase font-black px-1 bg-amber-500 text-white rounded ml-0.5">
+                    Bù
+                  </span>
+                )}
               </span>
             ))}
           </div>
@@ -433,11 +444,11 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
       const [pourRes, sepRes, standardsRes] = await Promise.all([
         supabase
           .from('foaming_pour_reports')
-          .select('id,firm_plan,shift,actual_bun_poured,report_date,created_at')
+          .select('id,firm_plan,shift,actual_bun_poured,is_compensation,report_date,created_at')
           .in('firm_plan', allowedFirmPlans),
         supabase
           .from('foaming_separate_reports')
-          .select('id,firm_plan,shift,actual_bun_separated,actual_sheet_received,product_type,report_date,created_at')
+          .select('id,firm_plan,shift,actual_bun_separated,actual_sheet_received,product_type,is_compensation,report_date,created_at')
           .in('firm_plan', allowedFirmPlans),
         supabase
           .from('thickness_standards')
@@ -468,6 +479,7 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
         date: getRecordDate(r),
         shift: r.shift || 'Ca ?',
         qty: r.actual_bun_poured || 0,
+        isCompensation: r.is_compensation || false,
       }))
       const pourTotal = pourEntries.reduce((s, e) => s + e.qty, 0)
 
@@ -478,7 +490,8 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
         shift: r.shift || 'Ca ?',
         qty: r.actual_bun_separated || 0,
         sheets: r.actual_sheet_received || 0,
-        productType: r.product_type || 'thanh_pham'
+        productType: r.product_type || 'thanh_pham',
+        isCompensation: r.is_compensation || false,
       }))
       const sepTotal = sepEntries.reduce((s, e) => s + e.qty, 0)
       const sepTotalSheets = sepEntries.reduce((s, e) => s + e.sheets, 0)

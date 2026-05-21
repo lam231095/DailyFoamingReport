@@ -54,6 +54,7 @@ const defaultForm = (plan: ProductionPlan) => {
     manager_name: '',
     ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
     note: '',
+    is_compensation: false,
   }
 }
 
@@ -141,6 +142,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       actual_sheet_received: plan.sl_sheet || 0,
       ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
       note: '',
+      is_compensation: false,
     }))
   }
   const isTP = productType === 'thanh_pham'
@@ -192,9 +194,9 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         maxOptimalSheets = plan.sl_sheet || 0
       }
 
-      if (totalInputSheets > maxOptimalSheets) {
+      if (!formData.is_compensation && totalInputSheets > maxOptimalSheets) {
         throw new Error(
-          `Số lượng sheet nhận vượt quá giới hạn tối ưu của đơn hàng này. (Lũy kế đã nhập trước đó: ${previousSheets} sheet, Nhập lần này: ${currentInputSheets} sheet, Số lượng tối ưu tối đa cho phép: ${maxOptimalSheets} sheet). Vui lòng điều chỉnh lại.`
+          `Số lượng sheet nhận vượt quá giới hạn tối ưu của đơn hàng này. (Lũy kế đã nhập trước đó: ${previousSheets} sheet, Nhập lần này: ${currentInputSheets} sheet, Số lượng tối ưu tối đa cho phép: ${maxOptimalSheets} sheet). Vui lòng điều chỉnh lại hoặc chọn "Đơn bù" nếu đây là lượt chạy bù hàng NG.`
         )
       }
 
@@ -230,6 +232,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         manager_name: formData.manager_name,
         product_type: productType,
         note: formData.note.trim() || null,
+        is_compensation: formData.is_compensation,
         recorder_id: user.id,
       })
       if (error) throw error
@@ -341,6 +344,20 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
             <input type="text" value={formData.lot_no} required onChange={e => setFormData({ ...formData, lot_no: e.target.value })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`} />
           </div>
+        </div>
+
+        {/* Đơn bù checkbox */}
+        <div className="flex items-center gap-3 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 hover:bg-amber-500/10 transition-colors">
+          <input
+            type="checkbox"
+            id="is_compensation_sep"
+            checked={formData.is_compensation}
+            onChange={(e) => setFormData({ ...formData, is_compensation: e.target.checked })}
+            className="w-5 h-5 rounded border-2 border-[var(--border)] text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-500 transition-all"
+          />
+          <label htmlFor="is_compensation_sep" className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase select-none cursor-pointer flex-1">
+            Đơn bù (Báo cáo này bù cho hàng phế phẩm NG)
+          </label>
         </div>
 
         {/* Độ dày */}

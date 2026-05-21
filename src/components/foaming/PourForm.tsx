@@ -63,6 +63,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     waste_kg: 0,
     manager_name: '',
     note: '',
+    is_compensation: false,
   })
 
   const storageCarts = Math.ceil(formData.actual_bun_poured / 6)
@@ -108,6 +109,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         waste_kg: Number(formData.waste_kg),
         manager_name: formData.manager_name,
         note: formData.note.trim() || null,
+        is_compensation: formData.is_compensation,
         recorder_id: user.id
       })
 
@@ -207,6 +209,20 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               <option value="Tuấn Anh">Tuấn Anh</option>
             </select>
           </div>
+        </div>
+
+        {/* Đơn bù checkbox */}
+        <div className="flex items-center gap-3 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10 hover:bg-amber-500/10 transition-colors">
+          <input
+            type="checkbox"
+            id="is_compensation_pour"
+            checked={formData.is_compensation}
+            onChange={(e) => setFormData({ ...formData, is_compensation: e.target.checked })}
+            className="w-5 h-5 rounded border-2 border-[var(--border)] text-amber-600 focus:ring-amber-500 cursor-pointer accent-amber-500 transition-all"
+          />
+          <label htmlFor="is_compensation_pour" className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase select-none cursor-pointer flex-1">
+            Đơn bù (Báo cáo này bù cho hàng phế phẩm NG)
+          </label>
         </div>
 
         {/* --- Phần lưu trữ (Mới) --- */}

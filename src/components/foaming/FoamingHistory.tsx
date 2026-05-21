@@ -176,7 +176,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     }
 
     // Header dựa trên stage
-    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV"]
+    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV", "Đơn bù"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
     if (activeStage === 'separate') {
       headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
@@ -195,7 +195,8 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         row.production_plan?.pu_code,
         row.production_plan?.ten_san_pham,
         row.users?.full_name,
-        row.users?.msnv
+        row.users?.msnv,
+        row.is_compensation ? 'Đơn bù' : 'Đơn chính'
       ]
       
       let specific: any[] = []
@@ -491,6 +492,11 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                       <span className="px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 text-[10px] font-bold uppercase">
                         {row.firm_plan}
                       </span>
+                      {row.is_compensation && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[10px] font-black uppercase">
+                          Đơn bù
+                        </span>
+                      )}
                       <span className="text-[11px] font-bold text-[var(--text-1)] font-mono">
                         {row.production_plan?.pu_code}
                       </span>
