@@ -97,6 +97,8 @@ while ($true) {
                 $targetSyncScript = Join-Path $SCRIPT_DIR "sync-excel-to-supabase.ps1"
             } elseif ($fileName -like "*dộ dày - số tấm*") {
                 $targetSyncScript = Join-Path $SCRIPT_DIR "sync-thickness-to-supabase.ps1"
+            } elseif ($fileName -like "*Sample*") {
+                $targetSyncScript = Join-Path $SCRIPT_DIR "sync-sample-plan.ps1"
             }
             
             if ($targetSyncScript -and (Test-Path $targetSyncScript)) {
