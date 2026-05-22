@@ -222,61 +222,109 @@ function SvgPerformanceChart({
   areaFilter: AreaFilter
 }) {
   const W = 800
-  const H = 240
+  const H = 200
   const PAD_L = 44
-  const PAD_R = 120
-  const PAD_T = 20
-  const PAD_B = 40
+  const PAD_R = 8
+  const PAD_T = 16
+  const PAD_B = 32
   const chartW = W - PAD_L - PAD_R
   const chartH = H - PAD_T - PAD_B
   const n = dateList.length
   const stepX = chartW / Math.max(n - 1, 1)
 
+  // Collect active managers for legend
+  const activeManagers = managers.filter(m => managerFilter === 'Tất cả' || m === managerFilter)
+
   return (
-    <div className="w-full overflow-x-auto">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        style={{ width: '100%', height: 'auto', minWidth: Math.max(W, n * 30) }}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Y-axis grid (0% to 125%) */}
-        {[0, 25, 50, 75, 100, 125].map((val, i) => {
-          const y = PAD_T + chartH - (val / 125) * chartH
-          return (
-            <g key={val}>
-              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y}
-                stroke={val === 100 ? '#10b981' : '#e2e8f0'}
-                strokeWidth={val === 100 ? 1.5 : 1}
-                strokeDasharray={val === 100 ? '0' : '4 4'}
-              />
-              <text x={PAD_L - 6} y={y + 4} textAnchor="end" fontSize="9" fill="#94a3b8" fontWeight="600">
-                {val}%
+    <div className="w-full">
+      <div className="w-full overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ width: '100%', height: 'auto', minWidth: 320 }}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Y-axis grid (0% to 125%) */}
+          {[0, 25, 50, 75, 100, 125].map((val) => {
+            const y = PAD_T + chartH - (val / 125) * chartH
+            return (
+              <g key={val}>
+                <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y}
+                  stroke={val === 100 ? '#10b981' : '#e2e8f0'}
+                  strokeWidth={val === 100 ? 1.5 : 1}
+                  strokeDasharray={val === 100 ? '0' : '4 4'}
+                />
+                <text x={PAD_L - 6} y={y + 4} textAnchor="end" fontSize="8" fill="#94a3b8" fontWeight="600">
+                  {val}%
+                </text>
+              </g>
+            )
+          })}
+
+          {/* X-axis labels — skip crowded labels */}
+          {dateList.map((date, idx) => {
+            const skipEvery = n > 21 ? 3 : n > 14 ? 2 : 1
+            if (idx % skipEvery !== 0) return null
+            const x = PAD_L + idx * stepX
+            return (
+              <text key={date} x={x} y={H - 6} textAnchor="middle" fontSize="7.5" fill="#94a3b8" fontWeight="600">
+                {date.split('/')[0]}/{date.split('/')[1]}
               </text>
-            </g>
-          )
-        })}
+            )
+          })}
 
-        {/* X-axis labels */}
-        {dateList.map((date, idx) => {
-          if (n > 15 && idx % 2 !== 0) return null
-          const x = PAD_L + idx * stepX
-          return (
-            <text key={date} x={x} y={H - 10} textAnchor="middle" fontSize="8" fill="#94a3b8" fontWeight="600">
-              {date.split('/')[0]}/{date.split('/')[1]}
-            </text>
-          )
-        })}
+          {/* Lines for each manager */}
+          {managers.map(manager => {
+            if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
 
-        {/* Lines for each manager */}
-        {managers.map(manager => {
-          if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
-          
-          const points = dateList.map((date, idx) => {
+            const points = dateList.map((date, idx) => {
+              const day = data.find(d => d.date === date)
+              if (!day) return null
+
+              let totalActual = 0
+              let compositeTarget = 0
+              if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
+                totalActual += day.pouredByManager[manager].actual
+                compositeTarget += day.pouredByManager[manager].shifts.size * TARGET_POUR
+              }
+              if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
+                totalActual += day.separatedByManager[manager].actual
+                compositeTarget += day.separatedByManager[manager].shifts.size * TARGET_SEPARATE
+              }
+
+              if (compositeTarget === 0) return null
+              const perf = (totalActual / compositeTarget) * 100
+              const x = PAD_L + idx * stepX
+              const y = PAD_T + chartH - (Math.min(125, perf) / 125) * chartH
+              return { x, y, perf }
+            }).filter(p => p !== null) as { x: number; y: number; perf: number }[]
+
+            if (points.length < 1) return null
+
+            const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+            const color = MANAGER_COLORS[manager]
+
+            return (
+              <g key={manager}>
+                <path d={pathD} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                {points.map((p, i) => (
+                  <circle key={i} cx={p.x} cy={p.y} r="2.5" fill="white" stroke={color} strokeWidth="1.5" />
+                ))}
+              </g>
+            )
+          })}
+        </svg>
+      </div>
+
+      {/* Legend gọn dưới biểu đồ */}
+      <div className="flex items-center justify-center gap-4 mt-2">
+        {activeManagers.map(manager => {
+          const color = MANAGER_COLORS[manager]
+          // Tính avg perf for display
+          let totalPerf = 0, cnt = 0
+          dateList.forEach(date => {
             const day = data.find(d => d.date === date)
-            if (!day) return null
-            
-            let totalActual = 0
-            let compositeTarget = 0
+            if (!day) return
+            let totalActual = 0, compositeTarget = 0
             if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
               totalActual += day.pouredByManager[manager].actual
               compositeTarget += day.pouredByManager[manager].shifts.size * TARGET_POUR
@@ -285,33 +333,18 @@ function SvgPerformanceChart({
               totalActual += day.separatedByManager[manager].actual
               compositeTarget += day.separatedByManager[manager].shifts.size * TARGET_SEPARATE
             }
-
-            if (compositeTarget === 0) return null
-            const perf = (totalActual / compositeTarget) * 100
-            const x = PAD_L + idx * stepX
-            const y = PAD_T + chartH - (Math.min(125, perf) / 125) * chartH
-            return { x, y, perf }
-          }).filter(p => p !== null) as { x: number; y: number; perf: number }[]
-
-          if (points.length < 1) return null
-
-          const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-          const color = MANAGER_COLORS[manager]
-
+            if (compositeTarget > 0) { totalPerf += (totalActual / compositeTarget) * 100; cnt++ }
+          })
+          const avgPerf = cnt > 0 ? Math.round(totalPerf / cnt) : 0
           return (
-            <g key={manager}>
-              <path d={pathD} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              {points.map((p, i) => (
-                <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="white" stroke={color} strokeWidth="2" />
-              ))}
-              <text x={points[points.length-1].x + 8} y={points[points.length-1].y + 4} 
-                fontSize="10" fontWeight="bold" fill={color}>
-                {manager} ({Math.round(points[points.length-1].perf)}%)
-              </text>
-            </g>
+            <div key={manager} className="flex items-center gap-1.5">
+              <div className="w-6 h-[3px] rounded-full" style={{ backgroundColor: color }} />
+              <span className="text-[10px] font-bold" style={{ color }}>{manager}</span>
+              <span className="text-[10px] font-black" style={{ color }}>{avgPerf}%</span>
+            </div>
           )
         })}
-      </svg>
+      </div>
     </div>
   )
 }
