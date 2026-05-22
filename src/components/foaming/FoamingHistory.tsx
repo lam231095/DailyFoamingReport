@@ -33,6 +33,28 @@ const ERROR_TYPES = [
 
 const AUTHORIZED_REVERT_MSNVS = ['02075', '02603', '04820', '04127']
 
+function cleanProductName(name: string | null | undefined): string {
+  if (!name) return '---'
+  let clean = name.trim()
+  
+  // 1. Remove "OrthoLite" at the beginning (case-insensitive, optional trailing space)
+  clean = clean.replace(/^ortholite\s*/i, '')
+  
+  // 2. Remove dimensions in mm: e.g. "4mm", "12.5mm", "4.2mm"
+  clean = clean.replace(/\b\d+(\.\d+)?\s*mm\b/gi, '')
+  
+  // 3. Remove dimensions in M/m: e.g. "1.1M", "2M", "1.7M", "1.47M"
+  clean = clean.replace(/\b\d+(\.\d+)?\s*[Mm]\b/g, '')
+
+  // 4. Handle Asker hardness: e.g. "25+/-4 Asker C", "35+/-4 asker C", "70-80 Asker F"
+  clean = clean.replace(/\b(\d+(?:-\d+)?)(?:\s*\+/-\s*\d+)?\s*asker\s*([a-zA-Z])\b/gi, '$1$2')
+
+  // Clean double spaces
+  clean = clean.replace(/\s+/g, ' ').trim()
+  
+  return clean
+}
+
 export default function FoamingHistory({ user }: FoamingHistoryProps) {
   const [activeStage, setActiveStage] = useState<StageType>('pour')
   const [data, setData] = useState<any[]>([])
@@ -182,7 +204,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     }
 
     // Header dựa trên stage
-    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV", "Quản lý", "Đơn bù"]
+    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Dòng sản phẩm", "Người nhập", "MSNV", "Quản lý", "Đơn bù"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
     if (activeStage === 'separate') {
       headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
@@ -200,6 +222,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         row.firm_plan,
         row.production_plan?.pu_code,
         row.production_plan?.ten_san_pham,
+        cleanProductName(row.production_plan?.ten_san_pham),
         row.users?.full_name,
         row.users?.msnv,
         row.manager_name || '---',
@@ -537,9 +560,20 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         • {row.shift || 'Warehouse'} {row.machine_id ? `• ${row.machine_id}` : ''}
                       </span>
                     </div>
-                    <h4 className="text-sm font-bold text-[var(--text-1)] leading-tight">
-                      {row.production_plan?.ten_san_pham}
-                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+                      <div>
+                        <span className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-wider block mb-0.5">Sản phẩm (Gốc)</span>
+                        <h4 className="text-sm font-semibold text-[var(--text-2)] leading-tight">
+                          {row.production_plan?.ten_san_pham}
+                        </h4>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-brand-500 uppercase tracking-wider block mb-0.5">Dòng sản phẩm</span>
+                        <h4 className="text-sm font-bold text-brand-500 leading-tight">
+                          {cleanProductName(row.production_plan?.ten_san_pham)}
+                        </h4>
+                      </div>
+                    </div>
                     
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 mt-3 pt-3 border-t border-[var(--border)]">
                       {activeStage === 'pour' && (
@@ -738,7 +772,8 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                   </p>
                   <div className="bg-red-500/5 border border-red-500/10 p-2.5 rounded-xl text-xs space-y-1 mt-2 text-[var(--text-2)] font-semibold font-mono">
                     <p>• Firm Plan: <span className="text-red-500 font-bold">{revertingItem.firm_plan}</span></p>
-                    <p>• Sản phẩm: {revertingItem.production_plan?.ten_san_pham}</p>
+                    <p>• Sản phẩm (Gốc): {revertingItem.production_plan?.ten_san_pham}</p>
+                    <p>• Dòng sản phẩm: <span className="text-brand-500 font-bold">{cleanProductName(revertingItem.production_plan?.ten_san_pham)}</span></p>
                     <p>• Ca: {revertingItem.shift || 'Warehouse'} {revertingItem.machine_id ? `· ${revertingItem.machine_id}` : ''}</p>
                     {activeStage === 'pour' && <p>• SL Đổ: <span className="text-blue-500 font-bold">{revertingItem.actual_bun_poured} Bun</span></p>}
                     {activeStage === 'separate' && <p>• SL Tách: <span className="text-purple-500 font-bold">{revertingItem.actual_bun_separated} Bun</span></p>}
