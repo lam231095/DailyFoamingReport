@@ -234,13 +234,16 @@ function calcManagerPerf(
 }
 
 function SvgPerformanceChart({
-  data, dateList, managers, managerFilter, areaFilter
+  data, dateList, managers, managerFilter, areaFilter, startDate, endDate, shiftFilter
 }: {
   data: AggregatedDay[]
   dateList: string[]
   managers: string[]
   managerFilter: string
   areaFilter: AreaFilter
+  startDate: string
+  endDate: string
+  shiftFilter: string
 }) {
   const activeManagers = managers.filter(m => managerFilter === 'Tất cả' || m === managerFilter)
 
@@ -257,6 +260,12 @@ function SvgPerformanceChart({
       Không có dữ liệu hiệu suất trong khoảng thời gian này
     </div>
   )
+
+  // Tạo nhãn filter đang áp dụng
+  const fmtDate = (d: string) => {
+    const [y, m, dd] = d.split('-')
+    return `${parseInt(dd)}/${parseInt(m)}`
+  }
 
   const W = 720
   const H = 220
@@ -279,10 +288,25 @@ function SvgPerformanceChart({
 
   return (
     <div className="w-full">
-      {/* Ghi chú: đang hiện 10 ngày gần nhất có dữ liệu */}
-      <p className="text-[10px] text-[var(--text-3)] font-bold mb-2 text-right pr-1">
-        📅 Hiển thị {n} ngày gần nhất có dữ liệu
-      </p>
+      {/* Filter context badge */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 text-[10px] font-bold">
+          📅 {fmtDate(startDate)} → {fmtDate(endDate)}
+        </span>
+        {shiftFilter !== 'Tất cả' && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[10px] font-bold">
+            🕐 {shiftFilter}
+          </span>
+        )}
+        {areaFilter !== 'all' && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 text-[10px] font-bold">
+            {areaFilter === 'pour' ? '💧 Khu vực Đổ' : '✂️ Khu vực Tách'}
+          </span>
+        )}
+        <span className="ml-auto text-[10px] text-[var(--text-3)] font-bold">
+          Hiển thị {n} ngày gần nhất có dữ liệu
+        </span>
+      </div>
       <div className="w-full overflow-x-auto">
         <svg
           viewBox={`0 0 ${W} ${H}`}
@@ -832,6 +856,9 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                 managers={MANAGERS}
                 managerFilter={managerFilter}
                 areaFilter={areaFilter}
+                startDate={startDate}
+                endDate={endDate}
+                shiftFilter={shiftFilter}
               />
             </div>
           </div>
@@ -868,14 +895,14 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
               </div>
             </div>
 
-            {aggregatedData.every(d => d.poured === 0 && d.separated === 0) ? (
+            {visibleData.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--text-3)]">
                 <Activity size={40} className="opacity-20" />
                 <p className="text-sm font-medium">Không có dữ liệu trong khoảng thời gian này</p>
               </div>
             ) : (
               <SvgBarChart
-                data={aggregatedData}
+                data={visibleData}
                 maxVal={maxVal}
                 showPour={areaFilter !== 'separate'}
                 showSep={areaFilter !== 'pour'}
