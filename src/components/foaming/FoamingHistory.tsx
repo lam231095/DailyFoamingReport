@@ -53,6 +53,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     firmPlan: '',
     puCode: '',
     msnv: '',
+    manager: 'Tất cả',
   })
   const [showFilters, setShowFilters] = useState(false)
 
@@ -104,6 +105,11 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       // Lọc theo Ca (không áp dụng cho Nhập kho)
       if (activeStage !== 'warehouse' && filters.shift !== 'Tất cả') {
         query = query.eq('shift', filters.shift)
+      }
+
+      // Lọc theo Quản lý (không áp dụng cho Nhập kho)
+      if (activeStage !== 'warehouse' && filters.manager !== 'Tất cả') {
+        query = query.eq('manager_name', filters.manager)
       }
 
       // Lọc theo Firm Plan hoặc No Order
@@ -176,7 +182,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     }
 
     // Header dựa trên stage
-    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV", "Đơn bù"]
+    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Người nhập", "MSNV", "Quản lý", "Đơn bù"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
     if (activeStage === 'separate') {
       headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
@@ -196,6 +202,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         row.production_plan?.ten_san_pham,
         row.users?.full_name,
         row.users?.msnv,
+        row.manager_name || '---',
         row.is_compensation ? 'Đơn bù' : 'Đơn chính'
       ]
       
@@ -375,7 +382,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 mt-4 border-t border-[var(--border)]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 mt-4 border-t border-[var(--border)]">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1">Loại PU Code</label>
                   <input 
@@ -410,6 +417,26 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     <option>Ca 2</option>
                     <option>Ca 3</option>
                     <option>Ca HC</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1">Quản lý (Manager)</label>
+                  <select 
+                    value={activeStage === 'warehouse' ? 'Không áp dụng' : filters.manager}
+                    disabled={activeStage === 'warehouse'}
+                    onChange={(e) => setFilters({...filters, manager: e.target.value})}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500 disabled:opacity-50"
+                  >
+                    {activeStage === 'warehouse' ? (
+                      <option>Không áp dụng</option>
+                    ) : (
+                      <>
+                        <option value="Tất cả">Tất cả</option>
+                        <option value="Linh">Linh</option>
+                        <option value="Thảo">Thảo</option>
+                        <option value="Tuấn Anh">Tuấn Anh</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
@@ -626,6 +653,12 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Người báo cáo / Operator</p>
                         <p className="text-xs font-bold text-[var(--text-2)]">{row.users?.full_name} / {row.operator_name || '---'}</p>
                       </div>
+                      {activeStage !== 'warehouse' && (
+                        <div>
+                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Quản lý / Manager</p>
+                          <p className="text-xs font-bold text-[var(--text-2)]">{row.manager_name || '---'}</p>
+                        </div>
+                      )}
                       {activeStage === 'separate' && (
                         <>
                           <div>
