@@ -50,7 +50,7 @@ function cleanProductName(name: string | null | undefined): string {
   clean = clean.replace(/\b\d+(\.\d+)?\s*[Mm]\b/g, '')
 
   // 5. Handle Asker hardness: e.g. "25+/-4 Asker C", "35+/-4 asker C", "70-80 Asker F"
-  clean = clean.replace(/\b(\d+(?:-\d+)?)(?:\s*\+/-\s*\d+)?\s*asker\s*([a-zA-Z])\b/gi, '$1$2')
+  clean = clean.replace(/\b(\d+(?:-\d+)?)(?:\s*\+\/-\s*\d+)?\s*asker\s*([a-zA-Z])\b/gi, '$1$2')
 
   // Clean double spaces
   clean = clean.replace(/\s+/g, ' ').trim()
