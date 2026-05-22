@@ -39,17 +39,20 @@ function cleanProductName(name: string | null | undefined): string {
   
   // 1. Remove "OrthoLite" at the beginning (case-insensitive, optional trailing space)
   clean = clean.replace(/^ortholite\s*/i, '')
+
+  // 2. Remove bracket codes like [116-17888], [118-467], [xxx] anywhere in the string
+  clean = clean.replace(/\[[^\]]*\]\s*/g, '')
   
-  // 2. Remove dimensions in mm: e.g. "4mm", "12.5mm", "4.2mm"
+  // 3. Remove dimensions in mm: e.g. "4mm", "12.5mm", "4.2mm"
   clean = clean.replace(/\b\d+(\.\d+)?\s*mm\b/gi, '')
   
-  // 3. Remove dimension pairs in M/m separated by X/x (e.g. "1.10M X 2.00M", "1.1M x 2M")
+  // 4. Remove dimension pairs in M/m separated by X/x (e.g. "1.10M X 2.00M", "1.1M x 2M")
   clean = clean.replace(/\b\d+(\.\d+)?\s*[Mm]\s*[xX]\s*\d+(\.\d+)?\s*[Mm]\b/g, '')
 
-  // 4. Remove single dimensions in M/m: e.g. "1.1M", "2M", "1.7M", "1.47M"
+  // 5. Remove single dimensions in M/m: e.g. "1.1M", "2M", "1.7M", "1.47M"
   clean = clean.replace(/\b\d+(\.\d+)?\s*[Mm]\b/g, '')
 
-  // 5. Handle Asker hardness: e.g. "25+/-4 Asker C", "35+/-4 asker C", "70-80 Asker F"
+  // 6. Handle Asker hardness: e.g. "25+/-4 Asker C", "35+/-4 asker C", "70-80 Asker F"
   clean = clean.replace(/\b(\d+(?:-\d+)?)(?:\s*\+\/-\s*\d+)?\s*asker\s*([a-zA-Z])\b/gi, '$1$2')
 
   // Clean double spaces
