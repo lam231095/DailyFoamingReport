@@ -3,14 +3,26 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
-  BarChart3, Calendar, ChevronLeft, ChevronRight,
+  BarChart3, Calendar,
   Activity, Zap, Factory, CheckCircle2,
-  Clock, Sun, Moon, Sunrise, Filter, X, ArrowRight
+  Clock, Filter, X, ArrowRight, Layers
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, FoamingPourReport, FoamingSeparateReport } from '@/types'
 import { getReportTimeRange, formatReportDate } from '@/lib/dateUtils'
-import { TrendingUp, Award, UserCheck } from 'lucide-react'
+import { TrendingUp, Award } from 'lucide-react'
+
+function cleanProductName(name: string | null | undefined): string {
+  if (!name) return '---'
+  let clean = name.trim()
+  clean = clean.replace(/^ortholite\s*/i, '')
+  clean = clean.replace(/\[[^\]]*\]\s*/g, '')
+  clean = clean.replace(/\b\d+(\.\d+)?\s*mm\b/gi, '')
+  clean = clean.replace(/\b\d+(\.\d+)?\s*[Mm]\s*[xX]\s*\d+(\.\d+)?\s*[Mm]\b/g, '')
+  clean = clean.replace(/\b\d+(\.\d+)?\s*[Mm]\b/g, '')
+  clean = clean.replace(/\b(\d+(?:-\d+)?)(?:\s*\+\/-\s*\d+)?\s*asker\s*([a-zA-Z])\b/gi, '$1$2')
+  return clean.replace(/\s+/g, ' ').trim() || '---'
+}
 
 const TARGET_POUR = 320
 const TARGET_SEPARATE = 300
@@ -571,6 +583,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   const [managerFilter, setManagerFilter] = useState<string>('Tất cả')
   const [areaFilter, setAreaFilter] = useState<AreaFilter>('all')
   const [showFilters, setShowFilters] = useState(false)
+  const [productLineFilter, setProductLineFilter] = useState<string>('Tất cả')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -578,7 +591,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     const [pourRes, sepRes] = await Promise.all([
       supabase.from('foaming_pour_reports').select('*')
         .gte('created_at', start).lt('created_at', end),
-      supabase.from('foaming_separate_reports').select('*')
+      supabase.from('foaming_separate_reports')
+        .select('*, production_plan(ten_san_pham)')
         .gte('created_at', start).lt('created_at', end),
     ])
     setPourReports((pourRes.data as any) || [])
@@ -683,6 +697,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     shiftFilter !== 'Tất cả',
     managerFilter !== 'Tất cả',
     areaFilter !== 'all',
+    productLineFilter !== 'Tất cả',
     startDate !== firstDayOfMonth() || endDate !== todayStr()
   ].filter(Boolean).length
 
@@ -690,12 +705,54 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     setShiftFilter('Tất cả')
     setManagerFilter('Tất cả')
     setAreaFilter('all')
+    setProductLineFilter('Tất cả')
     setStartDate(firstDayOfMonth())
     setEndDate(todayStr())
   }
 
   const visibleData = aggregatedData.filter(d => d.poured > 0 || d.separated > 0)
   const maxVal = Math.max(...aggregatedData.map(d => Math.max(d.poured, d.separated))) || 100
+
+  // Build bun thickness chart data from separate reports
+  const bunThicknessData = useMemo(() => {
+    return separateReports
+      .filter(r => {
+        if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
+        if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        if (productLineFilter !== 'Tất cả' && pl !== productLineFilter) return false
+        return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
+      })
+      .map(r => {
+        const totalSheetThickness = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        const actualBunThickness = totalSheetThickness / (r.actual_bun_separated || 1)
+        const reportDate = r.report_date
+          ? r.report_date.split('-').reverse().slice(0, 2).join('/')
+          : formatReportDate(r.created_at).split('/').slice(0, 2).join('/')
+        const productLine = cleanProductName((r as any).production_plan?.ten_san_pham)
+        return {
+          id: r.id,
+          label: `${r.firm_plan}`,
+          productLine,
+          shift: r.shift,
+          manager: r.manager_name || 'Khác',
+          date: reportDate,
+          bunThickness: Math.round(actualBunThickness * 10) / 10,
+          targetThickness: r.bun_thickness_mm || 0,
+        }
+      })
+      .sort((a, b) => a.bunThickness - b.bunThickness)
+  }, [separateReports, shiftFilter, managerFilter, productLineFilter])
+
+  // Collect unique product lines from separate reports
+  const productLineOptions = useMemo(() => {
+    const set = new Set<string>()
+    separateReports.forEach(r => {
+      const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+      if (pl && pl !== '---') set.add(pl)
+    })
+    return ['Tất cả', ...Array.from(set).sort()]
+  }, [separateReports])
 
   return (
     <div className="space-y-5 pb-20">
@@ -799,6 +856,22 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Product line filter */}
+            <div className="sm:col-span-2">
+              <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1 flex items-center gap-1">
+                <Layers size={11} /> Dòng sản phẩm (biểu đồ độ dày bun)
+              </p>
+              <select
+                value={productLineFilter}
+                onChange={e => setProductLineFilter(e.target.value)}
+                className="w-full bg-[var(--bg-input,#f3f4f6)] dark:bg-white/10 border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500 transition-all"
+              >
+                {productLineOptions.map(pl => (
+                  <option key={pl} value={pl}>{pl}</option>
+                ))}
+              </select>
             </div>
           </div>
         )}
@@ -1113,6 +1186,212 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
               </div>
             </div>
           )}
+          {/* Bun Thickness Chart */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-500">
+                  <Layers size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-tight">Độ dày bun thực tế theo đơn (mm)</h3>
+                  <p className="text-[10px] text-[var(--text-3)]">Tổng độ dày sheet thực tế ÷ SL Tách (Bun) · {bunThicknessData.length} đơn</p>
+                </div>
+              </div>
+              {productLineFilter !== 'Tất cả' && (
+                <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-teal-500/10 text-teal-600 border border-teal-500/20">
+                  {productLineFilter}
+                </span>
+              )}
+            </div>
+
+            {bunThicknessData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3 text-[var(--text-3)]">
+                <Layers size={36} className="opacity-20" />
+                <p className="text-sm font-medium">Không có dữ liệu tách trong khoảng thời gian này</p>
+              </div>
+            ) : (
+              <div className="w-full overflow-x-auto">
+                <div style={{ minWidth: Math.max(400, bunThicknessData.length * 44) + 'px' }}>
+                  {/* SVG horizontal-ish bar chart — vertical bars sorted by thickness */}
+                  {(() => {
+                    const maxT = Math.max(...bunThicknessData.map(d => Math.max(d.bunThickness, d.targetThickness)), 1)
+                    const W = Math.max(600, bunThicknessData.length * 44)
+                    const H = 260
+                    const PAD_L = 44
+                    const PAD_R = 12
+                    const PAD_T = 24
+                    const PAD_B = 80
+                    const chartW = W - PAD_L - PAD_R
+                    const chartH = H - PAD_T - PAD_B
+                    const barZone = chartW / bunThicknessData.length
+                    const barW = Math.max(8, Math.min(28, barZone * 0.55))
+                    const gridMax = Math.ceil(maxT / 5) * 5 + 5
+
+                    return (
+                      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }} xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                          <linearGradient id="bunThickGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#14b8a6" stopOpacity="1" />
+                            <stop offset="100%" stopColor="#0d9488" stopOpacity="0.7" />
+                          </linearGradient>
+                          <linearGradient id="targetThickGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.7" />
+                            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.35" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Y grid */}
+                        {[0, 20, 40, 60, 80, 100].map(pct => {
+                          const val = (gridMax * pct) / 100
+                          const y = PAD_T + chartH - (pct / 100) * chartH
+                          return (
+                            <g key={pct}>
+                              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y}
+                                stroke={pct === 0 ? '#cbd5e1' : '#e2e8f0'} strokeWidth={pct === 0 ? 1.5 : 0.8}
+                                strokeDasharray={pct === 0 ? '0' : '3 4'} />
+                              <text x={PAD_L - 4} y={y + 4} textAnchor="end" fontSize="8" fill="#94a3b8" fontWeight="600">
+                                {val.toFixed(0)}
+                              </text>
+                            </g>
+                          )
+                        })}
+
+                        {/* Bars */}
+                        {bunThicknessData.map((item, idx) => {
+                          const cx = PAD_L + barZone * idx + barZone / 2
+                          const bx = cx - barW / 2
+                          const actualH = gridMax > 0 ? (item.bunThickness / gridMax) * chartH : 0
+                          const targetH = gridMax > 0 && item.targetThickness > 0 ? (item.targetThickness / gridMax) * chartH : 0
+                          const actualY = PAD_T + chartH - actualH
+                          const targetY = PAD_T + chartH - targetH
+                          const isAbove = item.targetThickness > 0 && item.bunThickness > item.targetThickness * 1.05
+                          const isBelow = item.targetThickness > 0 && item.bunThickness < item.targetThickness * 0.95
+                          const barColor = isAbove ? '#ef4444' : isBelow ? '#f59e0b' : '#14b8a6'
+
+                          return (
+                            <g key={item.id}>
+                              {/* Target thickness ghost bar */}
+                              {item.targetThickness > 0 && (
+                                <rect x={bx - 2} y={targetY} width={barW + 4} height={Math.max(targetH, 1)}
+                                  rx="2" fill="url(#targetThickGrad)" opacity="0.5" />
+                              )}
+                              {/* Actual bar */}
+                              <rect x={bx} y={actualY} width={barW} height={Math.max(actualH, 2)}
+                                rx="2" fill={barColor} opacity="0.85" />
+                              {/* Value label */}
+                              {actualH > 12 && (
+                                <text x={cx} y={actualY - 4} textAnchor="middle" fontSize="7.5" fill={barColor} fontWeight="800">
+                                  {item.bunThickness}
+                                </text>
+                              )}
+                              {/* X label — firm plan */}
+                              <text
+                                x={cx} y={PAD_T + chartH + 14}
+                                textAnchor="end"
+                                fontSize="7.5" fill="#64748b" fontWeight="700"
+                                transform={`rotate(-45, ${cx}, ${PAD_T + chartH + 14})`}
+                              >
+                                {item.label.length > 14 ? item.label.slice(0, 14) + '…' : item.label}
+                              </text>
+                              {/* date */}
+                              <text
+                                x={cx} y={PAD_T + chartH + 26}
+                                textAnchor="end"
+                                fontSize="6.5" fill="#94a3b8"
+                                transform={`rotate(-45, ${cx}, ${PAD_T + chartH + 26})`}
+                              >
+                                {item.date}
+                              </text>
+                            </g>
+                          )
+                        })}
+
+                        {/* Y axis */}
+                        <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + chartH} stroke="#cbd5e1" strokeWidth="1.5" />
+                        {/* Y label */}
+                        <text x={10} y={PAD_T + chartH / 2} textAnchor="middle" fontSize="8" fill="#94a3b8" fontWeight="700"
+                          transform={`rotate(-90, 10, ${PAD_T + chartH / 2})`}>
+                          mm
+                        </text>
+                      </svg>
+                    )
+                  })()}
+
+                  {/* Legend */}
+                  <div className="flex items-center gap-4 mt-3 justify-center flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-3 rounded" style={{ backgroundColor: '#14b8a6' }} />
+                      <span className="text-[10px] font-bold text-teal-700">Độ dày bun thực tế</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-4 h-3 rounded opacity-50" style={{ backgroundColor: '#f59e0b' }} />
+                      <span className="text-[10px] font-bold text-amber-700">Dày bun tiêu chuẩn (nền)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }} />
+                      <span className="text-[10px] font-bold text-red-600">&gt;5% trên chuẩn</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f59e0b' }} />
+                      <span className="text-[10px] font-bold text-amber-600">&gt;5% dưới chuẩn</span>
+                    </div>
+                  </div>
+
+                  {/* Summary table */}
+                  {bunThicknessData.length > 0 && (
+                    <div className="mt-4 overflow-x-auto">
+                      <table className="w-full text-left text-[11px] border-collapse">
+                        <thead>
+                          <tr className="bg-teal-500/5 text-[10px] font-black uppercase text-teal-700 border-b border-teal-200/30">
+                            <th className="p-2">Firm Plan</th>
+                            <th className="p-2">Dòng SP</th>
+                            <th className="p-2">Ngày</th>
+                            <th className="p-2">Ca</th>
+                            <th className="p-2 text-center">Chuẩn (mm)</th>
+                            <th className="p-2 text-center">Thực tế (mm)</th>
+                            <th className="p-2 text-center">Lệch</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[var(--border)]">
+                          {bunThicknessData.map(item => {
+                            const diff = item.targetThickness > 0 ? item.bunThickness - item.targetThickness : null
+                            const pct = diff !== null && item.targetThickness > 0 ? (diff / item.targetThickness) * 100 : null
+                            const isOver = pct !== null && pct > 5
+                            const isUnder = pct !== null && pct < -5
+                            return (
+                              <tr key={item.id} className="hover:bg-teal-500/5 transition-colors">
+                                <td className="p-2 font-mono font-bold text-brand-600 whitespace-nowrap">{item.label}</td>
+                                <td className="p-2 text-[var(--text-2)] max-w-[180px] truncate" title={item.productLine}>{item.productLine}</td>
+                                <td className="p-2 text-[var(--text-3)]">{item.date}</td>
+                                <td className="p-2 text-[var(--text-3)]">{item.shift}</td>
+                                <td className="p-2 text-center text-[var(--text-3)] font-mono">{item.targetThickness > 0 ? item.targetThickness : '—'}</td>
+                                <td className="p-2 text-center font-mono font-black" style={{ color: isOver ? '#ef4444' : isUnder ? '#f59e0b' : '#14b8a6' }}>
+                                  {item.bunThickness}
+                                </td>
+                                <td className="p-2 text-center">
+                                  {pct !== null ? (
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                      isOver ? 'bg-red-100 text-red-600' :
+                                      isUnder ? 'bg-amber-100 text-amber-700' :
+                                      'bg-green-100 text-green-700'
+                                    }`}>
+                                      {diff! > 0 ? '+' : ''}{diff!.toFixed(1)} ({pct.toFixed(1)}%)
+                                    </span>
+                                  ) : '—'}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
         </motion.div>
       )}
     </div>
