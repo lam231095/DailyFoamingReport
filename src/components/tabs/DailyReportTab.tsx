@@ -212,6 +212,9 @@ function SvgBarChart({
   )
 }
 
+// SVG gradient ID không được chứa ký tự đặc biệt / khoảng trắng
+const safeId = (name: string) => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_')
+
 function calcManagerPerf(
   day: AggregatedDay,
   manager: string,
@@ -288,7 +291,7 @@ function SvgPerformanceChart({
         >
           <defs>
             {activeManagers.map(m => (
-              <linearGradient key={m} id={`barGrad_${m}`} x1="0" y1="0" x2="0" y2="1">
+              <linearGradient key={m} id={`barGrad_${safeId(m)}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={MANAGER_COLORS[m]} stopOpacity="1" />
                 <stop offset="100%" stopColor={MANAGER_COLORS[m]} stopOpacity="0.65" />
               </linearGradient>
@@ -366,7 +369,7 @@ function SvgPerformanceChart({
                       <rect
                         x={bx} y={by} width={barW} height={Math.max(bh, 2)}
                         rx="3"
-                        fill={`url(#barGrad_${manager})`}
+                        fill={`url(#barGrad_${safeId(manager)})`}
                       />
                       {/* % label phía trên cột */}
                       <text
@@ -700,7 +703,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           {/* KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {areaFilter !== 'separate' && (
-              <div className="card p-5 relative overflow-hidden bg-gradient-to-br from-blue-600 to-blue-700 text-white border-none shadow-blue-500/20 shadow-xl">
+              <div className="rounded-2xl p-5 relative overflow-hidden text-white shadow-xl"
+                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 10px 30px rgba(37,99,235,0.35)' }}>
                 <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Đổ</p>
                 <h4 className="text-4xl font-black">{totals.poured.toLocaleString()}</h4>
                 <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
@@ -711,7 +715,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
               </div>
             )}
             {areaFilter !== 'pour' && (
-              <div className="card p-5 relative overflow-hidden bg-gradient-to-br from-purple-600 to-purple-700 text-white border-none shadow-purple-500/20 shadow-xl">
+              <div className="rounded-2xl p-5 relative overflow-hidden text-white shadow-xl"
+                style={{ background: 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)', boxShadow: '0 10px 30px rgba(147,51,234,0.35)' }}>
                 <div className="flex justify-between items-start">
                   <div>
                     <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Tách (TP+BTP)</p>
