@@ -5,7 +5,7 @@ import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info, Plus, Trash2, Alert
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
-import { calculateSuggestedSheets, calculateEfficiency, getOptimalSheetsPerBun, THICKNESS_TABLE } from '@/lib/calculations'
+import { calculateSuggestedSheets, calculateEfficiency, getOptimalSheetsPerBun, THICKNESS_TABLE, calculateOptimalSheetsPerBun } from '@/lib/calculations'
 import { getReportDateISO } from '@/lib/dateUtils'
 
 interface SeparateFormProps {
@@ -103,8 +103,8 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         : {
             bunRef: 144,
             tolerance: 0,
-            tp: THICKNESS_TABLE[14].tp,
-            btp: THICKNESS_TABLE[14].btp
+            tp: calculateOptimalSheetsPerBun(identifiedThickness || 14),
+            btp: Math.round(calculateOptimalSheetsPerBun(identifiedThickness || 14) / 2)
           }
       )
 
@@ -421,18 +421,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                 <div className={`rounded-2xl border-2 border-dashed p-4 space-y-4
                   ${isTP ? 'bg-purple-500/5 border-purple-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
                   
-                  {!hasStandard && (
-                    <div className="flex items-start gap-2.5 text-xs text-amber-700 bg-amber-500/5 border border-amber-500/20 p-3 rounded-xl mb-1">
-                      <Info size={16} className="mt-0.5 shrink-0 text-amber-600" />
-                      <div>
-                        <p className="font-bold text-amber-800">Độ dày chưa cập nhật tiêu chuẩn</p>
-                        <p className="text-[11px] mt-0.5 text-amber-700 opacity-90">
-                          Sản phẩm này có độ dày {identifiedThickness ? `${identifiedThickness}mm` : 'chưa xác định'} chưa được cấu hình tiêu chuẩn trên hệ thống. 
-                          Hệ thống đã tự động áp dụng tiêu chuẩn đề xuất là <strong>14mm</strong>.
-                        </p>
-                      </div>
-                    </div>
-                  )}
+
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -444,7 +433,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-white text-[10px] font-bold
                       ${isTP ? 'bg-purple-500' : 'bg-amber-500'}`}>
                       <Zap size={10} fill="white" />
-                      {isTP ? 'THÀNH PHẨM' : 'BÁN THÀNH PHẨM'} {hasStandard ? identifiedThickness : 14}MM
+                      {isTP ? 'THÀNH PHẨM' : 'BÁN THÀNH PHẨM'} {identifiedThickness !== null ? identifiedThickness : 14}MM
                     </div>
                   </div>
 

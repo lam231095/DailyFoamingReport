@@ -89,7 +89,8 @@ export function getOptimalSheetsPerBun(
     return isTP ? localStd.tp : localStd.btp;
   }
   
-  // Fallback to 14mm
-  return isTP ? THICKNESS_TABLE[14].tp : THICKNESS_TABLE[14].btp;
+  // Fallback: tính toán động dựa trên công thức chuẩn với độ dày bun 144mm
+  const dynamicTP = calculateOptimalSheetsPerBun(thickness);
+  return isTP ? dynamicTP : Math.round(dynamicTP / 2);
 }
 
