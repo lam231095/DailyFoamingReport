@@ -15,11 +15,14 @@ import { TrendingUp, Award, UserCheck } from 'lucide-react'
 const TARGET_POUR = 320
 const TARGET_SEPARATE = 300
 const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh']
+const ALL_CHART_MANAGERS = [...MANAGERS, 'Khác']
 const MANAGER_COLORS: Record<string, string> = {
   'Linh': '#3b82f6',
   'Thảo': '#a855f7',
-  'Tuấn Anh': '#10b981'
+  'Tuấn Anh': '#10b981',
+  'Khác': '#94a3b8'
 }
+const safeId = (name: string) => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_')
 
 interface DailyReportTabProps { user: SessionUser }
 
@@ -86,22 +89,12 @@ function SvgBarChart({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <linearGradient id="gPour" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3b82f6" />
-            <stop offset="100%" stopColor="#1d4ed8" />
-          </linearGradient>
-          <linearGradient id="gSep" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#a855f7" />
-            <stop offset="100%" stopColor="#7c3aed" />
-          </linearGradient>
-          <linearGradient id="gPourH" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#93c5fd" />
-            <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-          <linearGradient id="gSepH" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#d8b4fe" />
-            <stop offset="100%" stopColor="#a855f7" />
-          </linearGradient>
+          {ALL_CHART_MANAGERS.map(m => (
+            <linearGradient key={m} id={`barGrad_prod_${safeId(m)}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={MANAGER_COLORS[m]} stopOpacity="1" />
+              <stop offset="100%" stopColor={MANAGER_COLORS[m]} stopOpacity="0.65" />
+            </linearGradient>
+          ))}
           <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#0004" />
           </filter>
@@ -147,12 +140,32 @@ function SvgBarChart({
               {/* Pour bar */}
               {showPour && pourH > 0 && (
                 <>
-                  <rect
-                    className="svg-bar svg-bar-hovered"
-                    x={pourX} y={pourY} width={barW} height={pourH}
-                    rx="3" fill="url(#gPour)" filter="url(#shadow)"
-                  />
-                  {pourH > 16 && (
+                  {(() => {
+                    let currentY = PAD_T + chartH
+                    const segments = ALL_CHART_MANAGERS.map(m => {
+                      const val = m === 'Khác'
+                        ? Object.keys(day.pouredByManager)
+                            .filter(k => !MANAGERS.includes(k))
+                            .reduce((sum, k) => sum + day.pouredByManager[k].actual, 0)
+                        : day.pouredByManager[m]?.actual || 0
+                      return { manager: m, val }
+                    }).filter(s => s.val > 0)
+
+                    return segments.map((seg, sIdx) => {
+                      const segH = maxVal > 0 ? (seg.val / maxVal) * chartH : 0
+                      const segY = currentY - segH
+                      currentY = segY
+                      return (
+                        <rect
+                          key={seg.manager}
+                          className="svg-bar svg-bar-hovered"
+                          x={pourX} y={segY} width={barW} height={Math.max(segH, 1)}
+                          rx="1.5" fill={`url(#barGrad_prod_${safeId(seg.manager)})`} filter="url(#shadow)"
+                        />
+                      )
+                    })
+                  })()}
+                  {pourH > 10 && (
                     <text x={pourX + barW / 2} y={pourY - 4} textAnchor="middle"
                       fontSize="8" fill="#3b82f6" fontWeight="800" className="svg-bar svg-bar-hovered">
                       {day.poured}
@@ -160,15 +173,36 @@ function SvgBarChart({
                   )}
                 </>
               )}
+
               {/* Sep bar */}
               {showSep && sepH > 0 && (
                 <>
-                  <rect
-                    className="svg-bar svg-bar-hovered"
-                    x={sepX} y={sepY} width={barW} height={sepH}
-                    rx="3" fill="url(#gSep)" filter="url(#shadow)"
-                  />
-                  {sepH > 16 && (
+                  {(() => {
+                    let currentY = PAD_T + chartH
+                    const segments = ALL_CHART_MANAGERS.map(m => {
+                      const val = m === 'Khác'
+                        ? Object.keys(day.separatedByManager)
+                            .filter(k => !MANAGERS.includes(k))
+                            .reduce((sum, k) => sum + day.separatedByManager[k].actual, 0)
+                        : day.separatedByManager[m]?.actual || 0
+                      return { manager: m, val }
+                    }).filter(s => s.val > 0)
+
+                    return segments.map((seg, sIdx) => {
+                      const segH = maxVal > 0 ? (seg.val / maxVal) * chartH : 0
+                      const segY = currentY - segH
+                      currentY = segY
+                      return (
+                        <rect
+                          key={seg.manager}
+                          className="svg-bar svg-bar-hovered"
+                          x={sepX} y={segY} width={barW} height={Math.max(segH, 1)}
+                          rx="1.5" fill={`url(#barGrad_prod_${safeId(seg.manager)})`} filter="url(#shadow)"
+                        />
+                      )
+                    })
+                  })()}
+                  {sepH > 10 && (
                     <text x={sepX + barW / 2} y={sepY - 4} textAnchor="middle"
                       fontSize="8" fill="#a855f7" fontWeight="800" className="svg-bar svg-bar-hovered">
                       {day.separated}
@@ -179,19 +213,60 @@ function SvgBarChart({
 
               {/* Tooltip on hover */}
               {(day.poured > 0 || day.separated > 0) && (
-                <g className="svg-tooltip">
-                  <rect x={cx - 38} y={PAD_T - 4} width={76} height={showPour && showSep ? 38 : 22}
-                    rx="6" fill="#1e293b" opacity="0.92" />
-                  {showPour && (
-                    <text x={cx} y={PAD_T + 11} textAnchor="middle" fontSize="9" fill="#93c5fd" fontWeight="700">
-                      Đổ: {day.poured.toLocaleString()}
-                    </text>
-                  )}
-                  {showSep && (
-                    <text x={cx} y={PAD_T + (showPour ? 25 : 11)} textAnchor="middle" fontSize="9" fill="#c4b5fd" fontWeight="700">
-                      Tách: {day.separated.toLocaleString()}
-                    </text>
-                  )}
+                <g className="svg-tooltip" pointerEvents="none">
+                  {(() => {
+                    const lines: { text: string; color: string; isHeader?: boolean }[] = []
+                    if (showPour && day.poured > 0) {
+                      lines.push({ text: `Đổ: ${day.poured.toLocaleString()}`, color: '#93c5fd', isHeader: true })
+                      ALL_CHART_MANAGERS.forEach(m => {
+                        const val = m === 'Khác'
+                          ? Object.keys(day.pouredByManager)
+                              .filter(k => !MANAGERS.includes(k))
+                              .reduce((sum, k) => sum + day.pouredByManager[k].actual, 0)
+                          : day.pouredByManager[m]?.actual || 0
+                        if (val > 0) {
+                          lines.push({ text: `• ${m}: ${val.toLocaleString()}`, color: MANAGER_COLORS[m] })
+                        }
+                      })
+                    }
+                    if (showSep && day.separated > 0) {
+                      lines.push({ text: `Tách: ${day.separated.toLocaleString()}`, color: '#c4b5fd', isHeader: true })
+                      ALL_CHART_MANAGERS.forEach(m => {
+                        const val = m === 'Khác'
+                          ? Object.keys(day.separatedByManager)
+                              .filter(k => !MANAGERS.includes(k))
+                              .reduce((sum, k) => sum + day.separatedByManager[k].actual, 0)
+                          : day.separatedByManager[m]?.actual || 0
+                        if (val > 0) {
+                          lines.push({ text: `• ${m}: ${val.toLocaleString()}`, color: MANAGER_COLORS[m] })
+                        }
+                      })
+                    }
+                    
+                    const tooltipH = lines.length * 13 + 10
+                    const tooltipW = 100
+                    const tx = cx - tooltipW / 2
+                    const maxH = Math.max(pourH, sepH)
+                    const ty = Math.max(5, PAD_T + chartH - maxH - tooltipH - 8)
+
+                    return (
+                      <g transform={`translate(${tx}, ${ty})`}>
+                        <rect width={tooltipW} height={tooltipH} rx="6" fill="#1e293b" opacity="0.95" filter="url(#shadow)" />
+                        {lines.map((line, li) => (
+                          <text
+                            key={li}
+                            x={line.isHeader ? 6 : 12}
+                            y={14 + li * 13}
+                            fontSize={line.isHeader ? "9" : "8.5"}
+                            fill={line.color}
+                            fontWeight={line.isHeader ? "800" : "600"}
+                          >
+                            {line.text}
+                          </text>
+                        ))}
+                      </g>
+                    )
+                  })()}
                 </g>
               )}
 
@@ -208,12 +283,35 @@ function SvgBarChart({
         <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + chartH}
           stroke="#cbd5e1" strokeWidth="1.5" />
       </svg>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-3 border-t border-[var(--border)]">
+        <div className="flex gap-4">
+          {showPour && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm border border-blue-500 bg-blue-500/10" />
+              <span className="text-[10px] font-black text-blue-600 uppercase">Cột Trái: Đổ (Bun)</span>
+            </div>
+          )}
+          {showSep && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm border border-purple-500 bg-purple-500/10" />
+              <span className="text-[10px] font-black text-purple-600 uppercase">Cột Phải: Tách (Bun)</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-4 flex-wrap">
+          {ALL_CHART_MANAGERS.map(m => (
+            <div key={m} className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: MANAGER_COLORS[m] }} />
+              <span className="text-[10px] font-bold text-[var(--text-2)]">{m}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
-
-// SVG gradient ID không được chứa ký tự đặc biệt / khoảng trắng
-const safeId = (name: string) => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_')
 
 function calcManagerPerf(
   day: AggregatedDay,
@@ -296,6 +394,11 @@ function SvgPerformanceChart({
         {shiftFilter !== 'Tất cả' && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[10px] font-bold">
             🕐 {shiftFilter}
+          </span>
+        )}
+        {managerFilter !== 'Tất cả' && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 text-[10px] font-bold">
+            👤 Quản lý: {managerFilter}
           </span>
         )}
         {areaFilter !== 'all' && (
@@ -522,6 +625,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     if (areaFilter !== 'separate') {
       pourReports.forEach(r => {
         if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return
+        const m = r.manager_name || 'Khác'
+        if (managerFilter !== 'Tất cả' && m !== managerFilter) return
         let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
         d = norm(d)
         const day = dailyMap.get(d)
@@ -530,7 +635,6 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           const s = r.shift || 'Ca 1'
           day.pouredByShift[s] = (day.pouredByShift[s] || 0) + (r.actual_bun_poured || 0)
           
-          const m = r.manager_name || 'Khác'
           if (!day.pouredByManager[m]) day.pouredByManager[m] = { actual: 0, shifts: new Set() }
           day.pouredByManager[m].actual += (r.actual_bun_poured || 0)
           day.pouredByManager[m].shifts.add(s)
@@ -542,6 +646,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
       separateReports.forEach(r => {
         // Tính TẤT CẢ loại sản phẩm (TP + BTP) để khớp với báo cáo
         if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return
+        const m = r.manager_name || 'Khác'
+        if (managerFilter !== 'Tất cả' && m !== managerFilter) return
         let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
         d = norm(d)
         const day = dailyMap.get(d)
@@ -552,7 +658,6 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           day.separatedByShift[s] = (day.separatedByShift[s] || 0) + (r.actual_bun_separated || 0)
           day.separatedByShiftSheets[s] = (day.separatedByShiftSheets[s] || 0) + (r.actual_sheet_received || 0)
           
-          const m = r.manager_name || 'Khác'
           if (!day.separatedByManager[m]) day.separatedByManager[m] = { actual: 0, actualSheets: 0, shifts: new Set() }
           day.separatedByManager[m].actual += (r.actual_bun_separated || 0)
           day.separatedByManager[m].actualSheets += (r.actual_sheet_received || 0)
@@ -562,7 +667,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     }
 
     return Array.from(dailyMap.values())
-  }, [pourReports, separateReports, dateList, shiftFilter, areaFilter])
+  }, [pourReports, separateReports, dateList, shiftFilter, managerFilter, areaFilter])
 
   const totals = useMemo(() => aggregatedData.reduce(
     (acc, d) => ({ 
@@ -576,6 +681,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
   const activeFiltersCount = [
     shiftFilter !== 'Tất cả',
+    managerFilter !== 'Tất cả',
     areaFilter !== 'all',
     startDate !== firstDayOfMonth() || endDate !== todayStr()
   ].filter(Boolean).length
@@ -875,22 +981,18 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   <p className="text-[10px] text-[var(--text-3)]">
                     {startDate} → {endDate}
                     {shiftFilter !== 'Tất cả' && ` · ${shiftFilter}`}
+                    {managerFilter !== 'Tất cả' && ` · Quản lý: ${managerFilter}`}
                     {areaFilter !== 'all' && ` · ${areaFilter === 'pour' ? 'Khu vực Đổ' : 'Khu vực Tách'}`}
                   </p>
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 text-[10px] font-black">
                 {areaFilter !== 'separate' && (
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm bg-blue-500" />
-                    <span className="text-[10px] font-bold text-[var(--text-3)] uppercase">Đổ</span>
-                  </div>
+                  <span className="text-blue-500">CỘT TRÁI: ĐỔ</span>
                 )}
+                {areaFilter !== 'separate' && areaFilter !== 'pour' && <span className="text-[var(--text-3)]">|</span>}
                 {areaFilter !== 'pour' && (
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm bg-purple-500" />
-                    <span className="text-[10px] font-bold text-[var(--text-3)] uppercase">Tách TP</span>
-                  </div>
+                  <span className="text-purple-500">CỘT PHẢI: TÁCH</span>
                 )}
               </div>
             </div>
@@ -916,8 +1018,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
               <div className="p-4 bg-gradient-to-r from-gray-50 to-white dark:from-white/5 dark:to-transparent border-b border-[var(--border)] flex items-center gap-2">
                 <Clock size={18} className="text-brand-500" />
                 <h3 className="text-sm font-black uppercase tracking-tight">
-                  Chi tiết sản lượng theo ngày & ca
-                  {shiftFilter !== 'Tất cả' && <span className="ml-2 text-brand-500">({shiftFilter})</span>}
+                  Chi tiết sản lượng theo ngày & quản lý
+                  {managerFilter !== 'Tất cả' && <span className="ml-2 text-brand-500">({managerFilter})</span>}
                 </h3>
               </div>
               <div className="overflow-x-auto">
@@ -925,14 +1027,14 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   <thead>
                     <tr className="bg-gray-50 dark:bg-black/20 text-[10px] font-black uppercase text-[var(--text-3)] border-b border-[var(--border)]">
                       <th className="p-3 w-24">Ngày</th>
-                      {(shiftFilter === 'Tất cả' ? SHIFTS : [shiftFilter]).map(s => (
-                        <th key={s} className="p-3 text-center border-l border-[var(--border)] min-w-[110px]">
+                      {(managerFilter === 'Tất cả' ? [...MANAGERS, 'Khác'] : [managerFilter]).map(m => (
+                        <th key={m} className="p-3 text-center border-l border-[var(--border)] min-w-[110px]">
                           <div className="flex flex-col items-center gap-1">
-                            {s === 'Ca 1' && <Sunrise size={13} className="text-orange-500" />}
-                            {s === 'Ca 2' && <Sun size={13} className="text-yellow-500" />}
-                            {s === 'Ca 3' && <Moon size={13} className="text-blue-500" />}
-                            {s === 'Ca HC' && <Clock size={13} className="text-purple-500" />}
-                            <span>{s}</span>
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold" 
+                              style={{ backgroundColor: MANAGER_COLORS[m] || '#94a3b8' }}>
+                              {m[0]}
+                            </div>
+                            <span>{m}</span>
                           </div>
                         </th>
                       ))}
@@ -941,32 +1043,50 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   </thead>
                   <tbody className="divide-y divide-[var(--border)]">
                     {visibleData.slice().reverse().map(day => {
-                      const cols = shiftFilter === 'Tất cả' ? SHIFTS : [shiftFilter]
+                      const cols = managerFilter === 'Tất cả' ? [...MANAGERS, 'Khác'] : [managerFilter]
                       return (
                         <tr key={day.date} className="text-xs hover:bg-brand-500/5 transition-colors">
                           <td className="p-3 font-black text-[var(--text-1)] bg-gray-50/50 dark:bg-white/5 whitespace-nowrap">
                             {day.date}
                           </td>
-                          {cols.map(s => (
-                            <td key={s} className="p-3 text-center border-l border-[var(--border)]">
-                              <div className="flex flex-col gap-1.5">
-                                {areaFilter !== 'separate' && (
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-blue-500/10 text-blue-600">Đổ</span>
-                                    <span className="font-mono font-bold">{(day.pouredByShift[s] || 0).toLocaleString()}</span>
+                          {cols.map(m => {
+                            const pouredVal = m === 'Khác'
+                              ? Object.keys(day.pouredByManager).filter(k => !MANAGERS.includes(k)).reduce((sum, k) => sum + day.pouredByManager[k].actual, 0)
+                              : day.pouredByManager[m]?.actual || 0
+                            const sepVal = m === 'Khác'
+                              ? Object.keys(day.separatedByManager).filter(k => !MANAGERS.includes(k)).reduce((sum, k) => sum + day.separatedByManager[k].actual, 0)
+                              : day.separatedByManager[m]?.actual || 0
+                            const sepSheetsVal = m === 'Khác'
+                              ? Object.keys(day.separatedByManager).filter(k => !MANAGERS.includes(k)).reduce((sum, k) => sum + day.separatedByManager[k].actualSheets, 0)
+                              : day.separatedByManager[m]?.actualSheets || 0
+
+                            const hasData = pouredVal > 0 || sepVal > 0 || sepSheetsVal > 0
+
+                            return (
+                              <td key={m} className="p-3 text-center border-l border-[var(--border)]">
+                                {hasData ? (
+                                  <div className="flex flex-col gap-1.5">
+                                    {areaFilter !== 'separate' && pouredVal > 0 && (
+                                      <div className="flex items-center justify-center gap-1.5">
+                                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-blue-500/10 text-blue-600">Đổ</span>
+                                        <span className="font-mono font-bold">{pouredVal.toLocaleString()}</span>
+                                      </div>
+                                    )}
+                                    {areaFilter !== 'pour' && (sepVal > 0 || sepSheetsVal > 0) && (
+                                      <div className="flex items-center justify-center gap-1.5">
+                                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-purple-500/10 text-purple-600">Tách</span>
+                                        <span className="font-mono font-bold">
+                                          {sepVal.toLocaleString()} <span className="text-[10px] font-normal opacity-70">B</span> / {sepSheetsVal.toLocaleString()} <span className="text-[10px] font-normal opacity-70">S</span>
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
+                                ) : (
+                                  <span className="text-[10px] text-gray-300 dark:text-gray-600">-</span>
                                 )}
-                                {areaFilter !== 'pour' && (
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-purple-500/10 text-purple-600">Tách</span>
-                                    <span className="font-mono font-bold">
-                                      {(day.separatedByShift[s] || 0).toLocaleString()} <span className="text-[10px] font-normal opacity-70">B</span> / {(day.separatedByShiftSheets[s] || 0).toLocaleString()} <span className="text-[10px] font-normal opacity-70">S</span>
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </td>
-                          ))}
+                              </td>
+                            )
+                          })}
                           <td className="p-3 text-center border-l border-[var(--border)] bg-gray-100/50 dark:bg-white/10">
                             <div className="flex flex-col gap-1">
                               {areaFilter !== 'separate' && (
