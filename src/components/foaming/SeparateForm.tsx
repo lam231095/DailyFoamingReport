@@ -87,6 +87,10 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   const localStd = identifiedThickness !== null ? THICKNESS_TABLE[identifiedThickness] : null
   const hasStandard = !!(dbStd || localStd)
 
+  // Kiểm tra dung sai độ dày (±0.2mm)
+  const isOutOfTolerance = identifiedThickness !== null && formData.sheet_thickness_mm !== undefined && formData.sheet_thickness_mm !== null &&
+    Math.abs(Number(formData.sheet_thickness_mm) - identifiedThickness) > 0.2
+
   const standard = dbStd 
     ? {
         bunRef: dbStd.total_bun_thickness_mm || 144,
@@ -170,6 +174,13 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isOutOfTolerance) {
+      setMessage({
+        type: 'error',
+        text: `Độ dày nhập vào (${formData.sheet_thickness_mm}mm) lệch quá dung sai cho phép (±0.2mm) so với độ dày quy định (${identifiedThickness}mm). Đơn bán thành phẩm không cần nhập vào hệ thống.`
+      })
+      return
+    }
     setLoading(true)
     setMessage(null)
     try {
@@ -267,29 +278,10 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         </div>
       </div>
 
-      {/* Tab Selector */}
-      <div className="flex gap-2 p-1 bg-[var(--bg-2,#f3f4f6)] dark:bg-black/20 rounded-xl mb-6">
-        {TABS.map(tab => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => handleTabChange(tab.id)}
-            className={`flex-1 py-2.5 px-4 rounded-lg text-xs font-bold transition-all duration-200
-              ${productType === tab.id
-                ? `${tab.bg} text-white shadow-md`
-                : 'text-[var(--text-2)] hover:bg-white/60 dark:hover:bg-white/10'
-              }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
       {/* Badge loại */}
-      <div className={`mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold
-        ${isTP ? 'bg-purple-500/10 text-purple-600' : 'bg-amber-500/10 text-amber-600'}`}>
-        <span className="w-2 h-2 rounded-full inline-block" style={{ background: isTP ? '#9333ea' : '#f59e0b' }} />
-        {isTP ? 'Báo cáo THÀNH PHẨM' : 'Báo cáo BÁN THÀNH PHẨM'}
+      <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600">
+        <span className="w-2 h-2 rounded-full inline-block" style={{ background: '#9333ea' }} />
+        Báo cáo THÀNH PHẨM
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -388,6 +380,17 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               onChange={e => setFormData({ ...formData, sheet_thickness_mm: Number(e.target.value) })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`}
             />
+            {isOutOfTolerance && (
+              <div className="flex items-start gap-2.5 text-xs text-red-700 bg-red-500/10 border border-red-500/20 p-3 rounded-xl mt-2 animate-fadeIn font-sans">
+                <AlertOctagon size={16} className="mt-0.5 shrink-0 text-red-600 animate-bounce" />
+                <div>
+                  <p className="font-bold">Độ dày lệch quá dung sai cho phép (±0.2mm)</p>
+                  <p className="text-[11px] mt-0.5 opacity-90">
+                    Độ dày nhập vào ({formData.sheet_thickness_mm}mm) lệch quá 0.2mm so với độ dày quy định ({identifiedThickness}mm). Đơn bán thành phẩm không cần nhập vào hệ thống.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -581,15 +584,15 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         )}
 
         {/* Submit */}
-        <button type="submit" disabled={loading}
+        <button type="submit" disabled={loading || isOutOfTolerance}
           className={`w-full py-4 text-white rounded-xl font-bold text-base shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-3
-            ${isTP
-              ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20'
-              : 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'}`}>
+            ${isOutOfTolerance
+              ? 'bg-red-500 hover:bg-red-600 shadow-red-500/20 cursor-not-allowed'
+              : 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20'}`}>
           {loading ? <Loader2 className="animate-spin" size={20} /> : (
             <>
               <Save size={20} />
-              LƯU BÁO CÁO {isTP ? 'THÀNH PHẨM' : 'BÁN THÀNH PHẨM'}
+              LƯU BÁO CÁO THÀNH PHẨM
             </>
           )}
         </button>
