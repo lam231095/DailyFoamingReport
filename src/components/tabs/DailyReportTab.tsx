@@ -783,6 +783,62 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     return { value: totalBunSep > 0 ? Math.round((totalSheetThickSum / totalBunSep) * 10) / 10 : 0, totalBunSep, totalSheetThickSum }
   }, [separateReports, shiftFilter, managerFilter, productLineFilter])
 
+  // Phân tích dòng sản phẩm có độ dày bun thực tế < 136mm
+  const LOW_BUN_THRESHOLD = 136
+  const lowBunByProductLine = useMemo(() => {
+    // Gom nhóm theo product line, dùng TẤT CẢ đơn (không lọc productLineFilter để thấy toàn bộ)
+    const plMap = new Map<string, {
+      totalSheetThickSum: number
+      totalBunSep: number
+      targetSum: number
+      targetCount: number
+      orderCount: number
+      dates: Set<string>
+      firmPlans: string[]
+    }>()
+
+    separateReports
+      .filter(r => {
+        if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
+        if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
+        return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
+      })
+      .forEach(r => {
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham) || 'Không rõ'
+        const sheetThickSum = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        const bunSep = r.actual_bun_separated || 0
+        const target = r.bun_thickness_mm || 0
+        const reportDate = r.report_date
+          ? r.report_date.split('-').reverse().slice(0, 2).join('/')
+          : formatReportDate(r.created_at).split('/').slice(0, 2).join('/')
+
+        if (!plMap.has(pl)) {
+          plMap.set(pl, { totalSheetThickSum: 0, totalBunSep: 0, targetSum: 0, targetCount: 0, orderCount: 0, dates: new Set(), firmPlans: [] })
+        }
+        const entry = plMap.get(pl)!
+        entry.totalSheetThickSum += sheetThickSum
+        entry.totalBunSep += bunSep
+        if (target > 0) { entry.targetSum += target; entry.targetCount++ }
+        entry.orderCount++
+        entry.dates.add(reportDate)
+        if (r.firm_plan && !entry.firmPlans.includes(r.firm_plan)) entry.firmPlans.push(r.firm_plan)
+      })
+
+    return Array.from(plMap.entries())
+      .map(([productLine, v]) => ({
+        productLine,
+        bunThickness: v.totalBunSep > 0 ? Math.round((v.totalSheetThickSum / v.totalBunSep) * 10) / 10 : 0,
+        targetThickness: v.targetCount > 0 ? Math.round((v.targetSum / v.targetCount) * 10) / 10 : 0,
+        orderCount: v.orderCount,
+        totalBunSep: v.totalBunSep,
+        totalSheetThickSum: v.totalSheetThickSum,
+        dateCount: v.dates.size,
+        firmPlans: v.firmPlans.slice(0, 5),
+      }))
+      .filter(d => d.bunThickness > 0 && d.bunThickness < LOW_BUN_THRESHOLD)
+      .sort((a, b) => a.bunThickness - b.bunThickness) // thấp nhất lên đầu
+  }, [separateReports, shiftFilter, managerFilter])
+
   // Collect unique product lines from separate reports
   const productLineOptions = useMemo(() => {
     const set = new Set<string>()
@@ -1459,6 +1515,139 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
               </div>
             )}
           </div>
+
+          {/* ── Phân tích dòng SP có độ dày bun < 136mm ── */}
+          {lowBunByProductLine.length > 0 && (
+            <div className="card p-5 border-2 border-red-300/50" style={{ background: 'linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%)' }}>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
+                  <span className="text-xl">⚠️</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-black uppercase tracking-tight text-red-700">
+                    Dòng sản phẩm có độ dày bun &lt; {LOW_BUN_THRESHOLD}mm — cần chú ý
+                  </h3>
+                  <p className="text-[10px] text-red-500 mt-0.5">
+                    {lowBunByProductLine.length} dòng SP · Sắp xếp từ thấp nhất · Áp dụng filter ca & quản lý hiện tại
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <span className="text-[9px] font-bold text-red-400 uppercase">Ngưỡng cảnh báo</span>
+                  <p className="text-2xl font-black text-red-600">&lt; {LOW_BUN_THRESHOLD}<span className="text-sm font-normal"> mm</span></p>
+                </div>
+              </div>
+
+              {/* Horizontal bar chart */}
+              <div className="space-y-2 mb-5">
+                {lowBunByProductLine.map((item, idx) => {
+                  const pct = Math.min(100, (item.bunThickness / LOW_BUN_THRESHOLD) * 100)
+                  const gap = LOW_BUN_THRESHOLD - item.bunThickness
+                  const severity = gap >= 20 ? 'critical' : gap >= 10 ? 'warning' : 'mild'
+                  const barColor = severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f97316' : '#eab308'
+                  const bgColor = severity === 'critical' ? 'bg-red-50' : severity === 'warning' ? 'bg-orange-50' : 'bg-yellow-50'
+                  const badgeColor = severity === 'critical' ? 'bg-red-100 text-red-700' : severity === 'warning' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700'
+                  return (
+                    <div key={item.productLine} className={`rounded-xl p-3 ${bgColor} border border-white/80`}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-[10px] font-black text-gray-500 w-5 text-right shrink-0">#{idx + 1}</span>
+                        <span className="flex-1 text-xs font-black text-gray-800 truncate" title={item.productLine}>
+                          {item.productLine}
+                        </span>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${badgeColor}`}>
+                          {item.bunThickness} mm
+                        </span>
+                        <span className="text-[10px] font-bold text-gray-400 shrink-0">/ {LOW_BUN_THRESHOLD}mm</span>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] text-gray-500 w-5 shrink-0"></span>
+                        <div className="flex-1 h-2 rounded-full bg-gray-200/70 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: barColor }}
+                          />
+                        </div>
+                        <span className={`text-[10px] font-black shrink-0`} style={{ color: barColor }}>
+                          -{gap.toFixed(1)}mm
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1.5 ml-7 flex-wrap">
+                        <span className="text-[9px] text-gray-400">
+                          📦 {item.orderCount} đơn · {item.dateCount} ngày
+                        </span>
+                        {item.targetThickness > 0 && (
+                          <span className="text-[9px] text-gray-400">
+                            🎯 Chuẩn: {item.targetThickness}mm
+                          </span>
+                        )}
+                        <span className="text-[9px] text-gray-400">
+                          🔢 Tổng bun: {item.totalBunSep.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Summary table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[11px] border-collapse">
+                  <thead>
+                    <tr className="bg-red-500/8 text-[10px] font-black uppercase text-red-700 border-b border-red-200/50">
+                      <th className="p-2">#</th>
+                      <th className="p-2">Dòng sản phẩm</th>
+                      <th className="p-2 text-center">Số đơn</th>
+                      <th className="p-2 text-center">Tổng Bun Tách</th>
+                      <th className="p-2 text-center">Chuẩn TB (mm)</th>
+                      <th className="p-2 text-center">Thực tế TB (mm)</th>
+                      <th className="p-2 text-center">Thiếu (mm)</th>
+                      <th className="p-2 text-center">Mức độ</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-red-100">
+                    {lowBunByProductLine.map((item, idx) => {
+                      const gap = LOW_BUN_THRESHOLD - item.bunThickness
+                      const severity = gap >= 20 ? 'critical' : gap >= 10 ? 'warning' : 'mild'
+                      return (
+                        <tr key={item.productLine} className="hover:bg-red-500/5 transition-colors">
+                          <td className="p-2 font-black text-gray-400">#{idx + 1}</td>
+                          <td className="p-2 font-bold text-gray-800 max-w-[200px]">
+                            <span className="truncate block" title={item.productLine}>{item.productLine}</span>
+                          </td>
+                          <td className="p-2 text-center text-gray-500">{item.orderCount}</td>
+                          <td className="p-2 text-center font-mono text-gray-600">{item.totalBunSep.toLocaleString()}</td>
+                          <td className="p-2 text-center font-mono text-gray-500">{item.targetThickness > 0 ? item.targetThickness : '—'}</td>
+                          <td className="p-2 text-center font-mono font-black" style={{
+                            color: severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f97316' : '#eab308'
+                          }}>
+                            {item.bunThickness}
+                          </td>
+                          <td className="p-2 text-center font-mono font-black text-red-600">-{gap.toFixed(1)}</td>
+                          <td className="p-2 text-center">
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                              severity === 'critical' ? 'bg-red-100 text-red-700' :
+                              severity === 'warning' ? 'bg-orange-100 text-orange-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {severity === 'critical' ? '🔴 Nghiêm trọng' : severity === 'warning' ? '🟠 Cảnh báo' : '🟡 Nhẹ'}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Ghi chú mức độ */}
+              <div className="flex items-center gap-4 mt-3 flex-wrap">
+                <p className="text-[9px] font-bold text-gray-400 uppercase">Phân loại mức độ:</p>
+                <span className="text-[9px] font-bold text-red-600">🔴 Nghiêm trọng: thiếu ≥ 20mm</span>
+                <span className="text-[9px] font-bold text-orange-600">🟠 Cảnh báo: thiếu 10–19mm</span>
+                <span className="text-[9px] font-bold text-yellow-600">🟡 Nhẹ: thiếu &lt; 10mm</span>
+              </div>
+            </div>
+          )}
 
         </motion.div>
       )}
