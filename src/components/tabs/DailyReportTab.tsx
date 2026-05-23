@@ -58,6 +58,10 @@ const SHIFT_COLORS: Record<string, string> = {
 }
 
 function todayStr() { return new Date().toISOString().split('T')[0] }
+function last7DaysStr() {
+  const d = new Date(); d.setDate(d.getDate() - 6)
+  return d.toISOString().split('T')[0]
+}
 function firstDayOfMonth() {
   const d = new Date(); d.setDate(1)
   return d.toISOString().split('T')[0]
@@ -577,7 +581,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   const [separateReports, setSeparateReports] = useState<FoamingSeparateReport[]>([])
 
   // Filters
-  const [startDate, setStartDate] = useState(firstDayOfMonth())
+  const [startDate, setStartDate] = useState(last7DaysStr())
   const [endDate, setEndDate] = useState(todayStr())
   const [shiftFilter, setShiftFilter] = useState<string>('Tất cả')
   const [managerFilter, setManagerFilter] = useState<string>('Tất cả')
@@ -698,7 +702,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     managerFilter !== 'Tất cả',
     areaFilter !== 'all',
     productLineFilter !== 'Tất cả',
-    startDate !== firstDayOfMonth() || endDate !== todayStr()
+    startDate !== last7DaysStr() || endDate !== todayStr()
   ].filter(Boolean).length
 
   const resetFilters = () => {
@@ -706,7 +710,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     setManagerFilter('Tất cả')
     setAreaFilter('all')
     setProductLineFilter('Tất cả')
-    setStartDate(firstDayOfMonth())
+    setStartDate(last7DaysStr())
     setEndDate(todayStr())
   }
 
