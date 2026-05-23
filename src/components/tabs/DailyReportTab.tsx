@@ -75,10 +75,10 @@ function SvgBarChart({
   showPour: boolean
   showSep: boolean
 }) {
-  const W = 800
+  const W = 720
   const H = 280
-  const PAD_L = 44
-  const PAD_R = 8
+  const PAD_L = 48
+  const PAD_R = 12
   const PAD_T = 20
   const PAD_B = 48
   const chartW = W - PAD_L - PAD_R
@@ -86,12 +86,12 @@ function SvgBarChart({
   const n = data.length
   const groupW = chartW / Math.max(n, 1)
   const barCount = (showPour ? 1 : 0) + (showSep ? 1 : 0)
-  const barW = Math.max(4, Math.min(18, groupW / (barCount + 1)))
+  const barW = Math.max(8, Math.min(36, groupW / (barCount + 1)))
   const gridLines = 5
   const yTick = (i: number) => PAD_T + (chartH / gridLines) * i
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="w-full">
       <style>{`
         .svg-bar { transition: opacity 0.15s; }
         .svg-bar-group:hover .svg-bar { opacity: 0.4; }
@@ -101,7 +101,7 @@ function SvgBarChart({
       `}</style>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: '100%', height: 'auto', minWidth: Math.max(W, n * 22) }}
+        style={{ width: '100%', height: 'auto' }}
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
