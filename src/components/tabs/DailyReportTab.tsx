@@ -332,7 +332,8 @@ function SvgBarChart({
 function calcManagerPerf(
   day: AggregatedDay,
   manager: string,
-  areaFilter: AreaFilter
+  areaFilter: AreaFilter,
+  tawnyShifts: Set<string>
 ): number | null {
   let totalActual = 0, compositeTarget = 0
   if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
@@ -341,14 +342,17 @@ function calcManagerPerf(
   }
   if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
     totalActual += day.separatedByManager[manager].actual
-    compositeTarget += day.separatedByManager[manager].shifts.size * TARGET_SEPARATE
+    day.separatedByManager[manager].shifts.forEach(s => {
+      const targetSeparate = tawnyShifts.has(`${day.date}_${s}`) ? 250 : 300
+      compositeTarget += targetSeparate
+    })
   }
   if (compositeTarget === 0) return null
   return (totalActual / compositeTarget) * 100
 }
 
 function SvgPerformanceChart({
-  data, dateList, managers, managerFilter, areaFilter, startDate, endDate, shiftFilter
+  data, dateList, managers, managerFilter, areaFilter, startDate, endDate, shiftFilter, tawnyShifts
 }: {
   data: AggregatedDay[]
   dateList: string[]
@@ -358,6 +362,7 @@ function SvgPerformanceChart({
   startDate: string
   endDate: string
   shiftFilter: string
+  tawnyShifts: Set<string>
 }) {
   const activeManagers = managers.filter(m => managerFilter === 'Tất cả' || m === managerFilter)
 
@@ -365,7 +370,7 @@ function SvgPerformanceChart({
   const datesWithData = [...dateList].reverse().filter(date => {
     const day = data.find(d => d.date === date)
     if (!day) return false
-    return activeManagers.some(m => calcManagerPerf(day, m, areaFilter) !== null)
+    return activeManagers.some(m => calcManagerPerf(day, m, areaFilter, tawnyShifts) !== null)
   }).slice(0, 10).reverse()
 
   const n = datesWithData.length
@@ -497,7 +502,7 @@ function SvgPerformanceChart({
 
                 {/* Bars per manager */}
                 {day && activeManagers.map((manager, mi) => {
-                  const perf = calcManagerPerf(day, manager, areaFilter)
+                  const perf = calcManagerPerf(day, manager, areaFilter, tawnyShifts)
                   if (perf === null) return null
                   const bx = startX + mi * (barW + barGap)
                   const by = perfY(perf)
@@ -550,7 +555,7 @@ function SvgPerformanceChart({
           datesWithData.forEach(date => {
             const day = data.find(d => d.date === date)
             if (!day) return
-            const p = calcManagerPerf(day, manager, areaFilter)
+            const p = calcManagerPerf(day, manager, areaFilter, tawnyShifts)
             if (p !== null) { tp += p; cnt++ }
           })
           const avg = cnt > 0 ? Math.round(tp / cnt) : 0
@@ -618,6 +623,21 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     }
     return list
   }, [startDate, endDate])
+
+  const tawnyShifts = useMemo(() => {
+    const set = new Set<string>()
+    separateReports.forEach(r => {
+      const name = r.production_plan?.ten_san_pham
+      if (name && name.toUpperCase().includes('TAWNY PORT')) {
+        let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
+        const [day, m, y] = d.split('/')
+        const normD = `${parseInt(day)}/${parseInt(m)}/${y}`
+        const s = r.shift || 'Ca 1'
+        set.add(`${normD}_${s}`)
+      }
+    })
+    return set
+  }, [separateReports])
 
   const aggregatedData = useMemo(() => {
     const dailyMap = new Map<string, AggregatedDay>()
@@ -1063,10 +1083,6 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                     totalShifts += d.separatedByManager[manager].shifts.size
                   }
                   
-                  const target = (areaFilter === 'pour' ? TARGET_POUR : 
-                                 areaFilter === 'separate' ? TARGET_SEPARATE : 
-                                 (TARGET_POUR + TARGET_SEPARATE) / 2) * (totalShifts || 1)
-                  
                   // Nếu filter 'all', ta tính trung bình target? 
                   // Thực tế user nói "tổng / target". Nếu đổ tách riêng thì dễ. 
                   // Nếu gộp, ta lấy tổng thực tế / tổng target của các ca đó.
@@ -1075,7 +1091,10 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                     compositeTarget += d.pouredByManager[manager].shifts.size * TARGET_POUR
                   }
                   if (areaFilter !== 'pour' && d.separatedByManager[manager]) {
-                    compositeTarget += d.separatedByManager[manager].shifts.size * TARGET_SEPARATE
+                    d.separatedByManager[manager].shifts.forEach(s => {
+                      const targetSeparate = tawnyShifts.has(`${d.date}_${s}`) ? 250 : 300
+                      compositeTarget += targetSeparate
+                    })
                   }
 
                   const perf = compositeTarget > 0 ? (totalActual / compositeTarget) * 100 : 0
@@ -1137,6 +1156,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                 startDate={startDate}
                 endDate={endDate}
                 shiftFilter={shiftFilter}
+                tawnyShifts={tawnyShifts}
               />
             </div>
           </div>
