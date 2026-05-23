@@ -713,9 +713,13 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   const visibleData = aggregatedData.filter(d => d.poured > 0 || d.separated > 0)
   const maxVal = Math.max(...aggregatedData.map(d => Math.max(d.poured, d.separated))) || 100
 
-  // Build bun thickness chart data from separate reports
+  // Build bun thickness chart data — tính độ dày bun trung bình theo ngày
+  // Công thức: Σ(actual_sheet_received × sheet_thickness_mm) / Σ(actual_bun_separated)
   const bunThicknessData = useMemo(() => {
-    return separateReports
+    // Gom nhóm theo ngày
+    const dayMap = new Map<string, { totalSheetThickSum: number; totalBunSep: number; targetSum: number; targetCount: number; orderCount: number }>()
+
+    separateReports
       .filter(r => {
         if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
         if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
@@ -723,25 +727,60 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
         if (productLineFilter !== 'Tất cả' && pl !== productLineFilter) return false
         return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
       })
-      .map(r => {
-        const totalSheetThickness = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
-        const actualBunThickness = totalSheetThickness / (r.actual_bun_separated || 1)
+      .forEach(r => {
         const reportDate = r.report_date
           ? r.report_date.split('-').reverse().slice(0, 2).join('/')
           : formatReportDate(r.created_at).split('/').slice(0, 2).join('/')
-        const productLine = cleanProductName((r as any).production_plan?.ten_san_pham)
-        return {
-          id: r.id,
-          label: `${r.firm_plan}`,
-          productLine,
-          shift: r.shift,
-          manager: r.manager_name || 'Khác',
-          date: reportDate,
-          bunThickness: Math.round(actualBunThickness * 10) / 10,
-          targetThickness: r.bun_thickness_mm || 0,
+        const sheetThickSum = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        const bunSep = r.actual_bun_separated || 0
+        const target = r.bun_thickness_mm || 0
+
+        if (!dayMap.has(reportDate)) {
+          dayMap.set(reportDate, { totalSheetThickSum: 0, totalBunSep: 0, targetSum: 0, targetCount: 0, orderCount: 0 })
         }
+        const entry = dayMap.get(reportDate)!
+        entry.totalSheetThickSum += sheetThickSum
+        entry.totalBunSep += bunSep
+        if (target > 0) { entry.targetSum += target; entry.targetCount++ }
+        entry.orderCount++
       })
-      .sort((a, b) => a.bunThickness - b.bunThickness)
+
+    return Array.from(dayMap.entries())
+      .map(([date, v]) => ({
+        date,
+        // Độ dày bun trung bình = Tổng độ dày sheet thực tế / Tổng SL Tách (Bun)
+        bunThickness: v.totalBunSep > 0 ? Math.round((v.totalSheetThickSum / v.totalBunSep) * 10) / 10 : 0,
+        targetThickness: v.targetCount > 0 ? Math.round((v.targetSum / v.targetCount) * 10) / 10 : 0,
+        orderCount: v.orderCount,
+        totalBunSep: v.totalBunSep,
+        totalSheetThickSum: v.totalSheetThickSum,
+      }))
+      .filter(d => d.bunThickness > 0)
+      .sort((a, b) => {
+        // Sắp xếp theo ngày tăng dần
+        const [da, ma] = a.date.split('/').map(Number)
+        const [db, mb] = b.date.split('/').map(Number)
+        return mb !== ma ? ma - mb : da - db
+      })
+  }, [separateReports, shiftFilter, managerFilter, productLineFilter])
+
+  // Tổng độ dày bun trung bình tất cả (gộp toàn bộ khoảng thời gian)
+  const overallAvgBunThickness = useMemo(() => {
+    let totalSheetThickSum = 0
+    let totalBunSep = 0
+    separateReports
+      .filter(r => {
+        if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
+        if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        if (productLineFilter !== 'Tất cả' && pl !== productLineFilter) return false
+        return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
+      })
+      .forEach(r => {
+        totalSheetThickSum += (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        totalBunSep += (r.actual_bun_separated || 0)
+      })
+    return { value: totalBunSep > 0 ? Math.round((totalSheetThickSum / totalBunSep) * 10) / 10 : 0, totalBunSep, totalSheetThickSum }
   }, [separateReports, shiftFilter, managerFilter, productLineFilter])
 
   // Collect unique product lines from separate reports
@@ -1194,15 +1233,25 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   <Layers size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black uppercase tracking-tight">Độ dày bun thực tế theo đơn (mm)</h3>
-                  <p className="text-[10px] text-[var(--text-3)]">Tổng độ dày sheet thực tế ÷ SL Tách (Bun) · {bunThicknessData.length} đơn</p>
+                  <h3 className="text-sm font-black uppercase tracking-tight">Độ dày bun trung bình theo ngày (mm)</h3>
+                  <p className="text-[10px] text-[var(--text-3)]">
+                    Σ Tổng độ dày sheet thực tế ÷ Σ SL Tách (Bun) · {bunThicknessData.length} ngày
+                  </p>
                 </div>
               </div>
-              {productLineFilter !== 'Tất cả' && (
-                <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-teal-500/10 text-teal-600 border border-teal-500/20">
-                  {productLineFilter}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {productLineFilter !== 'Tất cả' && (
+                  <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-teal-500/10 text-teal-600 border border-teal-500/20">
+                    {productLineFilter}
+                  </span>
+                )}
+                {overallAvgBunThickness.value > 0 && (
+                  <div className="flex flex-col items-end">
+                    <span className="text-[9px] font-bold text-[var(--text-3)] uppercase">TB toàn kỳ</span>
+                    <span className="text-lg font-black text-teal-600">{overallAvgBunThickness.value} mm</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {bunThicknessData.length === 0 ? (
@@ -1212,21 +1261,25 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
               </div>
             ) : (
               <div className="w-full overflow-x-auto">
-                <div style={{ minWidth: Math.max(400, bunThicknessData.length * 44) + 'px' }}>
-                  {/* SVG horizontal-ish bar chart — vertical bars sorted by thickness */}
+                <div style={{ minWidth: Math.max(400, bunThicknessData.length * 60) + 'px' }}>
+                  {/* SVG bar chart — mỗi cột là 1 ngày, giá trị = độ dày bun trung bình của ngày đó */}
                   {(() => {
                     const maxT = Math.max(...bunThicknessData.map(d => Math.max(d.bunThickness, d.targetThickness)), 1)
-                    const W = Math.max(600, bunThicknessData.length * 44)
+                    const W = Math.max(600, bunThicknessData.length * 60)
                     const H = 260
-                    const PAD_L = 44
+                    const PAD_L = 48
                     const PAD_R = 12
-                    const PAD_T = 24
-                    const PAD_B = 80
+                    const PAD_T = 28
+                    const PAD_B = 54
                     const chartW = W - PAD_L - PAD_R
                     const chartH = H - PAD_T - PAD_B
                     const barZone = chartW / bunThicknessData.length
-                    const barW = Math.max(8, Math.min(28, barZone * 0.55))
+                    const barW = Math.max(12, Math.min(38, barZone * 0.6))
                     const gridMax = Math.ceil(maxT / 5) * 5 + 5
+                    // Tính overall avg line position
+                    const avgLineY = overallAvgBunThickness.value > 0
+                      ? PAD_T + chartH - (overallAvgBunThickness.value / gridMax) * chartH
+                      : null
 
                     return (
                       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto' }} xmlns="http://www.w3.org/2000/svg">
@@ -1257,7 +1310,19 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                           )
                         })}
 
-                        {/* Bars */}
+                        {/* Đường trung bình toàn kỳ */}
+                        {avgLineY !== null && (
+                          <g>
+                            <line x1={PAD_L} y1={avgLineY} x2={W - PAD_R} y2={avgLineY}
+                              stroke="#6366f1" strokeWidth="1.5" strokeDasharray="5 3" />
+                            <text x={W - PAD_R - 2} y={avgLineY - 4} textAnchor="end"
+                              fontSize="7.5" fill="#6366f1" fontWeight="800">
+                              TB: {overallAvgBunThickness.value}mm
+                            </text>
+                          </g>
+                        )}
+
+                        {/* Bars — mỗi cột 1 ngày */}
                         {bunThicknessData.map((item, idx) => {
                           const cx = PAD_L + barZone * idx + barZone / 2
                           const bx = cx - barW / 2
@@ -1270,36 +1335,25 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                           const barColor = isAbove ? '#ef4444' : isBelow ? '#f59e0b' : '#14b8a6'
 
                           return (
-                            <g key={item.id}>
+                            <g key={item.date}>
                               {/* Target thickness ghost bar */}
                               {item.targetThickness > 0 && (
                                 <rect x={bx - 2} y={targetY} width={barW + 4} height={Math.max(targetH, 1)}
-                                  rx="2" fill="url(#targetThickGrad)" opacity="0.5" />
+                                  rx="2" fill="url(#targetThickGrad)" opacity="0.45" />
                               )}
                               {/* Actual bar */}
                               <rect x={bx} y={actualY} width={barW} height={Math.max(actualH, 2)}
-                                rx="2" fill={barColor} opacity="0.85" />
-                              {/* Value label */}
-                              {actualH > 12 && (
-                                <text x={cx} y={actualY - 4} textAnchor="middle" fontSize="7.5" fill={barColor} fontWeight="800">
-                                  {item.bunThickness}
-                                </text>
-                              )}
-                              {/* X label — firm plan */}
+                                rx="3" fill={barColor} opacity="0.88" />
+                              {/* Value label trên đầu cột */}
+                              <text x={cx} y={actualY - 5} textAnchor="middle" fontSize="8" fill={barColor} fontWeight="800">
+                                {item.bunThickness}
+                              </text>
+                              {/* X label — ngày */}
                               <text
                                 x={cx} y={PAD_T + chartH + 14}
                                 textAnchor="end"
-                                fontSize="7.5" fill="#64748b" fontWeight="700"
-                                transform={`rotate(-45, ${cx}, ${PAD_T + chartH + 14})`}
-                              >
-                                {item.label.length > 14 ? item.label.slice(0, 14) + '…' : item.label}
-                              </text>
-                              {/* date */}
-                              <text
-                                x={cx} y={PAD_T + chartH + 26}
-                                textAnchor="end"
-                                fontSize="6.5" fill="#94a3b8"
-                                transform={`rotate(-45, ${cx}, ${PAD_T + chartH + 26})`}
+                                fontSize="8" fill="#64748b" fontWeight="700"
+                                transform={`rotate(-40, ${cx}, ${PAD_T + chartH + 14})`}
                               >
                                 {item.date}
                               </text>
@@ -1322,11 +1376,15 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   <div className="flex items-center gap-4 mt-3 justify-center flex-wrap">
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-3 rounded" style={{ backgroundColor: '#14b8a6' }} />
-                      <span className="text-[10px] font-bold text-teal-700">Độ dày bun thực tế</span>
+                      <span className="text-[10px] font-bold text-teal-700">Độ dày bun TB (ngày)</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-4 h-3 rounded opacity-50" style={{ backgroundColor: '#f59e0b' }} />
-                      <span className="text-[10px] font-bold text-amber-700">Dày bun tiêu chuẩn (nền)</span>
+                      <span className="text-[10px] font-bold text-amber-700">Dày bun tiêu chuẩn (TB nền)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke="#6366f1" strokeWidth="1.5" strokeDasharray="4 2" /></svg>
+                      <span className="text-[10px] font-bold text-indigo-600">TB toàn kỳ</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }} />
@@ -1338,18 +1396,18 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                     </div>
                   </div>
 
-                  {/* Summary table */}
+                  {/* Summary table theo ngày */}
                   {bunThicknessData.length > 0 && (
                     <div className="mt-4 overflow-x-auto">
                       <table className="w-full text-left text-[11px] border-collapse">
                         <thead>
                           <tr className="bg-teal-500/5 text-[10px] font-black uppercase text-teal-700 border-b border-teal-200/30">
-                            <th className="p-2">Firm Plan</th>
-                            <th className="p-2">Dòng SP</th>
                             <th className="p-2">Ngày</th>
-                            <th className="p-2">Ca</th>
-                            <th className="p-2 text-center">Chuẩn (mm)</th>
-                            <th className="p-2 text-center">Thực tế (mm)</th>
+                            <th className="p-2 text-center">Số đơn</th>
+                            <th className="p-2 text-center">Tổng SL Tách (Bun)</th>
+                            <th className="p-2 text-center">Σ Dày Sheet (mm)</th>
+                            <th className="p-2 text-center">Chuẩn TB (mm)</th>
+                            <th className="p-2 text-center">Thực tế TB (mm)</th>
                             <th className="p-2 text-center">Lệch</th>
                           </tr>
                         </thead>
@@ -1360,11 +1418,11 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                             const isOver = pct !== null && pct > 5
                             const isUnder = pct !== null && pct < -5
                             return (
-                              <tr key={item.id} className="hover:bg-teal-500/5 transition-colors">
-                                <td className="p-2 font-mono font-bold text-brand-600 whitespace-nowrap">{item.label}</td>
-                                <td className="p-2 text-[var(--text-2)] max-w-[180px] truncate" title={item.productLine}>{item.productLine}</td>
-                                <td className="p-2 text-[var(--text-3)]">{item.date}</td>
-                                <td className="p-2 text-[var(--text-3)]">{item.shift}</td>
+                              <tr key={item.date} className="hover:bg-teal-500/5 transition-colors">
+                                <td className="p-2 font-bold text-[var(--text-1)] whitespace-nowrap">{item.date}</td>
+                                <td className="p-2 text-center text-[var(--text-3)]">{item.orderCount} đơn</td>
+                                <td className="p-2 text-center font-mono text-[var(--text-2)]">{item.totalBunSep.toLocaleString()}</td>
+                                <td className="p-2 text-center font-mono text-[var(--text-2)]">{item.totalSheetThickSum.toLocaleString()}</td>
                                 <td className="p-2 text-center text-[var(--text-3)] font-mono">{item.targetThickness > 0 ? item.targetThickness : '—'}</td>
                                 <td className="p-2 text-center font-mono font-black" style={{ color: isOver ? '#ef4444' : isUnder ? '#f59e0b' : '#14b8a6' }}>
                                   {item.bunThickness}
@@ -1383,6 +1441,16 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                               </tr>
                             )
                           })}
+                          {/* Dòng tổng */}
+                          <tr className="bg-teal-500/10 font-black border-t-2 border-teal-300/40">
+                            <td className="p-2 text-teal-700 font-black">Tổng / TB toàn kỳ</td>
+                            <td className="p-2 text-center text-teal-700">{bunThicknessData.reduce((s,d)=>s+d.orderCount,0)} đơn</td>
+                            <td className="p-2 text-center font-mono text-teal-700">{overallAvgBunThickness.totalBunSep.toLocaleString()}</td>
+                            <td className="p-2 text-center font-mono text-teal-700">{overallAvgBunThickness.totalSheetThickSum.toLocaleString()}</td>
+                            <td className="p-2 text-center text-teal-700">—</td>
+                            <td className="p-2 text-center font-mono font-black text-teal-700 text-sm">{overallAvgBunThickness.value} mm</td>
+                            <td className="p-2 text-center text-teal-700">—</td>
+                          </tr>
                         </tbody>
                       </table>
                     </div>
