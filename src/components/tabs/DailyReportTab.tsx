@@ -596,13 +596,12 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { start, end } = getReportTimeRange(startDate, endDate)
     const [pourRes, sepRes] = await Promise.all([
       supabase.from('foaming_pour_reports').select('*')
-        .gte('created_at', start).lt('created_at', end),
+        .gte('report_date', startDate).lte('report_date', endDate),
       supabase.from('foaming_separate_reports')
         .select('*, production_plan(ten_san_pham)')
-        .gte('created_at', start).lt('created_at', end),
+        .gte('report_date', startDate).lte('report_date', endDate),
     ])
     setPourReports((pourRes.data as any) || [])
     setSeparateReports((sepRes.data as any) || [])
@@ -629,7 +628,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     separateReports.forEach(r => {
       const name = r.production_plan?.ten_san_pham
       if (name && name.toUpperCase().includes('TAWNY PORT')) {
-        let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
+        let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at, r.shift)
         const [day, m, y] = d.split('/')
         const normD = `${parseInt(day)}/${parseInt(m)}/${y}`
         const s = r.shift || 'Ca 1'
@@ -665,7 +664,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
         if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return
         const m = r.manager_name || 'Khác'
         if (managerFilter !== 'Tất cả' && m !== managerFilter) return
-        let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
+        let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at, r.shift)
         d = norm(d)
         const day = dailyMap.get(d)
         if (day) {
@@ -686,7 +685,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
         if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return
         const m = r.manager_name || 'Khác'
         if (managerFilter !== 'Tất cả' && m !== managerFilter) return
-        let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at)
+        let d = r.report_date ? r.report_date.split('-').reverse().join('/') : formatReportDate(r.created_at, r.shift)
         d = norm(d)
         const day = dailyMap.get(d)
         if (day) {
@@ -754,7 +753,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
       .forEach(r => {
         const reportDate = r.report_date
           ? r.report_date.split('-').reverse().slice(0, 2).join('/')
-          : formatReportDate(r.created_at).split('/').slice(0, 2).join('/')
+          : formatReportDate(r.created_at, r.shift).split('/').slice(0, 2).join('/')
         const sheetThickSum = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
         const bunSep = r.actual_bun_separated || 0
         const target = r.bun_thickness_mm || 0
@@ -834,7 +833,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
         const target = r.bun_thickness_mm || 0
         const reportDate = r.report_date
           ? r.report_date.split('-').reverse().slice(0, 2).join('/')
-          : formatReportDate(r.created_at).split('/').slice(0, 2).join('/')
+          : formatReportDate(r.created_at, r.shift).split('/').slice(0, 2).join('/')
 
         if (!plMap.has(pl)) {
           plMap.set(pl, { totalSheetThickSum: 0, totalBunSep: 0, targetSum: 0, targetCount: 0, orderCount: 0, dates: new Set(), firmPlans: [] })

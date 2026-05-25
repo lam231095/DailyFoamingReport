@@ -98,7 +98,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         operator_name: formData.operator_name,
         actual_bun_poured: Number(formData.actual_bun_poured),
         lot_no: formData.lot_no,
-        report_date: getReportDateISO(new Date()),
+        report_date: getReportDateISO(new Date(), formData.shift),
         ng_bun_qty: totalNG,
         error_type: combinedError || '',
         storage_location: formData.storage_location,

@@ -126,8 +126,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       if (activeStage === 'warehouse') {
         query = query.gte('delivery_date', filters.startDate).lte('delivery_date', filters.endDate)
       } else {
-        const { start, end } = getReportTimeRange(filters.startDate, filters.endDate)
-        query = query.gte('created_at', start).lt('created_at', end)
+        query = query.gte('report_date', filters.startDate).lte('report_date', filters.endDate)
       }
 
       // Lọc theo Ca (không áp dụng cho Nhập kho)
@@ -222,7 +221,11 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       const dateTime = new Date(row.created_at).toLocaleString('vi-VN')
       const common = [
         dateTime,
-        row.delivery_date ? new Date(row.delivery_date).toLocaleDateString('vi-VN') : formatReportDate(row.created_at),
+        row.delivery_date 
+          ? new Date(row.delivery_date).toLocaleDateString('vi-VN') 
+          : (row.report_date 
+              ? row.report_date.split('-').reverse().map(Number).join('/') 
+              : formatReportDate(row.created_at, row.shift)),
         row.production_plan?.week_label || '---',
         row.production_plan?.no_order || '---',
         row.firm_plan,
@@ -723,7 +726,11 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                   <div className="text-right shrink-0 flex flex-col items-end justify-between self-stretch">
                     <div>
                       <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">
-                        {row.delivery_date ? new Date(row.delivery_date).toLocaleDateString('vi-VN') : formatReportDate(row.created_at)}
+                        {row.delivery_date 
+                          ? new Date(row.delivery_date).toLocaleDateString('vi-VN') 
+                          : (row.report_date 
+                              ? row.report_date.split('-').reverse().map(Number).join('/') 
+                              : formatReportDate(row.created_at, row.shift))}
                       </p>
                       <p className="text-[10px] text-[var(--text-3)]">
                         {new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

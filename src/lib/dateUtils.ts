@@ -1,15 +1,30 @@
 /**
- * Lấy ngày báo cáo dựa trên quy tắc 6h sáng.
- * Nếu thời gian hiện tại < 6:00:00, ngày báo cáo là ngày hôm trước.
+ * Lấy ngày báo cáo dựa trên quy tắc ca làm việc và giờ.
+ * Nếu là Ca 3 và nộp trước 12:00 trưa, hoặc các ca khác nộp trước 6:00 sáng,
+ * thì ngày báo cáo được lùi lại 1 ngày (thuộc ngày sản xuất hôm trước).
  * 
  * @param dateInput Chuỗi ISO hoặc đối tượng Date
+ * @param shift Ca làm việc (e.g. "Ca 1", "Ca 2", "Ca 3", "Ca HC")
  * @returns Chuỗi ngày định dạng DD/MM/YYYY
  */
-export function formatReportDate(dateInput: string | Date): string {
+export function formatReportDate(dateInput: string | Date, shift?: string): string {
   const date = new Date(dateInput);
   const hours = date.getHours();
 
-  if (hours < 6) {
+  let subtract = false;
+  if (shift === 'Ca 3') {
+    subtract = hours < 22;
+  } else if (shift === 'Ca 2') {
+    subtract = hours < 14;
+  } else if (shift === 'Ca 1') {
+    subtract = hours < 6;
+  } else if (shift === 'Ca HC') {
+    subtract = hours < 8;
+  } else {
+    subtract = hours < 6;
+  }
+
+  if (subtract) {
     date.setDate(date.getDate() - 1);
   }
 
@@ -24,13 +39,27 @@ export function formatReportDate(dateInput: string | Date): string {
  * Lấy ngày báo cáo định dạng ISO (YYYY-MM-DD)
  * 
  * @param dateInput Chuỗi ISO hoặc đối tượng Date
+ * @param shift Ca làm việc (e.g. "Ca 1", "Ca 2", "Ca 3", "Ca HC")
  * @returns Chuỗi ngày định dạng YYYY-MM-DD
  */
-export function getReportDateISO(dateInput: string | Date): string {
+export function getReportDateISO(dateInput: string | Date, shift?: string): string {
   const date = new Date(dateInput);
   const hours = date.getHours();
 
-  if (hours < 6) {
+  let subtract = false;
+  if (shift === 'Ca 3') {
+    subtract = hours < 22;
+  } else if (shift === 'Ca 2') {
+    subtract = hours < 14;
+  } else if (shift === 'Ca 1') {
+    subtract = hours < 6;
+  } else if (shift === 'Ca HC') {
+    subtract = hours < 8;
+  } else {
+    subtract = hours < 6;
+  }
+
+  if (subtract) {
     date.setDate(date.getDate() - 1);
   }
 
