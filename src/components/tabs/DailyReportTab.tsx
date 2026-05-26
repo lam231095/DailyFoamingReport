@@ -338,14 +338,19 @@ function calcManagerPerf(
   let totalActual = 0, compositeTarget = 0
   if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
     totalActual += day.pouredByManager[manager].actual
-    compositeTarget += day.pouredByManager[manager].shifts.size * TARGET_POUR
+    compositeTarget += TARGET_POUR
   }
   if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
     totalActual += day.separatedByManager[manager].actual
-    day.separatedByManager[manager].shifts.forEach(s => {
-      const targetSeparate = tawnyShifts.has(`${day.date}_${s}`) ? 250 : 300
-      compositeTarget += targetSeparate
-    })
+    // Lấy 1 target tách duy nhất trong ngày (250 nếu có bất kỳ ca nào chạy Tawny Port, ngược lại 300)
+    let targetSeparate = TARGET_SEPARATE
+    for (const s of day.separatedByManager[manager].shifts) {
+      if (tawnyShifts.has(`${day.date}_${s}`)) {
+        targetSeparate = 250
+        break
+      }
+    }
+    compositeTarget += targetSeparate
   }
   if (compositeTarget === 0) return null
   return (totalActual / compositeTarget) * 100
@@ -1070,34 +1075,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                 if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
                 
                 const managerData = aggregatedData.map(d => {
-                  let totalActual = 0
-                  let totalShifts = 0
-                  
-                  if (areaFilter !== 'separate' && d.pouredByManager[manager]) {
-                    totalActual += d.pouredByManager[manager].actual
-                    totalShifts += d.pouredByManager[manager].shifts.size
-                  }
-                  if (areaFilter !== 'pour' && d.separatedByManager[manager]) {
-                    totalActual += d.separatedByManager[manager].actual
-                    totalShifts += d.separatedByManager[manager].shifts.size
-                  }
-                  
-                  // Nếu filter 'all', ta tính trung bình target? 
-                  // Thực tế user nói "tổng / target". Nếu đổ tách riêng thì dễ. 
-                  // Nếu gộp, ta lấy tổng thực tế / tổng target của các ca đó.
-                  let compositeTarget = 0
-                  if (areaFilter !== 'separate' && d.pouredByManager[manager]) {
-                    compositeTarget += d.pouredByManager[manager].shifts.size * TARGET_POUR
-                  }
-                  if (areaFilter !== 'pour' && d.separatedByManager[manager]) {
-                    d.separatedByManager[manager].shifts.forEach(s => {
-                      const targetSeparate = tawnyShifts.has(`${d.date}_${s}`) ? 250 : 300
-                      compositeTarget += targetSeparate
-                    })
-                  }
-
-                  const perf = compositeTarget > 0 ? (totalActual / compositeTarget) * 100 : 0
-                  return { date: d.date, perf }
+                  const perf = calcManagerPerf(d, manager, areaFilter, tawnyShifts)
+                  return { date: d.date, perf: perf || 0 }
                 }).filter(d => d.perf > 0)
 
                 if (managerData.length === 0) return null
