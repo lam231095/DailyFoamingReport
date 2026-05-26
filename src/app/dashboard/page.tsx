@@ -90,7 +90,7 @@ export default function DashboardPage() {
       {/* ── Tab Bar ──────────────────────────────────── */}
       <div className="sticky top-16 z-30 bg-[var(--bg-card)]/95 backdrop-blur-md border-b border-[var(--border)]">
         <div className={`mx-auto px-3 transition-all duration-300 ${
-          activeTab === 'production-progress' ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
+          (activeTab === 'production-progress' || activeTab === 'daily-report') ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
         }`}>
           <div className="relative flex gap-0.5">
             {TABS.map((tab) => {
@@ -122,7 +122,7 @@ export default function DashboardPage() {
 
       {/* ── Tab Content ──────────────────────────────── */}
       <div className={`mx-auto px-4 py-4 pb-20 transition-all duration-300 ${
-        activeTab === 'production-progress' ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
+        (activeTab === 'production-progress' || activeTab === 'daily-report') ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
       }`}>
         {/* Welcome bar */}
         <div className="flex items-center justify-between mb-5 px-4 py-3 rounded-2xl"

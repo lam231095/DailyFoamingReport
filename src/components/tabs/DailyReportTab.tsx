@@ -944,188 +944,196 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   }, [separateReports])
 
   return (
-    <div className="space-y-5 pb-20">
-
-      {/* ── Filter Panel ───────────────────────────── */}
-      <div className="card p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-500">
-              <Filter size={16} />
-            </div>
-            <h3 className="text-sm font-black uppercase tracking-tight">Bộ lọc báo cáo</h3>
-            {activeFiltersCount > 0 && (
-              <span className="ml-1 px-2 py-0.5 rounded-full bg-brand-500 text-white text-[10px] font-bold">
-                {activeFiltersCount}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {activeFiltersCount > 0 && (
-              <button onClick={resetFilters}
-                className="flex items-center gap-1 text-[10px] font-bold text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-all">
-                <X size={12} /> Xóa lọc
-              </button>
-            )}
-            <button onClick={() => setShowFilters(!showFilters)}
-              className="text-xs font-bold text-brand-500 hover:underline">
-              {showFilters ? 'Thu gọn ▲' : 'Mở rộng ▼'}
-            </button>
-          </div>
-        </div>
-
-        {/* Date range — always visible */}
-        <div className="bg-orange-500/5 p-3 rounded-xl border border-orange-500/10">
-          <p className="text-[10px] font-bold text-orange-600 uppercase mb-2 flex items-center gap-1">
-            <Calendar size={11} /> Khoảng thời gian
-          </p>
-          <div className="flex items-center gap-2">
-            <input type="date" value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-orange-500 transition-all font-mono" />
-            <ArrowRight size={16} className="text-orange-300 shrink-0" />
-            <input type="date" value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-orange-500 transition-all font-mono" />
-          </div>
-        </div>
-
-        {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Shift filter */}
-            <div>
-              <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1">Ca làm việc</p>
-              <div className="flex flex-wrap gap-1.5">
-                {['Tất cả', ...SHIFTS].map(s => (
-                  <button key={s} onClick={() => setShiftFilter(s)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                      shiftFilter === s
-                        ? 'bg-brand-500 text-white shadow-md'
-                        : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-brand-500/10'
-                    }`}>
-                    {s}
+    <div className="pb-20">
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
+        {/* LEFT COLUMN: Filters & KPIs */}
+        <div className="w-full lg:w-80 shrink-0 space-y-5 lg:sticky lg:top-32 z-20">
+          {/* ── Filter Panel ───────────────────────────── */}
+          <div className="card p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-brand-500/10 flex items-center justify-center text-brand-500">
+                  <Filter size={16} />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-tight">Bộ lọc báo cáo</h3>
+                {activeFiltersCount > 0 && (
+                  <span className="ml-1 px-2 py-0.5 rounded-full bg-brand-500 text-white text-[10px] font-bold">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {activeFiltersCount > 0 && (
+                  <button onClick={resetFilters}
+                    className="flex items-center gap-1 text-[10px] font-bold text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-all font-sans">
+                    <X size={12} /> Xóa lọc
                   </button>
-                ))}
+                )}
+                <button onClick={() => setShowFilters(!showFilters)}
+                  className="text-xs font-bold text-brand-500 hover:underline">
+                  {showFilters ? 'Thu gọn ▲' : 'Mở rộng ▼'}
+                </button>
               </div>
             </div>
 
-            {/* Area filter */}
-            <div>
-              <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1">Khu vực / Công đoạn</p>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { id: 'all', label: '🏭 Tất cả' },
-                  { id: 'pour', label: '💧 Khu vực Đổ' },
-                  { id: 'separate', label: '✂️ Khu vực Tách' },
-                ].map(a => (
-                  <button key={a.id} onClick={() => setAreaFilter(a.id as AreaFilter)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                      areaFilter === a.id
-                        ? 'bg-brand-500 text-white shadow-md'
-                        : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-brand-500/10'
-                    }`}>
-                    {a.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Manager filter */}
-            <div>
-              <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1">Quản lý</p>
-              <div className="flex flex-wrap gap-1.5">
-                {['Tất cả', ...MANAGERS].map(m => (
-                  <button key={m} onClick={() => setManagerFilter(m)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
-                      managerFilter === m
-                        ? 'bg-brand-500 text-white shadow-md'
-                        : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-brand-500/10'
-                    }`}>
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Product line filter */}
-            <div className="sm:col-span-2">
-              <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1 flex items-center gap-1">
-                <Layers size={11} /> Dòng sản phẩm (biểu đồ độ dày bun)
+            {/* Date range — always visible */}
+            <div className="bg-orange-500/5 p-3 rounded-xl border border-orange-500/10">
+              <p className="text-[10px] font-bold text-orange-600 uppercase mb-2 flex items-center gap-1">
+                <Calendar size={11} /> Khoảng thời gian
               </p>
-              <select
-                value={productLineFilter}
-                onChange={e => setProductLineFilter(e.target.value)}
-                className="w-full bg-[var(--bg-input,#f3f4f6)] dark:bg-white/10 border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500 transition-all"
-              >
-                {productLineOptions.map(pl => (
-                  <option key={pl} value={pl}>{pl}</option>
-                ))}
-              </select>
+              <div className="flex flex-col gap-2">
+                <input type="date" value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-orange-500 transition-all font-mono" />
+                <div className="text-center text-orange-300 font-bold text-xs shrink-0 select-none">▼ đến ▼</div>
+                <input type="date" value={endDate}
+                  onChange={e => setEndDate(e.target.value)}
+                  className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-orange-500 transition-all font-mono" />
+              </div>
+            </div>
+
+            {showFilters && (
+              <div className="space-y-3">
+                {/* Shift filter */}
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1">Ca làm việc</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Tất cả', ...SHIFTS].map(s => (
+                      <button key={s} onClick={() => setShiftFilter(s)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                          shiftFilter === s
+                            ? 'bg-brand-500 text-white shadow-md'
+                            : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-brand-500/10'
+                        }`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Area filter */}
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1">Khu vực / Công đoạn</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      { id: 'all', label: '🏭 Tất cả' },
+                      { id: 'pour', label: '💧 Khu đổ' },
+                      { id: 'separate', label: '✂️ Khu tách' },
+                    ].map(a => (
+                      <button key={a.id} onClick={() => setAreaFilter(a.id as AreaFilter)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                          areaFilter === a.id
+                            ? 'bg-brand-500 text-white shadow-md'
+                            : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-brand-500/10'
+                        }`}>
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Manager filter */}
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1">Quản lý</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Tất cả', ...MANAGERS].map(m => (
+                      <button key={m} onClick={() => setManagerFilter(m)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${
+                          managerFilter === m
+                            ? 'bg-brand-500 text-white shadow-md'
+                            : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-brand-500/10'
+                        }`}>
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Product line filter */}
+                <div>
+                  <p className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-2 ml-1 flex items-center gap-1">
+                    <Layers size={11} /> Dòng sản phẩm
+                  </p>
+                  <select
+                    value={productLineFilter}
+                    onChange={e => setProductLineFilter(e.target.value)}
+                    className="w-full bg-[var(--bg-input,#f3f4f6)] dark:bg-white/10 border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500 transition-all"
+                  >
+                    {productLineOptions.map(pl => (
+                      <option key={pl} value={pl}>{pl}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Quick date buttons */}
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-[var(--border)]">
+              {[
+                { label: 'Hôm nay', fn: () => { setStartDate(todayStr()); setEndDate(todayStr()) } },
+                { label: '7 ngày', fn: () => { const d = new Date(); d.setDate(d.getDate()-6); setStartDate(d.toISOString().split('T')[0]); setEndDate(todayStr()) } },
+                { label: 'Tháng này', fn: () => { setStartDate(firstDayOfMonth()); setEndDate(todayStr()) } },
+              ].map(q => (
+                <button key={q.label} onClick={q.fn}
+                  className="px-2.5 py-1 text-[9px] font-bold rounded-full border border-[var(--border)] text-[var(--text-3)] hover:border-brand-500 hover:text-brand-500 transition-all">
+                  {q.label}
+                </button>
+              ))}
+              <button onClick={fetchData}
+                className="ml-auto px-3.5 py-1 text-[9px] font-bold rounded-full bg-brand-500 text-white hover:bg-brand-600 transition-all shadow-sm">
+                ↻ Tải lại
+              </button>
             </div>
           </div>
-        )}
 
-        {/* Quick date buttons */}
-        <div className="flex flex-wrap gap-2">
-          {[
-            { label: 'Hôm nay', fn: () => { setStartDate(todayStr()); setEndDate(todayStr()) } },
-            { label: '7 ngày', fn: () => { const d = new Date(); d.setDate(d.getDate()-6); setStartDate(d.toISOString().split('T')[0]); setEndDate(todayStr()) } },
-            { label: 'Tháng này', fn: () => { setStartDate(firstDayOfMonth()); setEndDate(todayStr()) } },
-          ].map(q => (
-            <button key={q.label} onClick={q.fn}
-              className="px-3 py-1 text-[10px] font-bold rounded-full border border-[var(--border)] text-[var(--text-3)] hover:border-brand-500 hover:text-brand-500 transition-all">
-              {q.label}
-            </button>
-          ))}
-          <button onClick={fetchData}
-            className="ml-auto px-4 py-1 text-[10px] font-bold rounded-full bg-brand-500 text-white hover:bg-brand-600 transition-all shadow-sm">
-            ↻ Tải lại
-          </button>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-32 gap-4">
-          <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-[var(--text-3)] font-bold animate-pulse">Đang tổng hợp dữ liệu...</p>
-        </div>
-      ) : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
-
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {areaFilter !== 'separate' && (
-              <div className="rounded-2xl p-5 relative overflow-hidden text-white shadow-xl"
-                style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 10px 30px rgba(37,99,235,0.35)' }}>
-                <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Đổ</p>
-                <h4 className="text-4xl font-black">{totals.poured.toLocaleString()}</h4>
-                <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
-                  <Factory size={10} />
-                  {shiftFilter === 'Tất cả' ? 'Tất cả ca' : shiftFilter}
-                </div>
-                <Activity size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
-              </div>
-            )}
-            {areaFilter !== 'pour' && (
-              <div className="rounded-2xl p-5 relative overflow-hidden text-white shadow-xl"
-                style={{ background: 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)', boxShadow: '0 10px 30px rgba(147,51,234,0.35)' }}>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Tách (TP+BTP)</p>
-                    <h4 className="text-4xl font-black">{totals.separated.toLocaleString()} <span className="text-sm font-normal opacity-85">bun</span></h4>
+          {/* KPI Cards (only shown if not loading) */}
+          {!loading && (
+            <div className="space-y-4">
+              {areaFilter !== 'separate' && (
+                <div className="rounded-2xl p-5 relative overflow-hidden text-white shadow-xl"
+                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', boxShadow: '0 10px 30px rgba(37,99,235,0.35)' }}>
+                  <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Đổ</p>
+                  <h4 className="text-4xl font-black">{totals.poured.toLocaleString()}</h4>
+                  <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    <Factory size={10} />
+                    {shiftFilter === 'Tất cả' ? 'Tất cả ca' : shiftFilter}
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Sheet Tách</p>
-                    <h4 className="text-2xl font-black">{totals.separatedSheets.toLocaleString()} <span className="text-xs font-normal opacity-85">sheet</span></h4>
+                  <Activity size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
+                </div>
+              )}
+              {areaFilter !== 'pour' && (
+                <div className="rounded-2xl p-5 relative overflow-hidden text-white shadow-xl"
+                  style={{ background: 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)', boxShadow: '0 10px 30px rgba(147,51,234,0.35)' }}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Bun Tách (TP+BTP)</p>
+                      <h4 className="text-4xl font-black">{totals.separated.toLocaleString()} <span className="text-sm font-normal opacity-85">bun</span></h4>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black uppercase opacity-80 mb-1">Tổng Sheet Tách</p>
+                      <h4 className="text-2xl font-black">{totals.separatedSheets.toLocaleString()} <span className="text-xs font-normal opacity-85">sheet</span></h4>
+                    </div>
                   </div>
+                  <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
+                    <CheckCircle2 size={10} /> Tất cả loại sản phẩm
+                  </div>
+                  <Zap size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
                 </div>
-                <div className="mt-2 flex items-center gap-1.5 bg-white/20 w-fit px-2 py-0.5 rounded-full text-[10px] font-bold">
-                  <CheckCircle2 size={10} /> Tất cả loại sản phẩm
-                </div>
-                <Zap size={80} className="absolute -right-4 -bottom-4 opacity-10 rotate-12" />
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: Loading or Dashboard Content */}
+        <div className="flex-1 w-full min-w-0">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-32 gap-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] shadow-sm">
+              <div className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+              <p className="text-sm text-[var(--text-3)] font-bold animate-pulse">Đang tổng hợp dữ liệu...</p>
+            </div>
+          ) : (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+
 
           {/* Performance Section */}
           <div className="space-y-4">
@@ -1852,6 +1860,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
         </motion.div>
       )}
+        </div>
+      </div>
     </div>
   )
 }
