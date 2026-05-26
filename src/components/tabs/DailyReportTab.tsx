@@ -344,12 +344,11 @@ function calcManagerPerf(
     totalActual += day.separatedByManager[manager].actual
     // Lấy 1 target tách duy nhất trong ngày (250 nếu có bất kỳ ca nào chạy Tawny Port, ngược lại 300)
     let targetSeparate = TARGET_SEPARATE
-    for (const s of day.separatedByManager[manager].shifts) {
+    day.separatedByManager[manager].shifts.forEach(s => {
       if (tawnyShifts.has(`${day.date}_${s}`)) {
         targetSeparate = 250
-        break
       }
-    }
+    })
     compositeTarget += targetSeparate
   }
   if (compositeTarget === 0) return null
