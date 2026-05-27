@@ -142,7 +142,17 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       // Lọc theo Firm Plan hoặc No Order
       if (filters.firmPlan.trim()) {
         const term = `%${filters.firmPlan.trim()}%`
-        query = query.or(`firm_plan.ilike.${term},production_plan.no_order.ilike.${term}`)
+        const { data: matchedPlans } = await supabase
+          .from('production_plan')
+          .select('firm_plan')
+          .or(`firm_plan.ilike.${term},no_order.ilike.${term}`)
+        
+        const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
+        if (matchedFirmPlans.length > 0) {
+          query = query.in('firm_plan', matchedFirmPlans)
+        } else {
+          query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
+        }
       }
 
       // Lọc theo PU Code (Join Production Plan)
