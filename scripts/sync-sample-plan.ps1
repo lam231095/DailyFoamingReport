@@ -1,8 +1,11 @@
+param(
+    [string]$TargetSheet = ""
+)
+
 # ==============================================================
 # sync-sample-plan.ps1
-# Đọc TẤT CẢ sheet trong "Kế hoach sản xuất Sample.xlsx" và UPSERT lên Supabase
-# Khi firm_plan trùng, dữ liệu mới nhất sẽ ghi đè (merge-duplicates)
-# Chạy: powershell -ExecutionPolicy Bypass -File ".\scripts\sync-sample-plan.ps1"
+# Đọc sheet trong "Kế hoach sản xuất Sample.xlsx" và UPSERT lên Supabase
+# Sử dụng phương pháp đọc từng ô với cơ chế early-exit để tránh lỗi treo UsedRange.
 # ==============================================================
 
 # ---- CONFIG ----
@@ -10,15 +13,41 @@ $SUPABASE_URL = "https://brdecledtyypykowjnjt.supabase.co"
 $SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJyZGVjbGVkdHl5cHlrb3dqbmp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYyNzgzMDksImV4cCI6MjA5MTg1NDMwOX0.86Vbjllr_IwYHgA92NJCxjPECmLWnb8ZQjiHISOrEkQ"
 $PROJECT_ROOT = Resolve-Path "."
 
-# Find Sample Excel file
-$excelFiles = Get-ChildItem -Path $PROJECT_ROOT -Filter "*Sample*.xlsx"
-if ($excelFiles.Count -eq 0) {
-    Write-Host "[ERROR] Không tìm thấy file Excel nào chứa chữ 'Sample' ở: $PROJECT_ROOT" -ForegroundColor Red
-    exit 1
-}
-$EXCEL_FILE = $excelFiles[0].FullName
+# Tìm file nguồn Sample Orders.xlsx từ thư mục hệ thống của người dùng
+Write-Host "[0/3] Đang tìm kiếm file Sample Orders.xlsx mới nhất..." -ForegroundColor Yellow
+$activeFiles = Get-ChildItem -Path "C:\Users\lam.dv2\Ortholite Vietnam" -Filter "Sample Orders.xlsx" -Recurse -ErrorAction SilentlyContinue
 
-# Layout cột (1-indexed) của file Kế hoach sản xuất Sample.xlsx
+$EXCEL_FILE = $null
+
+if ($activeFiles.Count -gt 0) {
+    $srcPath = $activeFiles[0].FullName
+    $EXCEL_FILE = $srcPath
+    Write-Host "  -> Tìm thấy file gốc tại: $srcPath" -ForegroundColor Green
+    
+    # Cố gắng sao chép vào dự phòng, bỏ qua nếu bị khóa (lock)
+    try {
+        $destPath = Join-Path $PROJECT_ROOT "Kế hoach sản xuất Sample.xlsx"
+        Copy-Item -Path $srcPath -Destination $destPath -Force -ErrorAction Stop
+        Write-Host "  -> Đã cập nhật bản sao dự phòng tại workspace." -ForegroundColor Green
+    } catch {
+        Write-Host "  -> [INFO] Bản sao tại workspace đang bị khóa. Đọc trực tiếp từ file gốc." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "  [WARNING] Không tìm thấy file 'Sample Orders.xlsx' gốc." -ForegroundColor Yellow
+}
+
+if ($EXCEL_FILE -eq $null) {
+    # Xác định file Excel chạy chính tại workspace làm dự phòng cuối cùng
+    $excelFiles = Get-ChildItem -Path $PROJECT_ROOT -Filter "*Sample*.xlsx"
+    if ($excelFiles.Count -eq 0) {
+        Write-Host "[ERROR] Không tìm thấy file Excel nào chứa chữ 'Sample' ở: $PROJECT_ROOT" -ForegroundColor Red
+        exit 1
+    }
+    $EXCEL_FILE = $excelFiles[0].FullName
+    Write-Host "  -> Sử dụng file tại workspace: $EXCEL_FILE" -ForegroundColor Green
+}
+
+# Cấu hình vị trí cột
 $COL_NO_ORDER   = 1
 $COL_FIRM_PLAN  = 2
 $COL_BUN_CODE   = 3
@@ -28,18 +57,33 @@ $COL_SL_SHEET   = 6
 $COL_SL_TACH    = 7
 $COL_SL_DO      = 8
 $COL_COMPLETION = 14
-$COL_DELIVERY   = 14
+$COL_DELIVERY   = 15
 
-$HEADER_ROW  = 2
 $DATA_START  = 3
 
 # ---- FUNCTIONS ----
 
 function Parse-Int($val) {
-    if ([string]::IsNullOrWhiteSpace($val) -or $val -eq "-") { return $null }
-    $clean = ($val -replace ",", "") -replace "\.", ""
+    if ($val -eq $null -or [string]::IsNullOrWhiteSpace($val) -or $val -eq "-") { return $null }
+    $clean = ($val.ToString() -replace ",", "") -replace "\.", ""
     if ($clean -match "^(\d+)") { return [int]$Matches[1] }
     return $null
+}
+
+function Format-DateString($val) {
+    if ($val -eq $null -or [string]::IsNullOrWhiteSpace($val)) { return $null }
+    if ($val.ToString() -match "(\d{1,2})/(\d{1,2})/(\d{4})") {
+        try {
+            return [datetime]::ParseExact($val.ToString(), "M/d/yyyy", $null).ToString("yyyy-MM-dd")
+        } catch {
+            try {
+                return [datetime]::ParseExact($val.ToString(), "d/M/yyyy", $null).ToString("yyyy-MM-dd")
+            } catch {
+                return $val.ToString()
+            }
+        }
+    }
+    return $val.ToString()
 }
 
 function Upload-Batch($batch) {
@@ -70,10 +114,12 @@ function Upload-Batch($batch) {
 # ---- MAIN ----
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-# Set UTF-8 encoding for Output console
 $OutputEncoding = [System.Text.Encoding]::UTF8
-Write-Host "  SAMPLE PLAN → SUPABASE SYNC" -ForegroundColor Cyan
+Write-Host "  FAST SAMPLE PLAN → SUPABASE SYNC" -ForegroundColor Cyan
 Write-Host "  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
+if (![string]::IsNullOrEmpty($TargetSheet)) {
+    Write-Host "  Target Sheet: $TargetSheet" -ForegroundColor Yellow
+}
 Write-Host "========================================" -ForegroundColor Cyan
 
 Write-Host "[1/3] Mở file: $EXCEL_FILE" -ForegroundColor Yellow
@@ -82,7 +128,6 @@ $xl = New-Object -ComObject Excel.Application
 $xl.Visible       = $false
 $xl.DisplayAlerts = $false
 
-# Map firm_plan -> record (để xử lý trùng lặp)
 $planMap = [System.Collections.Generic.Dictionary[string,object]]::new()
 
 try {
@@ -91,58 +136,78 @@ try {
 
     Write-Host "[1/3] Tìm thấy $sheetCount sheet(s)" -ForegroundColor Green
 
-    # Đọc TẤT CẢ sheet theo thứ tự
     for ($si = 1; $si -le $sheetCount; $si++) {
         $ws       = $wb.Worksheets.Item($si)
         $sheetName = $ws.Name
-        $nr       = $ws.UsedRange.Rows.Count
+        
+        # Nếu target sheet được chỉ định, bỏ qua các sheet khác
+        if (![string]::IsNullOrEmpty($TargetSheet) -and $sheetName -ne $TargetSheet) {
+            continue
+        }
+        
+        try {
+            $sheetCount_rows = 0
+            $consecutiveEmpty = 0
+            
+            for ($r = $DATA_START; $r -le 1000; $r++) {
+                $firmPlan = $ws.Cells.Item($r, $COL_FIRM_PLAN).Text.Trim()
+                if ([string]::IsNullOrWhiteSpace($firmPlan)) {
+                    $consecutiveEmpty++
+                    if ($consecutiveEmpty -ge 15) {
+                        break
+                    }
+                    continue
+                }
+                $consecutiveEmpty = 0
+                
+                # Bỏ qua nếu không khớp định dạng FPRO hoặc RPRO
+                if ($firmPlan -notmatch "^[FR]PRO-") { continue }
+                
+                $noOrder  = $ws.Cells.Item($r, $COL_NO_ORDER).Text.Trim()
+                $bunCode  = $ws.Cells.Item($r, $COL_BUN_CODE).Text.Trim()
+                $puCode   = $ws.Cells.Item($r, $COL_PU_CODE).Text.Trim()
+                $tenSP    = ($ws.Cells.Item($r, $COL_TEN_SP).Text.Trim()) -replace "`r`n"," " -replace "`n"," "
+                $slSheet  = $ws.Cells.Item($r, $COL_SL_SHEET).Text.Trim()
+                $slTach   = $ws.Cells.Item($r, $COL_SL_TACH).Text.Trim()
+                $slDo     = $ws.Cells.Item($r, $COL_SL_DO).Text.Trim()
+                
+                $compDate = $ws.Cells.Item($r, $COL_COMPLETION).Text.Trim()
+                $delDate  = $ws.Cells.Item($r, $COL_DELIVERY).Text.Trim()
+                if ($delDate -eq "") { $delDate = $compDate }
+                
+                $cDate = Format-DateString $compDate
+                $dDate = Format-DateString $delDate
 
-        Write-Host ""
-        Write-Host "  Sheet [$si/$sheetCount]: '$sheetName' ($nr rows)" -ForegroundColor Magenta
+                $record = [ordered]@{
+                    firm_plan       = $firmPlan
+                    no_order        = if ($noOrder -ne "") { $noOrder } else { $null }
+                    bun_code        = if ($bunCode -ne "") { $bunCode } else { $null }
+                    pu_code         = if ($puCode -ne "") { $puCode }   else { $null }
+                    ten_san_pham    = if ($tenSP -ne "") { $tenSP }    else { $null }
+                    sl_sheet        = Parse-Int $slSheet
+                    sl_bun_can_tach = Parse-Int $slTach
+                    sl_bun_can_do   = Parse-Int $slDo
+                    completion_date = if ($cDate -ne "") { $cDate } else { $null }
+                    delivery_date   = if ($dDate -ne "") { $dDate }   else { $null }
+                    week_label      = "Sample"
+                    synced_at       = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+                }
 
-        $sheetCount_rows = 0
-
-        for ($r = $DATA_START; $r -le $nr; $r++) {
-            $firmPlan = $ws.Cells.Item($r, $COL_FIRM_PLAN).Text.Trim()
-            if ([string]::IsNullOrWhiteSpace($firmPlan)) { continue }
-
-            # Bỏ qua nếu không phải FPRO hoặc RPRO
-            if ($firmPlan -notmatch "^[FR]PRO-") { continue }
-
-            $noOrder  = $ws.Cells.Item($r, $COL_NO_ORDER).Text.Trim()
-            $bunCode  = $ws.Cells.Item($r, $COL_BUN_CODE).Text.Trim()
-            $puCode   = $ws.Cells.Item($r, $COL_PU_CODE).Text.Trim()
-            $tenSP    = ($ws.Cells.Item($r, $COL_TEN_SP).Text.Trim()) -replace "`r`n"," " -replace "`n"," "
-            $slSheet  = $ws.Cells.Item($r, $COL_SL_SHEET).Text.Trim()
-            $slTach   = $ws.Cells.Item($r, $COL_SL_TACH).Text.Trim()
-            $slDo     = $ws.Cells.Item($r, $COL_SL_DO).Text.Trim()
-            $compDate = $ws.Cells.Item($r, $COL_COMPLETION).Text.Trim()
-            $delDate  = $ws.Cells.Item($r, $COL_DELIVERY).Text.Trim()
-
-            $record = [ordered]@{
-                firm_plan       = $firmPlan
-                no_order        = if ($noOrder  -ne "") { $noOrder }  else { $null }
-                bun_code        = if ($bunCode  -ne "") { $bunCode }  else { $null }
-                pu_code         = if ($puCode   -ne "") { $puCode }   else { $null }
-                ten_san_pham    = if ($tenSP    -ne "") { $tenSP }    else { $null }
-                sl_sheet        = Parse-Int $slSheet
-                sl_bun_can_tach = Parse-Int $slTach
-                sl_bun_can_do   = Parse-Int $slDo
-                completion_date = if ($compDate -ne "") { $compDate } else { $null }
-                delivery_date   = if ($delDate  -ne "") { $delDate }  else { $null }
-                week_label      = "Sample"
-                synced_at       = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
+                $planMap[$firmPlan] = $record
+                $sheetCount_rows++
             }
 
-            # Ghi đè nếu đã tồn tại
-            $planMap[$firmPlan] = $record
-            $sheetCount_rows++
+            if ($sheetCount_rows -gt 0) {
+                Write-Host "  Sheet [$si/$sheetCount]: '$sheetName' → Đọc được $sheetCount_rows dòng hợp lệ" -ForegroundColor Green
+            }
+        } catch {
+            Write-Host "[WARNING] Không thể đọc sheet '$sheetName': $($_.Exception.Message)" -ForegroundColor Yellow
         }
-
-        Write-Host "  → Đọc được $sheetCount_rows dòng hợp lệ từ '$sheetName'" -ForegroundColor Green
     }
 
     $wb.Close($false)
+} catch {
+    Write-Host "[CRITICAL ERROR] $($_.Exception.Message)" -ForegroundColor Red
 } finally {
     $xl.Quit()
     [System.Runtime.Interopservices.Marshal]::ReleaseComObject($xl) | Out-Null
@@ -152,7 +217,7 @@ try {
 $records   = @($planMap.Values)
 $totalRec  = $records.Count
 Write-Host ""
-Write-Host "[2/3] Tổng cộng $totalRec dòng unique từ file Sample Plan" -ForegroundColor Green
+Write-Host "[2/3] Tổng cộng $totalRec dòng unique từ toàn bộ file Sample Plan" -ForegroundColor Green
 
 # ---- UPLOAD ----
 Write-Host "[3/3] Upload lên Supabase..." -ForegroundColor Yellow
@@ -176,7 +241,7 @@ for ($i = 0; $i -lt $totalRec; $i += $batchSize) {
         Write-Host " FAILED" -ForegroundColor Red
     }
 
-    Start-Sleep -Milliseconds 300
+    Start-Sleep -Milliseconds 200
 }
 
 Write-Host ""
