@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
 import { Plus, Trash2, Info, Package, MapPin, Palette, Truck } from 'lucide-react'
 import { getReportDateISO } from '@/lib/dateUtils'
+import { distributeInteger } from '@/lib/calculations'
 
 const ERROR_TYPES = [
   'Bọt khí', 'Loang trắng', 'Loang đen', 'Lõm mặt',
@@ -91,29 +92,94 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         .map(x => x.type === 'Lỗi khác' && x.note ? `${x.type}: ${x.note.trim()} (${x.qty})` : `${x.type} (${x.qty})`)
         .join(', ')
 
-      const { error } = await supabase.from('foaming_pour_reports').insert({
-        firm_plan: plan.firm_plan,
-        shift: formData.shift,
-        machine_id: formData.machine_id,
-        operator_name: formData.operator_name,
-        actual_bun_poured: Number(formData.actual_bun_poured),
-        lot_no: formData.lot_no,
-        report_date: getReportDateISO(new Date(), formData.shift),
-        ng_bun_qty: totalNG,
-        error_type: combinedError || '',
-        storage_location: formData.storage_location,
-        storage_line: formData.storage_line,
-        color_tag: formData.color_tag,
-        storage_carts: storageCarts,
-        cleaning_agent_kg: Number(formData.cleaning_agent_kg),
-        waste_kg: Number(formData.waste_kg),
-        manager_name: formData.manager_name,
-        note: formData.note.trim() || null,
-        is_compensation: formData.is_compensation,
-        recorder_id: user.id
-      })
+      const plansList = plan.firm_plan.split('|').map(x => x.trim()).filter(Boolean)
 
-      if (error) throw error
+      if (plansList.length > 1) {
+        // Query targets for each plan
+        const { data: plansData, error: fetchErr } = await supabase
+          .from('production_plan')
+          .select('firm_plan, sl_bun_can_do')
+          .in('firm_plan', plansList)
+
+        if (fetchErr) throw fetchErr
+
+        const targets = plansList.map(fp => {
+          const p = plansData?.find(x => x.firm_plan === fp)
+          return p ? (p.sl_bun_can_do || 0) : 0
+        })
+
+        // Phân bổ số lượng bun thực tế và NG
+        const distributedActual = distributeInteger(Number(formData.actual_bun_poured), targets)
+        const distributedNG = distributeInteger(totalNG, targets)
+
+        // Phân bổ các số thực (cleaning, waste)
+        const totalTarget = targets.reduce((a, b) => a + b, 0)
+        const distributeFloat = (val: number, idx: number) => {
+          if (totalTarget === 0) return val / plansList.length
+          return (targets[idx] / totalTarget) * val
+        }
+
+        // Tạo danh sách các bản ghi để chèn
+        const recordsToInsert = plansList.map((fp, idx) => {
+          const act = distributedActual[idx]
+          const ng = distributedNG[idx]
+          const carts = Math.ceil(act / 6)
+          const cleaning = distributeFloat(Number(formData.cleaning_agent_kg), idx)
+          const waste = distributeFloat(Number(formData.waste_kg), idx)
+          const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`
+          const finalNote = formData.note.trim() 
+            ? `${formData.note.trim()} ${groupNote}`
+            : groupNote
+
+          return {
+            firm_plan: fp,
+            shift: formData.shift,
+            machine_id: formData.machine_id,
+            operator_name: formData.operator_name,
+            actual_bun_poured: act,
+            lot_no: formData.lot_no,
+            report_date: getReportDateISO(new Date(), formData.shift),
+            ng_bun_qty: ng,
+            error_type: combinedError || '',
+            storage_location: formData.storage_location,
+            storage_line: formData.storage_line,
+            color_tag: formData.color_tag,
+            storage_carts: carts,
+            cleaning_agent_kg: parseFloat(cleaning.toFixed(2)),
+            waste_kg: parseFloat(waste.toFixed(2)),
+            manager_name: formData.manager_name,
+            note: finalNote,
+            is_compensation: formData.is_compensation,
+            recorder_id: user.id
+          }
+        })
+
+        const { error: insertErr } = await supabase.from('foaming_pour_reports').insert(recordsToInsert)
+        if (insertErr) throw insertErr
+      } else {
+        const { error } = await supabase.from('foaming_pour_reports').insert({
+          firm_plan: plan.firm_plan,
+          shift: formData.shift,
+          machine_id: formData.machine_id,
+          operator_name: formData.operator_name,
+          actual_bun_poured: Number(formData.actual_bun_poured),
+          lot_no: formData.lot_no,
+          report_date: getReportDateISO(new Date(), formData.shift),
+          ng_bun_qty: totalNG,
+          error_type: combinedError || '',
+          storage_location: formData.storage_location,
+          storage_line: formData.storage_line,
+          color_tag: formData.color_tag,
+          storage_carts: storageCarts,
+          cleaning_agent_kg: Number(formData.cleaning_agent_kg),
+          waste_kg: Number(formData.waste_kg),
+          manager_name: formData.manager_name,
+          note: formData.note.trim() || null,
+          is_compensation: formData.is_compensation,
+          recorder_id: user.id
+        })
+        if (error) throw error
+      }
 
       setMessage({ type: 'success', text: 'Đã lưu báo cáo công đoạn Đổ thành công!' })
       setTimeout(() => {

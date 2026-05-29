@@ -42,62 +42,103 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
     onPlanFound(null)
 
     try {
-      const { data, error: sbError } = await supabase
+      const codes = searchVal.split('|').map(x => x.trim()).filter(Boolean)
+      if (codes.length === 0) {
+        setLoading(false)
+        return
+      }
+
+      // Xây dựng điều kiện OR để truy vấn tất cả mã đơn khớp
+      const conditions = codes.flatMap(code => [
+        `firm_plan.ilike.%${code}%`,
+        `no_order.ilike.%${code}%`
+      ]).join(',')
+
+      const { data: plans, error: sbError } = await supabase
         .from('production_plan')
         .select('*')
-        .or(`firm_plan.ilike.%${searchVal}%,no_order.ilike.%${searchVal}%`)
-        .limit(1)
-        .single()
+        .or(conditions)
 
-      if (sbError) {
-        if (sbError.code === 'PGRST116') {
-          setError('Không tìm thấy mã đơn hàng này trong kế hoạch!')
-        } else {
-          throw sbError
-        }
-      } else {
-        setFoundPlan(data)
-        onPlanFound(data)
+      if (sbError || !plans || plans.length === 0) {
+        setError('Không tìm thấy mã đơn hàng này trong kế hoạch!')
+        setLoading(false)
+        return
+      }
 
-        // Fetch tổng số lượng đã đổ và NG Đổ
-        const { data: pourData, error: pourError } = await supabase
-          .from('foaming_pour_reports')
-          .select('actual_bun_poured, ng_bun_qty')
-          .eq('firm_plan', data.firm_plan)
+      // Hợp nhất các đơn hàng tìm thấy thành 1 kế hoạch ảo
+      const combinedFirmPlan = Array.from(new Set(plans.map(p => p.firm_plan).filter(Boolean))).join('|')
+      const combinedNoOrder = Array.from(new Set(plans.map(p => p.no_order).filter(Boolean))).join(' | ')
+      const combinedBunCode = Array.from(new Set(plans.map(p => p.bun_code).filter(Boolean))).join(' | ')
+      const combinedPuCode = Array.from(new Set(plans.map(p => p.pu_code).filter(Boolean))).join(' | ')
+      
+      const productNames = Array.from(new Set(plans.map(p => p.ten_san_pham).filter(Boolean)))
+      const combinedProductName = productNames.join(' | ')
 
-        if (!pourError && pourData) {
-          const total = pourData.reduce((sum, row) => sum + (row.actual_bun_poured || 0), 0)
-          const ngPour = pourData.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0)
-          setTotalPoured(total)
-          
-          // Fetch NG từ Tách, Kho và Bảng tiêu chuẩn
-          const [{ data: sepData }, { data: whData }, { data: standards }] = await Promise.all([
-            supabase.from('foaming_separate_reports').select('ng_qty').eq('firm_plan', data.firm_plan),
-            supabase.from('foaming_warehouse_reports').select('ng_bun_qty').eq('firm_plan', data.firm_plan),
-            supabase.from('thickness_standards').select('*')
-          ])
+      const totalSheets = plans.reduce((sum, p) => sum + (p.sl_sheet || 0), 0)
+      const totalBunCanDo = plans.reduce((sum, p) => sum + (p.sl_bun_can_do || 0), 0)
+      const totalBunCanTach = plans.reduce((sum, p) => sum + (p.sl_bun_can_tach || 0), 0)
 
-          const ngSepSheets = sepData?.reduce((sum, row) => sum + (row.ng_qty || 0), 0) || 0
-          const ngWh = whData?.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0) || 0
-          
-          // Xác định độ dày từ tên sản phẩm
-          const match = data.ten_san_pham?.match(/([0-9.]+)\s*mm/i)
-          const thickness = match ? parseFloat(match[1]) : null
-          
-          // Tìm số sheet tối ưu
-          const standard = standards?.find(s => s.thickness_mm === thickness)
-          const optimalSheets = standard 
-            ? standard.optimal_sheets_per_bun 
-            : (thickness ? calculateOptimalSheetsPerBun(thickness) : 1)
+      const compDates = Array.from(new Set(plans.map(p => p.completion_date).filter(Boolean))).sort()
+      const delDates = Array.from(new Set(plans.map(p => p.delivery_date).filter(Boolean))).sort()
+      const combinedCompDate = compDates.length > 0 ? compDates.join(' | ') : null
+      const combinedDelDate = delDates.length > 0 ? delDates.join(' | ') : null
 
-          // Công thức mới: NG Đổ (bun) + NG Kho (bun) + ceil(NG Tách (tấm) / Số sheet tối ưu)
-          const ngSepEquivalentBuns = Math.ceil(ngSepSheets / (optimalSheets || 1))
-          
-          setTotalNG(ngPour + ngWh + ngSepEquivalentBuns)
-        } else {
-          setTotalPoured(0)
-          setTotalNG(0)
-        }
+      const consolidatedPlan: ProductionPlan = {
+        id: plans[0].id,
+        firm_plan: combinedFirmPlan,
+        no_order: combinedNoOrder,
+        bun_code: combinedBunCode,
+        pu_code: combinedPuCode,
+        ten_san_pham: combinedProductName,
+        sl_sheet: totalSheets,
+        sl_bun_can_do: totalBunCanDo,
+        sl_bun_can_tach: totalBunCanTach,
+        completion_date: combinedCompDate as any,
+        delivery_date: combinedDelDate as any,
+        week_label: Array.from(new Set(plans.map(p => p.week_label).filter(Boolean))).join(' | '),
+        synced_at: new Date().toISOString()
+      }
+
+      setFoundPlan(consolidatedPlan)
+      onPlanFound(consolidatedPlan)
+
+      // Xây dựng điều kiện OR để truy xuất báo cáo của tất cả mã đơn thuộc nhóm này
+      const reportConditions = plans.map(p => `firm_plan.ilike.%${p.firm_plan}%`).join(',')
+
+      const { data: pourData, error: pourError } = await supabase
+        .from('foaming_pour_reports')
+        .select('actual_bun_poured, ng_bun_qty')
+        .or(reportConditions)
+
+      if (!pourError && pourData) {
+        const total = pourData.reduce((sum, row) => sum + (row.actual_bun_poured || 0), 0)
+        const ngPour = pourData.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0)
+        setTotalPoured(total)
+        
+        // Fetch NG từ Tách, Kho và Bảng tiêu chuẩn
+        const [{ data: sepData }, { data: whData }, { data: standards }] = await Promise.all([
+          supabase.from('foaming_separate_reports').select('ng_qty').or(reportConditions),
+          supabase.from('foaming_warehouse_reports').select('ng_bun_qty').or(reportConditions),
+          supabase.from('thickness_standards').select('*')
+        ])
+
+        const ngSepSheets = sepData?.reduce((sum, row) => sum + (row.ng_qty || 0), 0) || 0
+        const ngWh = whData?.reduce((sum, row) => sum + (row.ng_bun_qty || 0), 0) || 0
+        
+        // Xác định độ dày từ tên sản phẩm đầu tiên (cùng loại sản phẩm)
+        const match = plans[0].ten_san_pham?.match(/([0-9.]+)\s*mm/i)
+        const thickness = match ? parseFloat(match[1]) : null
+        
+        // Tìm số sheet tối ưu
+        const standard = standards?.find(s => s.thickness_mm === thickness)
+        const optimalSheets = standard 
+          ? standard.optimal_sheets_per_bun 
+          : (thickness ? calculateOptimalSheetsPerBun(thickness) : 1)
+
+        // Công thức mới: NG Đổ (bun) + NG Kho (bun) + ceil(NG Tách (tấm) / Số sheet tối ưu)
+        const ngSepEquivalentBuns = Math.ceil(ngSepSheets / (optimalSheets || 1))
+        
+        setTotalNG(ngPour + ngWh + ngSepEquivalentBuns)
       }
     } catch (err: any) {
       setError('Lỗi khi truy xuất dữ liệu: ' + err.message)

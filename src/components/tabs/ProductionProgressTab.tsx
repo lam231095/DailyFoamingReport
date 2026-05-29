@@ -35,6 +35,15 @@ function fmtDatePlan(iso: string | null | undefined): string {
   return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`
 }
 
+function isReportForPlan(reportFirmPlan: string | null | undefined, planFirmPlan: string | null | undefined): boolean {
+  if (!reportFirmPlan || !planFirmPlan) return false
+  const rFp = reportFirmPlan.trim()
+  const pFp = planFirmPlan.trim()
+  if (rFp === pFp) return true
+  const parts = rFp.split('|').map(x => x.trim())
+  return parts.includes(pFp)
+}
+
 // Get report date from record (prefer report_date, else created_at with 6h rule)
 function getRecordDate(r: { report_date?: string; created_at: string }): string {
   if (r.report_date) return r.report_date
@@ -445,11 +454,11 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
         supabase
           .from('foaming_pour_reports')
           .select('id,firm_plan,shift,actual_bun_poured,is_compensation,report_date,created_at')
-          .in('firm_plan', allowedFirmPlans),
+          .gte('created_at', '2026-05-01T00:00:00Z'),
         supabase
           .from('foaming_separate_reports')
           .select('id,firm_plan,shift,actual_bun_separated,actual_sheet_received,product_type,is_compensation,report_date,created_at')
-          .in('firm_plan', allowedFirmPlans),
+          .gte('created_at', '2026-05-01T00:00:00Z'),
         supabase
           .from('thickness_standards')
           .select('*')
@@ -474,7 +483,7 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
       const fp = plan.firm_plan?.trim()
 
       // Pour entries for this plan
-      const pours = pourReports.filter(r => r.firm_plan?.trim() === fp)
+      const pours = pourReports.filter(r => isReportForPlan(r.firm_plan, fp))
       const pourEntries: ShiftEntry[] = pours.map(r => ({
         date: getRecordDate(r),
         shift: r.shift || 'Ca ?',
@@ -484,7 +493,7 @@ export default function ProductionProgressTab({ user: _user }: ProductionProgres
       const pourTotal = pourEntries.reduce((s, e) => s + e.qty, 0)
 
       // Sep entries for this plan
-      const seps = sepReports.filter(r => r.firm_plan?.trim() === fp)
+      const seps = sepReports.filter(r => isReportForPlan(r.firm_plan, fp))
       const sepEntries = seps.map(r => ({
         date: getRecordDate(r),
         shift: r.shift || 'Ca ?',

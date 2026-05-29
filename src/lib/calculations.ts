@@ -94,3 +94,53 @@ export function getOptimalSheetsPerBun(
   return isTP ? dynamicTP : Math.round(dynamicTP / 2);
 }
 
+/**
+ * Phân bổ một số lượng nguyên vào các phần tỉ lệ theo trọng số (targets),
+ * đảm bảo tổng các giá trị sau phân bổ bằng chính xác tổng lượng ban đầu.
+ */
+export function distributeInteger(totalQty: number, targets: number[]): number[] {
+  if (!targets || targets.length === 0) return [];
+  const totalTarget = targets.reduce((a, b) => a + b, 0);
+  
+  if (totalTarget === 0) {
+    // Phân bổ đều
+    const base = Math.floor(totalQty / targets.length);
+    const remainder = totalQty % targets.length;
+    return targets.map((_, i) => base + (i < remainder ? 1 : 0));
+  }
+  
+  const shares = targets.map(t => (t / totalTarget) * totalQty);
+  const rounded = shares.map(Math.round);
+  
+  let roundedSum = rounded.reduce((a, b) => a + b, 0);
+  let diff = totalQty - roundedSum;
+  
+  let idx = 0;
+  // Điều chỉnh phần dư để tổng sau phân bổ bằng đúng totalQty
+  while (diff !== 0) {
+    if (diff > 0) {
+      rounded[idx]++;
+      diff--;
+    } else {
+      if (rounded[idx] > 0) {
+        rounded[idx]--;
+        diff++;
+      } else {
+        let found = false;
+        for (let j = 0; j < rounded.length; j++) {
+          if (rounded[j] > 0) {
+            rounded[j]--;
+            diff++;
+            found = true;
+            break;
+          }
+        }
+        if (!found) break;
+      }
+    }
+    idx = (idx + 1) % rounded.length;
+  }
+  return rounded;
+}
+
+

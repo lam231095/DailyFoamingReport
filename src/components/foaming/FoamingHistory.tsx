@@ -149,7 +149,8 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         
         const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
         if (matchedFirmPlans.length > 0) {
-          query = query.in('firm_plan', matchedFirmPlans)
+          const orConditions = matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`).join(',')
+          query = query.or(orConditions)
         } else {
           query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
         }

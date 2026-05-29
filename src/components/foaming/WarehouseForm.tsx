@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser } from '@/types'
 import { getReportDateISO } from '@/lib/dateUtils'
+import { distributeInteger } from '@/lib/calculations'
 
 interface WarehouseFormProps {
   plan: ProductionPlan
@@ -30,17 +31,57 @@ export default function WarehouseForm({ plan, user, onSuccess }: WarehouseFormPr
     setMessage(null)
 
     try {
-      const { error } = await supabase.from('foaming_warehouse_reports').insert({
-        firm_plan: plan.firm_plan,
-        qty_delivered_sheet: Number(formData.qty_delivered_sheet),
-        delivery_date: formData.delivery_date,
-        report_date: getReportDateISO(new Date()),
-        ng_bun_qty: Number(formData.ng_bun_qty),
-        error_type: formData.error_type,
-        deliverer_id: user.id
-      })
+      const plansList = plan.firm_plan.split('|').map(x => x.trim()).filter(Boolean)
 
-      if (error) throw error
+      if (plansList.length > 1) {
+        // Query targets for each plan
+        const { data: plansData, error: fetchErr } = await supabase
+          .from('production_plan')
+          .select('firm_plan, sl_sheet')
+          .in('firm_plan', plansList)
+
+        if (fetchErr) throw fetchErr
+
+        const targets = plansList.map(fp => {
+          const p = plansData?.find(x => x.firm_plan === fp)
+          return p ? (p.sl_sheet || 0) : 0
+        })
+
+        // Phân bổ số lượng sheet giao và NG
+        const distributedDelivered = distributeInteger(Number(formData.qty_delivered_sheet), targets)
+        const distributedNG = distributeInteger(Number(formData.ng_bun_qty), targets)
+
+        const recordsToInsert = plansList.map((fp, idx) => {
+          const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`
+          const finalNote = formData.error_type.trim()
+            ? `${formData.error_type.trim()} ${groupNote}`
+            : groupNote
+
+          return {
+            firm_plan: fp,
+            qty_delivered_sheet: distributedDelivered[idx],
+            delivery_date: formData.delivery_date,
+            report_date: getReportDateISO(new Date()),
+            ng_bun_qty: distributedNG[idx],
+            error_type: finalNote,
+            deliverer_id: user.id
+          }
+        })
+
+        const { error: insertErr } = await supabase.from('foaming_warehouse_reports').insert(recordsToInsert)
+        if (insertErr) throw insertErr
+      } else {
+        const { error } = await supabase.from('foaming_warehouse_reports').insert({
+          firm_plan: plan.firm_plan,
+          qty_delivered_sheet: Number(formData.qty_delivered_sheet),
+          delivery_date: formData.delivery_date,
+          report_date: getReportDateISO(new Date()),
+          ng_bun_qty: Number(formData.ng_bun_qty),
+          error_type: formData.error_type,
+          deliverer_id: user.id
+        })
+        if (error) throw error
+      }
 
       setMessage({ type: 'success', text: 'Đã lưu báo cáo Nhập kho thành công!' })
       setTimeout(() => {

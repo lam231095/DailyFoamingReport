@@ -5,7 +5,7 @@ import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info, Plus, Trash2, Alert
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
-import { calculateSuggestedSheets, calculateEfficiency, getOptimalSheetsPerBun, THICKNESS_TABLE, calculateOptimalSheetsPerBun } from '@/lib/calculations'
+import { calculateSuggestedSheets, calculateEfficiency, getOptimalSheetsPerBun, THICKNESS_TABLE, calculateOptimalSheetsPerBun, distributeInteger } from '@/lib/calculations'
 import { getReportDateISO } from '@/lib/dateUtils'
 
 interface SeparateFormProps {
@@ -187,11 +187,13 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       const totalNG = formData.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
       const noInfoSheets = suggestedSheets - formData.actual_sheet_received - totalNG
 
-      // Fetch all previous reports for this order (firm_plan) and product_type
+      const plansList = plan.firm_plan.split('|').map(x => x.trim()).filter(Boolean)
+
+      // Query previous reports for all plans in the list
       const { data: prevReports, error: prevErr } = await supabase
         .from('foaming_separate_reports')
-        .select('actual_sheet_received')
-        .eq('firm_plan', plan.firm_plan)
+        .select('actual_sheet_received, firm_plan')
+        .in('firm_plan', plansList)
         .eq('product_type', productType)
 
       if (prevErr) throw prevErr
@@ -200,9 +202,25 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       const currentInputSheets = Number(formData.actual_sheet_received)
       const totalInputSheets = previousSheets + currentInputSheets
 
-      let maxOptimalSheets = (plan.sl_bun_can_tach || 0) * optimalPerBun
-      if (maxOptimalSheets === 0) {
-        maxOptimalSheets = plan.sl_sheet || 0
+      let maxOptimalSheets = 0
+      if (plansList.length > 1) {
+        // Query targets for each plan
+        const { data: plansData, error: fetchErr } = await supabase
+          .from('production_plan')
+          .select('firm_plan, sl_bun_can_tach, sl_sheet')
+          .in('firm_plan', plansList)
+        if (fetchErr) throw fetchErr
+
+        plansList.forEach(fp => {
+          const p = plansData?.find(x => x.firm_plan === fp)
+          if (p) {
+            const opt = (p.sl_bun_can_tach || 0) * optimalPerBun
+            maxOptimalSheets += opt > 0 ? opt : (p.sl_sheet || 0)
+          }
+        })
+      } else {
+        const opt = (plan.sl_bun_can_tach || 0) * optimalPerBun
+        maxOptimalSheets = opt > 0 ? opt : (plan.sl_sheet || 0)
       }
 
       if (!formData.is_compensation && totalInputSheets > maxOptimalSheets) {
@@ -226,27 +244,78 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         .map(x => x.type === 'Lỗi khác' && x.note ? `${x.type}: ${x.note.trim()} (${x.qty})` : `${x.type} (${x.qty})`)
         .join(', ')
 
-      const { error } = await supabase.from('foaming_separate_reports').insert({
-        firm_plan: plan.firm_plan,
-        shift: formData.shift,
-        machine_id: formData.machine_id,
-        operator_name: formData.operator_name,
-        bun_thickness_mm: Number(formData.bun_thickness_mm),
-        sheet_thickness_mm: Number(formData.sheet_thickness_mm),
-        actual_bun_separated: Number(formData.actual_bun_separated),
-        actual_sheet_received: Number(formData.actual_sheet_received),
-        lot_no: formData.lot_no,
-        report_date: getReportDateISO(new Date(), formData.shift),
-        ng_qty: totalNG,
-        ng_bun_qty: 0,
-        error_type: combinedError || '',
-        manager_name: formData.manager_name,
-        product_type: productType,
-        note: formData.note.trim() || null,
-        is_compensation: formData.is_compensation,
-        recorder_id: user.id,
-      })
-      if (error) throw error
+      if (plansList.length > 1) {
+        // Query targets for each plan
+        const { data: plansData, error: fetchErr } = await supabase
+          .from('production_plan')
+          .select('firm_plan, sl_bun_can_tach, sl_sheet')
+          .in('firm_plan', plansList)
+
+        if (fetchErr) throw fetchErr
+
+        const targets = plansList.map(fp => {
+          const p = plansData?.find(x => x.firm_plan === fp)
+          return p ? (p.sl_bun_can_tach || 0) : 0
+        })
+
+        // Phân bổ số lượng bun thực tế, sheet nhận và NG
+        const distributedBun = distributeInteger(Number(formData.actual_bun_separated), targets)
+        const distributedSheet = distributeInteger(Number(formData.actual_sheet_received), targets)
+        const distributedNG = distributeInteger(totalNG, targets)
+
+        const recordsToInsert = plansList.map((fp, idx) => {
+          const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`
+          const finalNote = formData.note.trim() 
+            ? `${formData.note.trim()} ${groupNote}`
+            : groupNote
+
+          return {
+            firm_plan: fp,
+            shift: formData.shift,
+            machine_id: formData.machine_id,
+            operator_name: formData.operator_name,
+            bun_thickness_mm: Number(formData.bun_thickness_mm),
+            sheet_thickness_mm: Number(formData.sheet_thickness_mm),
+            actual_bun_separated: distributedBun[idx],
+            actual_sheet_received: distributedSheet[idx],
+            lot_no: formData.lot_no,
+            report_date: getReportDateISO(new Date(), formData.shift),
+            ng_qty: distributedNG[idx],
+            ng_bun_qty: 0,
+            error_type: combinedError || '',
+            manager_name: formData.manager_name,
+            product_type: productType,
+            note: finalNote,
+            is_compensation: formData.is_compensation,
+            recorder_id: user.id,
+          }
+        })
+
+        const { error: insertErr } = await supabase.from('foaming_separate_reports').insert(recordsToInsert)
+        if (insertErr) throw insertErr
+      } else {
+        const { error } = await supabase.from('foaming_separate_reports').insert({
+          firm_plan: plan.firm_plan,
+          shift: formData.shift,
+          machine_id: formData.machine_id,
+          operator_name: formData.operator_name,
+          bun_thickness_mm: Number(formData.bun_thickness_mm),
+          sheet_thickness_mm: Number(formData.sheet_thickness_mm),
+          actual_bun_separated: Number(formData.actual_bun_separated),
+          actual_sheet_received: Number(formData.actual_sheet_received),
+          lot_no: formData.lot_no,
+          report_date: getReportDateISO(new Date(), formData.shift),
+          ng_qty: totalNG,
+          ng_bun_qty: 0,
+          error_type: combinedError || '',
+          manager_name: formData.manager_name,
+          product_type: productType,
+          note: formData.note.trim() || null,
+          is_compensation: formData.is_compensation,
+          recorder_id: user.id,
+        })
+        if (error) throw error
+      }
       const label = isTP ? 'Thành phẩm' : 'Bán thành phẩm'
       setMessage({ type: 'success', text: `Đã lưu báo cáo Tách (${label}) thành công!` })
       setTimeout(() => onSuccess(), 2000)
