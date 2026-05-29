@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Search, Loader2, CheckCircle2, AlertCircle, QrCode } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
@@ -20,6 +20,17 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
   const [isScannerOpen, setIsScannerOpen] = useState(false)
   const [totalPoured, setTotalPoured] = useState(0)
   const [totalNG, setTotalNG] = useState(0)
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Tự động điều chỉnh chiều cao của textarea khi người dùng gõ
+  useEffect(() => {
+    const textarea = textareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = `${textarea.scrollHeight}px`
+    }
+  }, [searchTerm])
 
   const handleSearch = async (term?: string) => {
     const searchVal = (term || searchTerm).trim()
@@ -104,17 +115,25 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
 
       <form onSubmit={(e) => { e.preventDefault(); handleSearch() }} className="flex flex-col sm:block sm:relative group gap-3">
         <div className="relative w-full">
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSearch()
+              }
+            }}
             placeholder="Nhập mã FPRO, RPRO hoặc NO.ORDER..."
             className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl py-3.5 pl-20 pr-4 sm:pr-36 
               text-[var(--text-1)] placeholder-[var(--text-3)] text-base font-medium
               focus:border-brand-500 focus:ring-0 transition-all duration-300
-              group-hover:border-[var(--text-3)] outline-none"
+              group-hover:border-[var(--text-3)] outline-none resize-none min-h-[54px] max-h-[150px] overflow-y-auto block"
+            style={{ height: 'auto' }}
           />
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+          <div className="absolute left-4 top-[16px] flex items-center gap-2">
             <Search className="text-[var(--text-3)] group-focus-within:text-brand-500 transition-colors" size={20} />
             <div className="w-[1px] h-4 bg-[var(--border)] mx-0.5" />
             <button
