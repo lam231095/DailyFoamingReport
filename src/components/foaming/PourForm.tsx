@@ -55,7 +55,6 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     machine_id: 'Máy 1',
     operator_name: '',
     actual_bun_poured: plan.sl_bun_can_do || 0,
-    lot_no: '',
     ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
     storage_location: '',
     storage_line: '',
@@ -137,7 +136,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
             machine_id: formData.machine_id,
             operator_name: formData.operator_name,
             actual_bun_poured: act,
-            lot_no: formData.lot_no,
+            lot_no: null,
             report_date: getReportDateISO(new Date(), formData.shift),
             ng_bun_qty: ng,
             error_type: combinedError || '',
@@ -163,7 +162,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           machine_id: formData.machine_id,
           operator_name: formData.operator_name,
           actual_bun_poured: Number(formData.actual_bun_poured),
-          lot_no: formData.lot_no,
+          lot_no: null,
           report_date: getReportDateISO(new Date(), formData.shift),
           ng_bun_qty: totalNG,
           error_type: combinedError || '',
@@ -337,35 +336,20 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Người vận hành (Operator)</label>
-            <select
-              value={formData.operator_name}
-              required
-              onChange={(e) => setFormData({ ...formData, operator_name: e.target.value })}
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
-                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
-            >
-              <option value="">-- Chọn người vận hành --</option>
-              {operators.map(op => (
-                <option key={op.id} value={op.full_name}>{op.full_name} ({op.msnv})</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Lot No (Số lô)</label>
-            <input
-              type="text"
-              value={formData.lot_no}
-              onChange={(e) => setFormData({ ...formData, lot_no: e.target.value })}
-              placeholder="VD: L04-2304..."
-              required
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
-                text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
-            />
-          </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Người vận hành (Operator)</label>
+          <select
+            value={formData.operator_name}
+            required
+            onChange={(e) => setFormData({ ...formData, operator_name: e.target.value })}
+            className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+              text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
+          >
+            <option value="">-- Chọn người vận hành --</option>
+            {operators.map(op => (
+              <option key={op.id} value={op.full_name}>{op.full_name} ({op.msnv})</option>
+            ))}
+          </select>
         </div>
 
         {/* --- Phần báo cáo NG (Cập nhật giống báo cáo tách) --- */}
