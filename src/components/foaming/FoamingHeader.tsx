@@ -54,12 +54,38 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
         `no_order.ilike.%${code}%`
       ]).join(',')
 
-      const { data: plans, error: sbError } = await supabase
+      const { data: rawPlans, error: sbError } = await supabase
         .from('production_plan')
         .select('*')
         .or(conditions)
 
-      if (sbError || !plans || plans.length === 0) {
+      if (sbError || !rawPlans || rawPlans.length === 0) {
+        setError('Không tìm thấy mã đơn hàng này trong kế hoạch!')
+        setLoading(false)
+        return
+      }
+
+      // Lọc kế hoạch: Ưu tiên khớp chính xác cho từng mã tìm kiếm
+      let plans: typeof rawPlans = []
+      const plansMap = new Map<string, typeof rawPlans[0]>()
+      for (const code of codes) {
+        const lowerCode = code.toLowerCase()
+        const matchingPlans = rawPlans.filter(p => 
+          (p.firm_plan && p.firm_plan.toLowerCase().includes(lowerCode)) ||
+          (p.no_order && p.no_order.toLowerCase().includes(lowerCode))
+        )
+        const exactMatch = matchingPlans.filter(p => 
+          (p.firm_plan && p.firm_plan.toLowerCase() === lowerCode) ||
+          (p.no_order && p.no_order.toLowerCase() === lowerCode)
+        )
+        const selectedForCode = exactMatch.length > 0 ? exactMatch : matchingPlans
+        for (const p of selectedForCode) {
+          plansMap.set(p.id, p)
+        }
+      }
+      plans = Array.from(plansMap.values())
+
+      if (plans.length === 0) {
         setError('Không tìm thấy mã đơn hàng này trong kế hoạch!')
         setLoading(false)
         return
@@ -250,8 +276,11 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
                     <p className="text-[10px] text-orange-600 font-bold uppercase">Độ dày</p>
                     <p className="text-sm font-bold text-orange-600">
                       {(() => {
-                        const match = foundPlan.ten_san_pham?.match(/([0-9.]+)\s*mm/i);
-                        return match ? match[1] : '---';
+                        if (!foundPlan.ten_san_pham) return '---';
+                        const matches = [...foundPlan.ten_san_pham.matchAll(/([0-9.]+)\s*mm/gi)];
+                        if (matches.length === 0) return '---';
+                        const thicknesses = Array.from(new Set(matches.map(m => parseFloat(m[1]))));
+                        return thicknesses.join(' | ');
                       })()} mm
                     </p>
                   </div>
