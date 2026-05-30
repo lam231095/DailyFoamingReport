@@ -277,9 +277,12 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
                     <p className="text-sm font-bold text-orange-600">
                       {(() => {
                         if (!foundPlan.ten_san_pham) return '---';
-                        const matches = [...foundPlan.ten_san_pham.matchAll(/([0-9.]+)\s*mm/gi)];
-                        if (matches.length === 0) return '---';
-                        const thicknesses = Array.from(new Set(matches.map(m => parseFloat(m[1]))));
+                        const matches = foundPlan.ten_san_pham.match(/([0-9.]+)\s*mm/gi);
+                        if (!matches || matches.length === 0) return '---';
+                        const thicknesses = Array.from(new Set(matches.map(m => {
+                          const num = m.match(/[0-9.]+/);
+                          return num ? parseFloat(num[0]) : null;
+                        }).filter((x): x is number => x !== null)));
                         return thicknesses.join(' | ');
                       })()} mm
                     </p>
