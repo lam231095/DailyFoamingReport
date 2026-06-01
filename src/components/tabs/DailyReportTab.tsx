@@ -584,6 +584,219 @@ function SvgPerformanceChart({
   )
 }
 
+function SvgManagerSheetsChart({
+  data, dateList, managers, managerFilter, startDate, endDate, shiftFilter
+}: {
+  data: AggregatedDay[]
+  dateList: string[]
+  managers: string[]
+  managerFilter: string
+  startDate: string
+  endDate: string
+  shiftFilter: string
+}) {
+  const activeManagers = managers.filter(m => managerFilter === 'Tất cả' || m === managerFilter)
+
+  // Lấy 10 ngày gần nhất có ít nhất 1 manager có dữ liệu tách
+  const datesWithData = [...dateList].reverse().filter(date => {
+    const day = data.find(d => d.date === date)
+    if (!day) return false
+    return activeManagers.some(m => (day.separatedByManager[m]?.actualSheets || 0) > 0)
+  }).slice(0, 10).reverse()
+
+  const n = datesWithData.length
+  if (n === 0) return (
+    <div className="flex items-center justify-center py-12 text-[var(--text-3)] text-xs font-bold">
+      Không có dữ liệu tách tấm của quản lý trong khoảng thời gian này
+    </div>
+  )
+
+  const fmtDate = (d: string) => {
+    const [y, m, dd] = d.split('-')
+    return `${parseInt(dd)}/${parseInt(m)}`
+  }
+
+  const W = 720
+  const H = 220
+  const PAD_L = 46
+  const PAD_R = 12
+  const PAD_T = 36
+  const PAD_B = 32
+  const chartW = W - PAD_L - PAD_R
+  const chartH = H - PAD_T - PAD_B
+
+  const maxSheets = Math.max(...datesWithData.map(date => {
+    const day = data.find(d => d.date === date)
+    if (!day) return 0
+    return Math.max(...activeManagers.map(m => day.separatedByManager[m]?.actualSheets || 0))
+  })) || 1000
+
+  const roundedMaxSheets = (() => {
+    if (maxSheets <= 10) return 10
+    if (maxSheets <= 50) return 50
+    if (maxSheets <= 100) return 100
+    if (maxSheets <= 500) return 500
+    if (maxSheets <= 1000) return 1000
+    const magnitude = Math.pow(10, Math.floor(Math.log10(maxSheets)))
+    const normalized = maxSheets / magnitude
+    let step = 1
+    if (normalized <= 1.2) step = 1.2
+    else if (normalized <= 1.5) step = 1.5
+    else if (normalized <= 2) step = 2
+    else if (normalized <= 3) step = 3
+    else if (normalized <= 4) step = 4
+    else if (normalized <= 5) step = 5
+    else if (normalized <= 6) step = 6
+    else if (normalized <= 8) step = 8
+    else step = 10
+    return Math.ceil(step * magnitude)
+  })()
+
+  const groupW = chartW / n
+  const barCount = activeManagers.length
+  const totalBarZone = groupW * 0.78
+  const barW = Math.max(6, Math.min(22, totalBarZone / barCount - 2))
+  const barGap = 2
+
+  const sheetsY = (val: number) =>
+    PAD_T + chartH - Math.min(1, val / roundedMaxSheets) * chartH
+
+  return (
+    <div className="w-full">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 text-[10px] font-bold">
+          📅 {fmtDate(startDate)} → {fmtDate(endDate)}
+        </span>
+        {shiftFilter !== 'Tất cả' && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 text-[10px] font-bold">
+            🕐 {shiftFilter}
+          </span>
+        )}
+        {managerFilter !== 'Tất cả' && (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 text-[10px] font-bold">
+            👤 Quản lý: {managerFilter}
+          </span>
+        )}
+        <span className="ml-auto text-[10px] text-[var(--text-3)] font-bold">
+          Hiển thị {n} ngày gần nhất có dữ liệu tách
+        </span>
+      </div>
+      <div className="w-full overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          style={{ width: '100%', height: 'auto', minWidth: 320 }}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <defs>
+            {activeManagers.map(m => (
+              <linearGradient key={m} id={`barGrad_sheets_${safeId(m)}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={MANAGER_COLORS[m]} stopOpacity="1" />
+                <stop offset="100%" stopColor={MANAGER_COLORS[m]} stopOpacity="0.65" />
+              </linearGradient>
+            ))}
+          </defs>
+
+          {/* Grid lines Y */}
+          {[0, 0.2, 0.4, 0.6, 0.8, 1.0].map(pct => {
+            const val = roundedMaxSheets * pct
+            const y = PAD_T + chartH - pct * chartH
+            return (
+              <g key={pct}>
+                <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y}
+                  stroke="#e2e8f0"
+                  strokeWidth={pct === 0 ? 1.5 : 0.8}
+                  strokeDasharray={pct === 0 ? '0' : '3 4'}
+                />
+                <text x={PAD_L - 5} y={y + 4} textAnchor="end" fontSize="8" fill="#94a3b8" fontWeight="600">
+                  {val.toLocaleString()}
+                </text>
+              </g>
+            )
+          })}
+
+          {/* Columns by Date */}
+          {datesWithData.map((date, idx) => {
+            const day = data.find(d => d.date === date)
+            const cx = PAD_L + groupW * idx + groupW / 2
+            const totalBarW = barCount * barW + (barCount - 1) * barGap
+            const startX = cx - totalBarW / 2
+
+            return (
+              <g key={date}>
+                <text x={cx} y={H - 8} textAnchor="middle" fontSize="8.5" fill="#64748b" fontWeight="700">
+                  {date.split('/')[0]}/{date.split('/')[1]}
+                </text>
+
+                {idx > 0 && (
+                  <line x1={PAD_L + groupW * idx} y1={PAD_T} x2={PAD_L + groupW * idx} y2={PAD_T + chartH}
+                    stroke="#e2e8f0" strokeWidth="0.5" />
+                )}
+
+                {day && activeManagers.map((manager, mi) => {
+                  const sheets = day.separatedByManager[manager]?.actualSheets || 0
+                  if (sheets === 0) return null
+                  const bx = startX + mi * (barW + barGap)
+                  const by = sheetsY(sheets)
+                  const bh = PAD_T + chartH - by
+                  const color = MANAGER_COLORS[manager]
+
+                  return (
+                    <g key={manager}>
+                      <rect
+                        x={bx} y={by} width={barW} height={Math.max(bh, 2)}
+                        rx="3"
+                        fill={`url(#barGrad_sheets_${safeId(manager)})`}
+                      />
+                      <text
+                        x={bx + barW / 2}
+                        y={by - 4}
+                        textAnchor="middle"
+                        fontSize="7.5"
+                        fill={color}
+                        fontWeight="800"
+                      >
+                        {sheets.toLocaleString()}
+                      </text>
+                    </g>
+                  )
+                })}
+              </g>
+            )
+          })}
+
+          <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={PAD_T + chartH} stroke="#cbd5e1" strokeWidth="1.5" />
+        </svg>
+      </div>
+
+      <div className="flex items-center justify-center gap-5 mt-3 flex-wrap">
+        {activeManagers.map(manager => {
+          const color = MANAGER_COLORS[manager]
+          let total = 0, cnt = 0
+          datesWithData.forEach(date => {
+            const day = data.find(d => d.date === date)
+            if (!day) return
+            const val = day.separatedByManager[manager]?.actualSheets || 0
+            if (val > 0) {
+              total += val
+              cnt++
+            }
+          })
+          const avg = cnt > 0 ? Math.round(total / cnt) : 0
+          return (
+            <div key={manager} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
+              <span className="text-[11px] font-bold text-[var(--text-2)]">{manager}</span>
+              <span className="text-[11px] font-black text-brand-600">
+                TB: {avg.toLocaleString()} sheet
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function DailyReportTab({ user }: DailyReportTabProps) {
 
   const [loading, setLoading] = useState(true)
@@ -1209,6 +1422,25 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                 endDate={endDate}
                 shiftFilter={shiftFilter}
                 tawnyShifts={tawnyShifts}
+              />
+            </div>
+
+            {/* Manager Sheets Trend Chart */}
+            <div className="card p-5 mt-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xs font-black uppercase text-[var(--text-2)] flex items-center gap-2">
+                  <BarChart3 size={14} className="text-brand-500" />
+                  Biểu đồ tổng số sheet tách được theo quản lý theo ngày
+                </h4>
+              </div>
+              <SvgManagerSheetsChart 
+                data={aggregatedData} 
+                dateList={dateList}
+                managers={MANAGERS}
+                managerFilter={managerFilter}
+                startDate={startDate}
+                endDate={endDate}
+                shiftFilter={shiftFilter}
               />
             </div>
           </div>
