@@ -144,13 +144,38 @@ try {
         if (![string]::IsNullOrEmpty($TargetSheet) -and $sheetName -ne $TargetSheet) {
             continue
         }
+
+        # Cấu hình động vị trí cột theo loại sheet (BCN vs Thường)
+        $col_no_order   = $COL_NO_ORDER
+        $col_firm_plan  = $COL_FIRM_PLAN
+        $col_bun_code   = $COL_BUN_CODE
+        $col_pu_code    = $COL_PU_CODE
+        $col_ten_sp     = $COL_TEN_SP
+        $col_sl_sheet   = $COL_SL_SHEET
+        $col_sl_tach    = $COL_SL_TACH
+        $col_sl_do      = $COL_SL_DO
+        $col_completion = $COL_COMPLETION
+        $col_delivery   = $COL_DELIVERY
+
+        if ($sheetName -match "BCN") {
+            $col_no_order   = 1
+            $col_firm_plan  = 2
+            $col_bun_code   = 3
+            $col_pu_code    = 4
+            $col_ten_sp     = 5
+            $col_sl_sheet   = 6
+            $col_sl_tach    = 7
+            $col_sl_do      = 99  # Không có cột Đổ
+            $col_completion = 12  # Cột "Ngày giao hàng ETD"
+            $col_delivery   = 12  # Cột "Ngày giao hàng ETD"
+        }
         
         try {
             $sheetCount_rows = 0
             $consecutiveEmpty = 0
             
             for ($r = $DATA_START; $r -le 1000; $r++) {
-                $firmPlan = $ws.Cells.Item($r, $COL_FIRM_PLAN).Text.Trim()
+                $firmPlan = $ws.Cells.Item($r, $col_firm_plan).Text.Trim()
                 if ([string]::IsNullOrWhiteSpace($firmPlan)) {
                     $consecutiveEmpty++
                     if ($consecutiveEmpty -ge 15) {
@@ -163,16 +188,20 @@ try {
                 # Bỏ qua nếu không khớp định dạng FPRO hoặc RPRO
                 if ($firmPlan -notmatch "^[FR]PRO-") { continue }
                 
-                $noOrder  = $ws.Cells.Item($r, $COL_NO_ORDER).Text.Trim()
-                $bunCode  = $ws.Cells.Item($r, $COL_BUN_CODE).Text.Trim()
-                $puCode   = $ws.Cells.Item($r, $COL_PU_CODE).Text.Trim()
-                $tenSP    = ($ws.Cells.Item($r, $COL_TEN_SP).Text.Trim()) -replace "`r`n"," " -replace "`n"," "
-                $slSheet  = $ws.Cells.Item($r, $COL_SL_SHEET).Text.Trim()
-                $slTach   = $ws.Cells.Item($r, $COL_SL_TACH).Text.Trim()
-                $slDo     = $ws.Cells.Item($r, $COL_SL_DO).Text.Trim()
+                $noOrder  = $ws.Cells.Item($r, $col_no_order).Text.Trim()
+                $bunCode  = $ws.Cells.Item($r, $col_bun_code).Text.Trim()
+                $puCode   = $ws.Cells.Item($r, $col_pu_code).Text.Trim()
+                $tenSP    = ($ws.Cells.Item($r, $col_ten_sp).Text.Trim()) -replace "`r`n"," " -replace "`n"," "
+                $slSheet  = $ws.Cells.Item($r, $col_sl_sheet).Text.Trim()
+                $slTach   = $ws.Cells.Item($r, $col_sl_tach).Text.Trim()
                 
-                $compDate = $ws.Cells.Item($r, $COL_COMPLETION).Text.Trim()
-                $delDate  = $ws.Cells.Item($r, $COL_DELIVERY).Text.Trim()
+                $slDo = ""
+                if ($col_sl_do -le 50) {
+                    $slDo = $ws.Cells.Item($r, $col_sl_do).Text.Trim()
+                }
+                
+                $compDate = $ws.Cells.Item($r, $col_completion).Text.Trim()
+                $delDate  = $ws.Cells.Item($r, $col_delivery).Text.Trim()
                 if ($delDate -eq "") { $delDate = $compDate }
                 
                 $cDate = Format-DateString $compDate
