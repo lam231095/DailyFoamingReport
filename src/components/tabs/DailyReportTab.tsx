@@ -360,7 +360,9 @@ function calcManagerPerf(
 
     if (isExactJune1st2026) {
       const managerShifts = day.separatedByManager[manager].shifts
-      if (managerShifts.has('Ca 1')) {
+      if (manager === 'Tuấn Anh') {
+        targetSeparate = 250
+      } else if (managerShifts.has('Ca 1')) {
         targetSeparate = 89
       } else if (managerShifts.has('Ca 2')) {
         let calculated = TARGET_SEPARATE
