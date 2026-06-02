@@ -344,60 +344,49 @@ function calcManagerPerf(
   if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
     totalActual += day.separatedByManager[manager].actual
     
-    // Check if the date is on or after 1/6/2026
+    // Check if the date is on or after 1/6/2025
     const parts = day.date.split('/')
     const d = parseInt(parts[0], 10)
     const m = parseInt(parts[1], 10)
     const y = parseInt(parts[2], 10)
-    const isAfterJune2026 = y > 2026 || (y === 2026 && (m > 6 || (m === 6 && d >= 1)))
+    const isAfterJune2025 = y > 2025 || (y === 2025 && (m > 6 || (m === 6 && d >= 1)))
     const isExactJune1st2026 = d === 1 && m === 6 && y === 2026
-
-    const hasTawnyCa1 = tawnyShifts.has(`${day.date}_Ca 1`)
-    const hasTawnyCa2 = tawnyShifts.has(`${day.date}_Ca 2`)
-    const bothTawny1And2 = hasTawnyCa1 && hasTawnyCa2
 
     let targetSeparate = TARGET_SEPARATE
 
     if (isExactJune1st2026) {
-      const managerShifts = day.separatedByManager[manager].shifts
-      if (manager === 'Tuấn Anh') {
-        targetSeparate = 250
-      } else if (managerShifts.has('Ca 1')) {
+      if (manager === 'Linh') {
         targetSeparate = 89
-      } else if (managerShifts.has('Ca 2')) {
-        let calculated = TARGET_SEPARATE
-        if (bothTawny1And2) {
-          calculated = 250
-        } else {
-          managerShifts.forEach(s => {
-            if (tawnyShifts.has(`${day.date}_${s}`)) {
-              calculated = 250
-            }
-          })
-        }
-        targetSeparate = calculated - 50
-      } else {
-        day.separatedByManager[manager].shifts.forEach(s => {
-          if (tawnyShifts.has(`${day.date}_${s}`)) {
-            targetSeparate = 250
-          }
-        })
-      }
-    } else if (isAfterJune2026 && bothTawny1And2) {
-      const managerShifts = day.separatedByManager[manager].shifts
-      if (managerShifts.has('Ca 1')) {
-        targetSeparate = 225
-      } else if (managerShifts.has('Ca 2')) {
+      } else if (manager === 'Thảo') {
+        targetSeparate = 250
+      } else if (manager === 'Tuấn Anh') {
         targetSeparate = 250
       } else {
-        let hasTawny = false
-        managerShifts.forEach(s => {
+        // Fallback or other managers: apply standard 1/6/2025 rule
+        day.separatedByManager[manager].shifts.forEach(s => {
+          let shiftTarget = 300
           if (tawnyShifts.has(`${day.date}_${s}`)) {
-            hasTawny = true
+            if (s === 'Ca 1') shiftTarget = 225
+            else if (s === 'Ca 2') shiftTarget = 250
+            else shiftTarget = 300
+          }
+          if (shiftTarget < targetSeparate) {
+            targetSeparate = shiftTarget
           }
         })
-        targetSeparate = hasTawny ? 250 : TARGET_SEPARATE
       }
+    } else if (isAfterJune2025) {
+      day.separatedByManager[manager].shifts.forEach(s => {
+        let shiftTarget = 300
+        if (tawnyShifts.has(`${day.date}_${s}`)) {
+          if (s === 'Ca 1') shiftTarget = 225
+          else if (s === 'Ca 2') shiftTarget = 250
+          else shiftTarget = 300
+        }
+        if (shiftTarget < targetSeparate) {
+          targetSeparate = shiftTarget
+        }
+      })
     } else {
       day.separatedByManager[manager].shifts.forEach(s => {
         if (tawnyShifts.has(`${day.date}_${s}`)) {
