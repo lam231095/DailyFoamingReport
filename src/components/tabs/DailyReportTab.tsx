@@ -1392,102 +1392,184 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
 
 
-          {/* Performance Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-500">
-                <Award size={18} />
+          {/* Performance Section: ĐỔ */}
+          {areaFilter !== 'separate' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                  <Award size={18} />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-tight text-blue-600">Hiệu suất ĐỔ theo Quản lý (%)</h3>
               </div>
-              <h3 className="text-sm font-black uppercase tracking-tight">Hiệu suất theo Quản lý (%)</h3>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {MANAGERS.map(manager => {
-                if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
-                
-                const managerData = aggregatedData.map(d => {
-                  const perf = calcManagerPerf(d, manager, areaFilter, tawnyShifts)
-                  return { date: d.date, perf: perf || 0 }
-                }).filter(d => d.perf > 0)
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {MANAGERS.map(manager => {
+                  if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
+                  
+                  const managerData = aggregatedData.map(d => {
+                    const perf = calcManagerPerf(d, manager, 'pour', tawnyShifts)
+                    return { date: d.date, perf: perf || 0 }
+                  }).filter(d => d.perf > 0)
 
-                if (managerData.length === 0) return null
+                  if (managerData.length === 0) return null
 
-                const avgPerf = Math.round(managerData.reduce((s, x) => s + x.perf, 0) / managerData.length)
+                  const avgPerf = Math.round(managerData.reduce((s, x) => s + x.perf, 0) / managerData.length)
 
-                return (
-                  <div key={manager} className="card p-4 border-l-4" style={{ borderLeftColor: MANAGER_COLORS[manager] }}>
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" 
-                          style={{ backgroundColor: MANAGER_COLORS[manager] }}>
-                          {manager[0]}
+                  return (
+                    <div key={manager} className="card p-4 border-l-4" style={{ borderLeftColor: MANAGER_COLORS[manager] }}>
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" 
+                            style={{ backgroundColor: MANAGER_COLORS[manager] }}>
+                            {manager[0]}
+                          </div>
+                          <span className="text-xs font-bold text-[var(--text-1)]">{manager}</span>
                         </div>
-                        <span className="text-xs font-bold text-[var(--text-1)]">{manager}</span>
+                        <span className={`text-lg font-black ${avgPerf >= 100 ? 'text-green-500' : 'text-orange-500'}`}>
+                          {avgPerf}%
+                        </span>
                       </div>
-                      <span className={`text-lg font-black ${avgPerf >= 100 ? 'text-green-500' : 'text-orange-500'}`}>
-                        {avgPerf}%
-                      </span>
+                      
+                      {/* Mini Sparkline using CSS */}
+                      <div className="flex items-end gap-0.5 h-12 bg-gray-50 dark:bg-black/10 rounded-lg p-1">
+                        {managerData.slice(-15).map((d, i) => (
+                          <div key={i} className="flex-1 rounded-t-sm transition-all hover:opacity-80"
+                            style={{ 
+                              height: `${Math.min(100, d.perf)}%`, 
+                              backgroundColor: MANAGER_COLORS[manager],
+                              opacity: 0.6 + (d.perf / 200)
+                            }}
+                            title={`${d.date}: ${Math.round(d.perf)}%`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-[9px] text-[var(--text-3)] mt-2 font-bold uppercase text-center">Xu hướng 15 ngày gần nhất</p>
                     </div>
-                    
-                    {/* Mini Sparkline using CSS */}
-                    <div className="flex items-end gap-0.5 h-12 bg-gray-50 dark:bg-black/10 rounded-lg p-1">
-                      {managerData.slice(-15).map((d, i) => (
-                        <div key={i} className="flex-1 rounded-t-sm transition-all hover:opacity-80"
-                          style={{ 
-                            height: `${Math.min(100, d.perf)}%`, 
-                            backgroundColor: MANAGER_COLORS[manager],
-                            opacity: 0.6 + (d.perf / 200)
-                          }}
-                          title={`${d.date}: ${Math.round(d.perf)}%`}
-                        />
-                      ))}
+                  )
+                })}
+              </div>
+
+              {/* Performance Trend Chart: ĐỔ */}
+              <div className="card p-5 mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-xs font-black uppercase text-[var(--text-2)] flex items-center gap-2">
+                    <TrendingUp size={14} className="text-blue-500" />
+                    Biểu đồ diễn biến hiệu suất ĐỔ theo ngày
+                  </h4>
+                </div>
+                <SvgPerformanceChart 
+                  data={aggregatedData} 
+                  dateList={dateList}
+                  managers={MANAGERS}
+                  managerFilter={managerFilter}
+                  areaFilter="pour"
+                  startDate={startDate}
+                  endDate={endDate}
+                  shiftFilter={shiftFilter}
+                  tawnyShifts={tawnyShifts}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Performance Section: TÁCH */}
+          {areaFilter !== 'pour' && (
+            <div className="space-y-4 pt-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500">
+                  <Award size={18} />
+                </div>
+                <h3 className="text-sm font-black uppercase tracking-tight text-purple-600">Hiệu suất TÁCH theo Quản lý (%)</h3>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {MANAGERS.map(manager => {
+                  if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
+                  
+                  const managerData = aggregatedData.map(d => {
+                    const perf = calcManagerPerf(d, manager, 'separate', tawnyShifts)
+                    return { date: d.date, perf: perf || 0 }
+                  }).filter(d => d.perf > 0)
+
+                  if (managerData.length === 0) return null
+
+                  const avgPerf = Math.round(managerData.reduce((s, x) => s + x.perf, 0) / managerData.length)
+
+                  return (
+                    <div key={manager} className="card p-4 border-l-4" style={{ borderLeftColor: MANAGER_COLORS[manager] }}>
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-bold" 
+                            style={{ backgroundColor: MANAGER_COLORS[manager] }}>
+                            {manager[0]}
+                          </div>
+                          <span className="text-xs font-bold text-[var(--text-1)]">{manager}</span>
+                        </div>
+                        <span className={`text-lg font-black ${avgPerf >= 100 ? 'text-green-500' : 'text-orange-500'}`}>
+                          {avgPerf}%
+                        </span>
+                      </div>
+                      
+                      {/* Mini Sparkline using CSS */}
+                      <div className="flex items-end gap-0.5 h-12 bg-gray-50 dark:bg-black/10 rounded-lg p-1">
+                        {managerData.slice(-15).map((d, i) => (
+                          <div key={i} className="flex-1 rounded-t-sm transition-all hover:opacity-80"
+                            style={{ 
+                              height: `${Math.min(100, d.perf)}%`, 
+                              backgroundColor: MANAGER_COLORS[manager],
+                              opacity: 0.6 + (d.perf / 200)
+                            }}
+                            title={`${d.date}: ${Math.round(d.perf)}%`}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-[9px] text-[var(--text-3)] mt-2 font-bold uppercase text-center">Xu hướng 15 ngày gần nhất</p>
                     </div>
-                    <p className="text-[9px] text-[var(--text-3)] mt-2 font-bold uppercase text-center">Xu hướng 15 ngày gần nhất</p>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Performance Trend Chart */}
-            <div className="card p-5 mt-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xs font-black uppercase text-[var(--text-2)] flex items-center gap-2">
-                  <TrendingUp size={14} className="text-brand-500" />
-                  Biểu đồ diễn biến hiệu suất theo ngày
-                </h4>
+                  )
+                })}
               </div>
-              <SvgPerformanceChart 
-                data={aggregatedData} 
-                dateList={dateList}
-                managers={MANAGERS}
-                managerFilter={managerFilter}
-                areaFilter={areaFilter}
-                startDate={startDate}
-                endDate={endDate}
-                shiftFilter={shiftFilter}
-                tawnyShifts={tawnyShifts}
-              />
-            </div>
 
-            {/* Manager Sheets Trend Chart */}
-            <div className="card p-5 mt-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xs font-black uppercase text-[var(--text-2)] flex items-center gap-2">
-                  <BarChart3 size={14} className="text-brand-500" />
-                  Biểu đồ tổng số sheet tách được theo quản lý theo ngày
-                </h4>
+              {/* Performance Trend Chart: TÁCH */}
+              <div className="card p-5 mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-xs font-black uppercase text-[var(--text-2)] flex items-center gap-2">
+                    <TrendingUp size={14} className="text-purple-500" />
+                    Biểu đồ diễn biến hiệu suất TÁCH theo ngày
+                  </h4>
+                </div>
+                <SvgPerformanceChart 
+                  data={aggregatedData} 
+                  dateList={dateList}
+                  managers={MANAGERS}
+                  managerFilter={managerFilter}
+                  areaFilter="separate"
+                  startDate={startDate}
+                  endDate={endDate}
+                  shiftFilter={shiftFilter}
+                  tawnyShifts={tawnyShifts}
+                />
               </div>
-              <SvgManagerSheetsChart 
-                data={aggregatedData} 
-                dateList={dateList}
-                managers={MANAGERS}
-                managerFilter={managerFilter}
-                startDate={startDate}
-                endDate={endDate}
-                shiftFilter={shiftFilter}
-              />
+
+              {/* Manager Sheets Trend Chart */}
+              <div className="card p-5 mt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-xs font-black uppercase text-[var(--text-2)] flex items-center gap-2">
+                    <BarChart3 size={14} className="text-brand-500" />
+                    Biểu đồ tổng số sheet tách được theo quản lý theo ngày
+                  </h4>
+                </div>
+                <SvgManagerSheetsChart 
+                  data={aggregatedData} 
+                  dateList={dateList}
+                  managers={MANAGERS}
+                  managerFilter={managerFilter}
+                  startDate={startDate}
+                  endDate={endDate}
+                  shiftFilter={shiftFilter}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Chart */}
           <div className="card p-5">
