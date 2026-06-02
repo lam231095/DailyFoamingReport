@@ -350,6 +350,7 @@ function calcManagerPerf(
     const m = parseInt(parts[1], 10)
     const y = parseInt(parts[2], 10)
     const isAfterJune2026 = y > 2026 || (y === 2026 && (m > 6 || (m === 6 && d >= 1)))
+    const isExactJune1st2026 = d === 1 && m === 6 && y === 2026
 
     const hasTawnyCa1 = tawnyShifts.has(`${day.date}_Ca 1`)
     const hasTawnyCa2 = tawnyShifts.has(`${day.date}_Ca 2`)
@@ -357,7 +358,30 @@ function calcManagerPerf(
 
     let targetSeparate = TARGET_SEPARATE
 
-    if (isAfterJune2026 && bothTawny1And2) {
+    if (isExactJune1st2026) {
+      const managerShifts = day.separatedByManager[manager].shifts
+      if (managerShifts.has('Ca 1')) {
+        targetSeparate = 89
+      } else if (managerShifts.has('Ca 2')) {
+        let calculated = TARGET_SEPARATE
+        if (bothTawny1And2) {
+          calculated = 250
+        } else {
+          managerShifts.forEach(s => {
+            if (tawnyShifts.has(`${day.date}_${s}`)) {
+              calculated = 250
+            }
+          })
+        }
+        targetSeparate = calculated - 50
+      } else {
+        day.separatedByManager[manager].shifts.forEach(s => {
+          if (tawnyShifts.has(`${day.date}_${s}`)) {
+            targetSeparate = 250
+          }
+        })
+      }
+    } else if (isAfterJune2026 && bothTawny1And2) {
       const managerShifts = day.separatedByManager[manager].shifts
       if (managerShifts.has('Ca 1')) {
         targetSeparate = 225
