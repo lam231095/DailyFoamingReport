@@ -351,10 +351,13 @@ function calcManagerPerf(
     const y = parseInt(parts[2], 10)
     const isAfterJune2025 = y > 2025 || (y === 2025 && (m > 6 || (m === 6 && d >= 1)))
     const isExactJune1st2026 = d === 1 && m === 6 && y === 2026
+    const isExactJune2nd2026 = d === 2 && m === 6 && y === 2026
 
     let targetSeparate = TARGET_SEPARATE
 
-    if (isExactJune1st2026) {
+    if (isExactJune2nd2026 && manager === 'Linh') {
+      targetSeparate = 225
+    } else if (isExactJune1st2026) {
       if (manager === 'Linh') {
         targetSeparate = 89
       } else if (manager === 'Thảo') {
