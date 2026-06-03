@@ -337,21 +337,27 @@ function calcManagerPerf(
   tawnyShifts: Set<string>
 ): number | null {
   let totalActual = 0, compositeTarget = 0
+
+  const parts = day.date.split('/')
+  const d = parseInt(parts[0], 10)
+  const m = parseInt(parts[1], 10)
+  const y = parseInt(parts[2], 10)
+  const isExactJune2nd2026 = d === 2 && m === 6 && y === 2026
+
   if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
     totalActual += day.pouredByManager[manager].actual
-    compositeTarget += TARGET_POUR
+    let targetPour = TARGET_POUR
+    if (isExactJune2nd2026 && manager === 'Tuấn Anh') {
+      targetPour = 210
+    }
+    compositeTarget += targetPour
   }
   if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
     totalActual += day.separatedByManager[manager].actual
     
     // Check if the date is on or after 1/6/2025
-    const parts = day.date.split('/')
-    const d = parseInt(parts[0], 10)
-    const m = parseInt(parts[1], 10)
-    const y = parseInt(parts[2], 10)
     const isAfterJune2025 = y > 2025 || (y === 2025 && (m > 6 || (m === 6 && d >= 1)))
     const isExactJune1st2026 = d === 1 && m === 6 && y === 2026
-    const isExactJune2nd2026 = d === 2 && m === 6 && y === 2026
 
     let targetSeparate = TARGET_SEPARATE
 
