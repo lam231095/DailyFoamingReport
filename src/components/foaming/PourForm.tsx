@@ -93,17 +93,47 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
 
       const plansList = plan.firm_plan.split('|').map(x => x.trim()).filter(Boolean)
 
+      // Query previous pour reports to check cumulative poured buns
+      const { data: prevPourReports, error: prevPourErr } = await supabase
+        .from('foaming_pour_reports')
+        .select('actual_bun_poured, is_compensation')
+        .in('firm_plan', plansList)
+
+      if (prevPourErr) throw prevPourErr
+
+      const previousMainBuns = prevPourReports
+        ?.filter(r => !r.is_compensation)
+        .reduce((sum, r) => sum + (r.actual_bun_poured || 0), 0) || 0
+      const currentInputBuns = Number(formData.actual_bun_poured)
+      const totalInputBuns = previousMainBuns + currentInputBuns
+
+      let targetBuns = 0
+      let plansData: any[] = []
+
       if (plansList.length > 1) {
-        // Query targets for each plan
-        const { data: plansData, error: fetchErr } = await supabase
+        const { data, error: fetchErr } = await supabase
           .from('production_plan')
           .select('firm_plan, sl_bun_can_do')
           .in('firm_plan', plansList)
-
         if (fetchErr) throw fetchErr
+        plansData = data || []
+        plansList.forEach(fp => {
+          const p = plansData.find(x => x.firm_plan === fp)
+          targetBuns += p ? (p.sl_bun_can_do || 0) : 0
+        })
+      } else {
+        targetBuns = plan.sl_bun_can_do || 0
+      }
 
+      if (!formData.is_compensation && totalInputBuns > targetBuns) {
+        throw new Error(
+          `Số lượng bun đổ vượt quá giới hạn của đơn hàng này. (Lũy kế đơn chính đã nhập trước đó: ${previousMainBuns} bun, Nhập lần này: ${currentInputBuns} bun, Số lượng tối đa cho phép: ${targetBuns} bun). Vui lòng điều chỉnh lại hoặc chọn "Đơn bù" nếu đây là lượt chạy bù hàng NG.`
+        )
+      }
+
+      if (plansList.length > 1) {
         const targets = plansList.map(fp => {
-          const p = plansData?.find(x => x.firm_plan === fp)
+          const p = plansData.find(x => x.firm_plan === fp)
           return p ? (p.sl_bun_can_do || 0) : 0
         })
 

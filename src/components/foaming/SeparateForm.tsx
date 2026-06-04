@@ -189,7 +189,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
       const plansList = plan.firm_plan.split('|').map(x => x.trim()).filter(Boolean)
 
-      // Query previous reports for all plans in the list
+      // Query previous separate reports to check cumulative sheets (for both main and compensation)
       const { data: prevReports, error: prevErr } = await supabase
         .from('foaming_separate_reports')
         .select('actual_sheet_received, firm_plan')
@@ -202,30 +202,58 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       const currentInputSheets = Number(formData.actual_sheet_received)
       const totalInputSheets = previousSheets + currentInputSheets
 
+      // Query previous separate reports to check cumulative separated buns (only main reports)
+      const { data: prevSepReports, error: prevSepErr } = await supabase
+        .from('foaming_separate_reports')
+        .select('actual_bun_separated, is_compensation')
+        .in('firm_plan', plansList)
+
+      if (prevSepErr) throw prevSepErr
+
+      const previousMainBuns = prevSepReports
+        ?.filter(r => !r.is_compensation)
+        .reduce((sum, r) => sum + (r.actual_bun_separated || 0), 0) || 0
+      const currentInputBuns = Number(formData.actual_bun_separated)
+      const totalInputBuns = previousMainBuns + currentInputBuns
+
       let maxOptimalSheets = 0
+      let targetBuns = 0
+      let plansData: any[] = []
+
       if (plansList.length > 1) {
         // Query targets for each plan
-        const { data: plansData, error: fetchErr } = await supabase
+        const { data, error: fetchErr } = await supabase
           .from('production_plan')
           .select('firm_plan, sl_bun_can_tach, sl_sheet')
           .in('firm_plan', plansList)
         if (fetchErr) throw fetchErr
+        plansData = data || []
 
         plansList.forEach(fp => {
-          const p = plansData?.find(x => x.firm_plan === fp)
+          const p = plansData.find(x => x.firm_plan === fp)
           if (p) {
             const opt = (p.sl_bun_can_tach || 0) * optimalPerBun
             maxOptimalSheets += opt > 0 ? opt : (p.sl_sheet || 0)
+            targetBuns += p.sl_bun_can_tach || 0
           }
         })
       } else {
         const opt = (plan.sl_bun_can_tach || 0) * optimalPerBun
         maxOptimalSheets = opt > 0 ? opt : (plan.sl_sheet || 0)
+        targetBuns = plan.sl_bun_can_tach || 0
       }
 
-      if (!formData.is_compensation && totalInputSheets > maxOptimalSheets) {
+      // Check max optimal sheets (always enforced for both main and compensation)
+      if (totalInputSheets > maxOptimalSheets) {
         throw new Error(
-          `Số lượng sheet nhận vượt quá giới hạn tối ưu của đơn hàng này. (Lũy kế đã nhập trước đó: ${previousSheets} sheet, Nhập lần này: ${currentInputSheets} sheet, Số lượng tối ưu tối đa cho phép: ${maxOptimalSheets} sheet). Vui lòng điều chỉnh lại hoặc chọn "Đơn bù" nếu đây là lượt chạy bù hàng NG.`
+          `Số lượng sheet nhận vượt quá giới hạn tối ưu của đơn hàng này (tính cả đơn chính và đơn bù). (Lũy kế đã nhập trước đó: ${previousSheets} sheet, Nhập lần này: ${currentInputSheets} sheet, Số lượng tối ưu tối đa cho phép: ${maxOptimalSheets} sheet). Vui lòng điều chỉnh lại.`
+        )
+      }
+
+      // Check max separated buns for main orders
+      if (!formData.is_compensation && totalInputBuns > targetBuns) {
+        throw new Error(
+          `Số lượng bun tách vượt quá giới hạn của đơn hàng này. (Lũy kế đơn chính đã nhập trước đó: ${previousMainBuns} bun, Nhập lần này: ${currentInputBuns} bun, Số lượng tối đa cho phép: ${targetBuns} bun). Vui lòng điều chỉnh lại hoặc chọn "Đơn bù" nếu đây là lượt chạy bù hàng NG.`
         )
       }
 
@@ -245,16 +273,8 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         .join(', ')
 
       if (plansList.length > 1) {
-        // Query targets for each plan
-        const { data: plansData, error: fetchErr } = await supabase
-          .from('production_plan')
-          .select('firm_plan, sl_bun_can_tach, sl_sheet')
-          .in('firm_plan', plansList)
-
-        if (fetchErr) throw fetchErr
-
         const targets = plansList.map(fp => {
-          const p = plansData?.find(x => x.firm_plan === fp)
+          const p = plansData.find(x => x.firm_plan === fp)
           return p ? (p.sl_bun_can_tach || 0) : 0
         })
 
