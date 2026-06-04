@@ -342,6 +342,7 @@ function calcManagerPerf(
   const d = parseInt(parts[0], 10)
   const m = parseInt(parts[1], 10)
   const y = parseInt(parts[2], 10)
+  const isExactJune3rd2026 = d === 3 && m === 6 && y === 2026
   const isExactJune2nd2026 = d === 2 && m === 6 && y === 2026
 
   if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
@@ -361,7 +362,15 @@ function calcManagerPerf(
 
     let targetSeparate = TARGET_SEPARATE
 
-    if (isExactJune2nd2026 && manager === 'Linh') {
+    if (isExactJune3rd2026) {
+      if (manager === 'Linh') {
+        targetSeparate = 175
+      } else if (manager === 'Thảo') {
+        targetSeparate = 287.5
+      } else if (manager === 'Tuấn Anh') {
+        targetSeparate = 300
+      }
+    } else if (isExactJune2nd2026 && manager === 'Linh') {
       targetSeparate = 225
     } else if (isExactJune1st2026) {
       if (manager === 'Linh') {
