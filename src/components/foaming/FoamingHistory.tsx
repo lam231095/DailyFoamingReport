@@ -220,7 +220,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     }
 
     // Header dựa trên stage
-    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Sản phẩm", "Dòng sản phẩm", "Người nhập", "MSNV", "Quản lý", "Đơn bù"]
+    const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Mã Bun", "Sản phẩm", "Dòng sản phẩm", "Người nhập", "MSNV", "Quản lý", "Đơn bù"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
     if (activeStage === 'separate') {
       headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
@@ -229,22 +229,50 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
 
     const csvContentRaw = headers.map(escapeCSV).join(",") + "\r\n" + data.map(row => {
-      const dateTime = new Date(row.created_at).toLocaleString('vi-VN')
+      const pad2 = (n: number) => String(n).padStart(2, '0')
+      const dObj = new Date(row.created_at)
+      let dateTime = '---'
+      if (!isNaN(dObj.getTime())) {
+        dateTime = `${pad2(dObj.getDate())}/${pad2(dObj.getMonth() + 1)}/${dObj.getFullYear()} ${pad2(dObj.getHours())}:${pad2(dObj.getMinutes())}:${pad2(dObj.getSeconds())}`
+      }
+
+      let reportDateStr = '---'
+      if (row.delivery_date) {
+        const parts = row.delivery_date.split('-')
+        if (parts.length === 3) {
+          reportDateStr = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`
+        } else {
+          const slashParts = row.delivery_date.split('/')
+          if (slashParts.length === 3) {
+            reportDateStr = `${slashParts[0].padStart(2, '0')}/${slashParts[1].padStart(2, '0')}/${slashParts[2]}`
+          } else {
+            const delDate = new Date(row.delivery_date)
+            if (!isNaN(delDate.getTime())) {
+              reportDateStr = `${pad2(delDate.getDate())}/${pad2(delDate.getMonth() + 1)}/${delDate.getFullYear()}`
+            }
+          }
+        }
+      } else if (row.report_date) {
+        const parts = row.report_date.split('-')
+        if (parts.length === 3) {
+          reportDateStr = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`
+        }
+      } else {
+        reportDateStr = formatReportDate(row.created_at, row.shift)
+      }
+
       const common = [
         dateTime,
-        row.delivery_date 
-          ? new Date(row.delivery_date).toLocaleDateString('vi-VN') 
-          : (row.report_date 
-              ? row.report_date.split('-').reverse().map(Number).join('/') 
-              : formatReportDate(row.created_at, row.shift)),
+        reportDateStr,
         row.production_plan?.week_label || '---',
         row.production_plan?.no_order || '---',
         row.firm_plan,
-        row.production_plan?.pu_code,
-        row.production_plan?.ten_san_pham,
+        row.production_plan?.pu_code || '---',
+        row.production_plan?.bun_code || '---',
+        row.production_plan?.ten_san_pham || '---',
         cleanProductName(row.production_plan?.ten_san_pham),
-        row.users?.full_name,
-        row.users?.msnv,
+        row.users?.full_name || '---',
+        row.users?.msnv || '---',
         row.manager_name || '---',
         row.is_compensation ? 'Đơn bù' : 'Đơn chính'
       ]
@@ -698,7 +726,15 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                           </div>
                           <div>
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ngày Giao</p>
-                            <p className="text-sm font-bold text-[var(--text-1)]">{new Date(row.delivery_date).toLocaleDateString()}</p>
+                            <p className="text-sm font-bold text-[var(--text-1)]">
+                              {row.delivery_date
+                                ? (row.delivery_date.includes('-')
+                                    ? row.delivery_date.split('-').reverse().map(x => x.padStart(2, '0')).join('/')
+                                    : (row.delivery_date.includes('/')
+                                        ? row.delivery_date.split('/').map(x => x.padStart(2, '0')).join('/')
+                                        : new Date(row.delivery_date).toLocaleDateString('vi-VN')))
+                                : '---'}
+                            </p>
                           </div>
                         </>
                       )}
@@ -738,9 +774,9 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     <div>
                       <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">
                         {row.delivery_date 
-                          ? new Date(row.delivery_date).toLocaleDateString('vi-VN') 
+                          ? row.delivery_date.split('-').reverse().map(x => x.padStart(2, '0')).join('/')
                           : (row.report_date 
-                              ? row.report_date.split('-').reverse().map(Number).join('/') 
+                              ? row.report_date.split('-').reverse().map(x => x.padStart(2, '0')).join('/')
                               : formatReportDate(row.created_at, row.shift))}
                       </p>
                       <p className="text-[10px] text-[var(--text-3)]">

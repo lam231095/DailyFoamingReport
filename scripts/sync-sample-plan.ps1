@@ -74,10 +74,10 @@ function Format-DateString($val) {
     if ($val -eq $null -or [string]::IsNullOrWhiteSpace($val)) { return $null }
     if ($val.ToString() -match "(\d{1,2})/(\d{1,2})/(\d{4})") {
         try {
-            return [datetime]::ParseExact($val.ToString(), "M/d/yyyy", $null).ToString("yyyy-MM-dd")
+            return [datetime]::ParseExact($val.ToString(), "d/M/yyyy", $null).ToString("yyyy-MM-dd")
         } catch {
             try {
-                return [datetime]::ParseExact($val.ToString(), "d/M/yyyy", $null).ToString("yyyy-MM-dd")
+                return [datetime]::ParseExact($val.ToString(), "M/d/yyyy", $null).ToString("yyyy-MM-dd")
             } catch {
                 return $val.ToString()
             }
