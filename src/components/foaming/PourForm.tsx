@@ -125,7 +125,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         targetBuns = plan.sl_bun_can_do || 0
       }
 
-      if (!formData.is_compensation && totalInputBuns > targetBuns) {
+      if (targetBuns > 0 && !formData.is_compensation && totalInputBuns > targetBuns) {
         throw new Error(
           `Số lượng bun đổ vượt quá giới hạn của đơn hàng này. (Lũy kế đơn chính đã nhập trước đó: ${previousMainBuns} bun, Nhập lần này: ${currentInputBuns} bun, Số lượng tối đa cho phép: ${targetBuns} bun). Vui lòng điều chỉnh lại hoặc chọn "Đơn bù" nếu đây là lượt chạy bù hàng NG.`
         )

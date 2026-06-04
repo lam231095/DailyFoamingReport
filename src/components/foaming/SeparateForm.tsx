@@ -243,15 +243,15 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         targetBuns = plan.sl_bun_can_tach || 0
       }
 
-      // Check max optimal sheets (always enforced for both main and compensation)
-      if (totalInputSheets > maxOptimalSheets) {
+      // Check max optimal sheets (always enforced for both main and compensation if target is specified)
+      if (maxOptimalSheets > 0 && totalInputSheets > maxOptimalSheets) {
         throw new Error(
           `Số lượng sheet nhận vượt quá giới hạn tối ưu của đơn hàng này (tính cả đơn chính và đơn bù). (Lũy kế đã nhập trước đó: ${previousSheets} sheet, Nhập lần này: ${currentInputSheets} sheet, Số lượng tối ưu tối đa cho phép: ${maxOptimalSheets} sheet). Vui lòng điều chỉnh lại.`
         )
       }
 
-      // Check max separated buns for main orders
-      if (!formData.is_compensation && totalInputBuns > targetBuns) {
+      // Check max separated buns for main orders (if target is specified)
+      if (targetBuns > 0 && !formData.is_compensation && totalInputBuns > targetBuns) {
         throw new Error(
           `Số lượng bun tách vượt quá giới hạn của đơn hàng này. (Lũy kế đơn chính đã nhập trước đó: ${previousMainBuns} bun, Nhập lần này: ${currentInputBuns} bun, Số lượng tối đa cho phép: ${targetBuns} bun). Vui lòng điều chỉnh lại hoặc chọn "Đơn bù" nếu đây là lượt chạy bù hàng NG.`
         )
