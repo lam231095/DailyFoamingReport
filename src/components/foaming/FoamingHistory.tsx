@@ -755,9 +755,9 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                             <p className="text-sm font-bold text-[var(--text-1)]">
                               {row.delivery_date
                                 ? (row.delivery_date.includes('-')
-                                    ? row.delivery_date.split('-').reverse().map(x => x.padStart(2, '0')).join('/')
+                                    ? row.delivery_date.split('-').reverse().map((x: string) => x.padStart(2, '0')).join('/')
                                     : (row.delivery_date.includes('/')
-                                        ? row.delivery_date.split('/').map(x => x.padStart(2, '0')).join('/')
+                                        ? row.delivery_date.split('/').map((x: string) => x.padStart(2, '0')).join('/')
                                         : new Date(row.delivery_date).toLocaleDateString('vi-VN')))
                                 : '---'}
                             </p>
@@ -800,9 +800,9 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     <div>
                       <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">
                         {row.delivery_date 
-                          ? row.delivery_date.split('-').reverse().map(x => x.padStart(2, '0')).join('/')
+                          ? row.delivery_date.split('-').reverse().map((x: string) => x.padStart(2, '0')).join('/')
                           : (row.report_date 
-                              ? row.report_date.split('-').reverse().map(x => x.padStart(2, '0')).join('/')
+                              ? row.report_date.split('-').reverse().map((x: string) => x.padStart(2, '0')).join('/')
                               : formatReportDate(row.created_at, row.shift))}
                       </p>
                       <p className="text-[10px] text-[var(--text-3)]">
