@@ -233,32 +233,58 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       const dObj = new Date(row.created_at)
       let dateTime = '---'
       if (!isNaN(dObj.getTime())) {
-        dateTime = `${pad2(dObj.getDate())}/${pad2(dObj.getMonth() + 1)}/${dObj.getFullYear()} ${pad2(dObj.getHours())}:${pad2(dObj.getMinutes())}:${pad2(dObj.getSeconds())}`
+        dateTime = `${dObj.getFullYear()}-${pad2(dObj.getMonth() + 1)}-${pad2(dObj.getDate())} ${pad2(dObj.getHours())}:${pad2(dObj.getMinutes())}:${pad2(dObj.getSeconds())}`
+      }
+
+      const getReportDateISOFromDate = (dateInput: string | Date, shift?: string): string => {
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) return '';
+        const hours = date.getHours();
+
+        let subtract = false;
+        if (shift === 'Ca 3') {
+          subtract = hours < 22;
+        } else if (shift === 'Ca 2') {
+          subtract = hours < 14;
+        } else if (shift === 'Ca 1') {
+          subtract = hours < 6;
+        } else if (shift === 'Ca HC') {
+          subtract = hours < 8;
+        } else {
+          subtract = hours < 6;
+        }
+
+        if (subtract) {
+          date.setDate(date.getDate() - 1);
+        }
+
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+
+        return `${y}-${m}-${d}`;
       }
 
       let reportDateStr = '---'
       if (row.delivery_date) {
         const parts = row.delivery_date.split('-')
         if (parts.length === 3) {
-          reportDateStr = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`
+          reportDateStr = row.delivery_date
         } else {
           const slashParts = row.delivery_date.split('/')
           if (slashParts.length === 3) {
-            reportDateStr = `${slashParts[0].padStart(2, '0')}/${slashParts[1].padStart(2, '0')}/${slashParts[2]}`
+            reportDateStr = `${slashParts[2]}-${slashParts[1].padStart(2, '0')}-${slashParts[0].padStart(2, '0')}`
           } else {
             const delDate = new Date(row.delivery_date)
             if (!isNaN(delDate.getTime())) {
-              reportDateStr = `${pad2(delDate.getDate())}/${pad2(delDate.getMonth() + 1)}/${delDate.getFullYear()}`
+              reportDateStr = `${delDate.getFullYear()}-${pad2(delDate.getMonth() + 1)}-${pad2(delDate.getDate())}`
             }
           }
         }
       } else if (row.report_date) {
-        const parts = row.report_date.split('-')
-        if (parts.length === 3) {
-          reportDateStr = `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`
-        }
+        reportDateStr = row.report_date
       } else {
-        reportDateStr = formatReportDate(row.created_at, row.shift)
+        reportDateStr = getReportDateISOFromDate(row.created_at, row.shift)
       }
 
       const common = [
