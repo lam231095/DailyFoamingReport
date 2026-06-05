@@ -5,7 +5,7 @@ import { Save, Loader2, CheckCircle2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
-import { Plus, Trash2, Info, Package, MapPin, Palette, Truck } from 'lucide-react'
+import { Plus, Trash2, Info, Truck } from 'lucide-react'
 import { getReportDateISO } from '@/lib/dateUtils'
 import { distributeInteger } from '@/lib/calculations'
 
@@ -16,9 +16,7 @@ const ERROR_TYPES = [
   'Lỗi độ cứng TRÊN chuẩn', 'Lỗi độ cứng DƯỚI chuẩn'
 ]
 
-const STORAGE_LOCATIONS = ['Khu A', 'Khu B', 'Khu C']
-const STORAGE_LINES = ['line 1', 'line 2', 'line 3', 'line 4', 'line 5', 'line 6', 'line 7']
-const COLOR_TAGS = ['xanh', 'đỏ', 'vàng', 'đen']
+
 
 interface PourFormProps {
   plan: ProductionPlan
@@ -56,9 +54,6 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     operator_name: '',
     actual_bun_poured: plan.sl_bun_can_do || 0,
     ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
-    storage_location: '',
-    storage_line: '',
-    color_tag: '',
     cleaning_agent_kg: 0,
     waste_kg: 0,
     manager_name: '',
@@ -170,9 +165,9 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
             report_date: getReportDateISO(new Date(), formData.shift),
             ng_bun_qty: ng,
             error_type: combinedError || '',
-            storage_location: formData.storage_location,
-            storage_line: formData.storage_line,
-            color_tag: formData.color_tag,
+            storage_location: null,
+            storage_line: null,
+            color_tag: null,
             storage_carts: carts,
             cleaning_agent_kg: parseFloat(cleaning.toFixed(2)),
             waste_kg: parseFloat(waste.toFixed(2)),
@@ -196,9 +191,9 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           report_date: getReportDateISO(new Date(), formData.shift),
           ng_bun_qty: totalNG,
           error_type: combinedError || '',
-          storage_location: formData.storage_location,
-          storage_line: formData.storage_line,
-          color_tag: formData.color_tag,
+          storage_location: null,
+          storage_line: null,
+          color_tag: null,
           storage_carts: storageCarts,
           cleaning_agent_kg: Number(formData.cleaning_agent_kg),
           waste_kg: Number(formData.waste_kg),
@@ -320,51 +315,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           </label>
         </div>
 
-        {/* --- Phần lưu trữ (Mới) --- */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-blue-500/5 p-4 rounded-xl border border-blue-500/10">
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-blue-600 uppercase ml-1 flex items-center gap-1.5">
-              <MapPin size={12} /> Nơi lưu trữ
-            </label>
-            <select
-              value={formData.storage_location}
-              required
-              onChange={(e) => setFormData({ ...formData, storage_location: e.target.value })}
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-            >
-              <option value="">-- Chọn khu vực --</option>
-              {STORAGE_LOCATIONS.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-blue-600 uppercase ml-1 flex items-center gap-1.5">
-              <Package size={12} /> Line lưu trữ
-            </label>
-            <select
-              value={formData.storage_line}
-              required
-              onChange={(e) => setFormData({ ...formData, storage_line: e.target.value })}
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-            >
-              <option value="">-- Chọn line --</option>
-              {STORAGE_LINES.map(line => <option key={line} value={line}>{line}</option>)}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-blue-600 uppercase ml-1 flex items-center gap-1.5">
-              <Palette size={12} /> Thẻ màu
-            </label>
-            <select
-              value={formData.color_tag}
-              required
-              onChange={(e) => setFormData({ ...formData, color_tag: e.target.value })}
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-            >
-              <option value="">-- Chọn thẻ --</option>
-              {COLOR_TAGS.map(color => <option key={color} value={color}>{color.toUpperCase()}</option>)}
-            </select>
-          </div>
-        </div>
+
 
         <div className="space-y-2">
           <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Người vận hành (Operator)</label>
