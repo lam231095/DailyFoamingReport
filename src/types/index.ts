@@ -158,6 +158,7 @@ export interface FoamingSeparateReport {
   productivity_points?: number;
   note?: string | null;
   product_type?: string;
+  product_type_abbrev?: string | null;
   is_compensation?: boolean;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };

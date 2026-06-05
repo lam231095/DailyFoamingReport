@@ -21,6 +21,13 @@ const ERROR_TYPES = [
   'Lỗi độ cứng TRÊN chuẩn', 'Lỗi độ cứng DƯỚI chuẩn'
 ]
 
+const PRODUCT_TYPE_ABBREVS = [
+  { value: 'A', label: 'Hàng thường (A)' },
+  { value: 'T', label: 'Test (T)' },
+  { value: 'M', label: 'Đổ tay (M)' },
+  { value: 'B', label: 'Hàng xấu (B)' },
+]
+
 type ProductType = 'thanh_pham' | 'ban_thanh_pham'
 
 const TABS: { id: ProductType; label: string; color: string; bg: string }[] = [
@@ -48,8 +55,9 @@ const defaultForm = (plan: ProductionPlan) => {
     operator_name: '',
     bun_thickness_mm: initialBunThickness,
     sheet_thickness_mm: finalThickness,
-    actual_bun_separated: plan.sl_bun_can_tach || 0,
-    actual_sheet_received: plan.sl_sheet || 0,
+    items: [
+      { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_qty: 0 }
+    ],
     lot_no: '',
     manager_name: '',
     ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
@@ -121,8 +129,9 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       ...prev,
       bun_thickness_mm: initialBunThickness,
       sheet_thickness_mm: identifiedThickness !== null ? identifiedThickness : 14,
-      actual_bun_separated: plan.sl_bun_can_tach || 0,
-      actual_sheet_received: plan.sl_sheet || 0,
+      items: [
+        { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_qty: 0 }
+      ],
     }))
   }, [plan, standards, identifiedThickness, dbStd, localStd])
 
@@ -142,8 +151,9 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       ...prev,
       bun_thickness_mm: initialBunThickness,
       sheet_thickness_mm: identifiedThickness !== null ? identifiedThickness : 14,
-      actual_bun_separated: plan.sl_bun_can_tach || 0,
-      actual_sheet_received: plan.sl_sheet || 0,
+      items: [
+        { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_qty: 0 }
+      ],
       ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
       note: '',
       is_compensation: false,
@@ -154,11 +164,15 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   // Số sheet/bun tối ưu theo loại
   const optimalPerBun = standard ? (isTP ? standard.tp : standard.btp) : 0
 
+  const totalBunsSeparated = formData.items.reduce((sum, item) => sum + Number(item.actual_bun_separated || 0), 0)
+  const totalSheetsReceived = formData.items.reduce((sum, item) => sum + Number(item.actual_sheet_received || 0), 0)
+  const totalNGQty = formData.items.reduce((sum, item) => sum + Number(item.ng_qty || 0), 0)
+
   const suggestedSheets = optimalPerBun > 0
-    ? Math.round(formData.actual_bun_separated * optimalPerBun)
+    ? Math.round(totalBunsSeparated * optimalPerBun)
     : 0
   const efficiency = suggestedSheets > 0
-    ? Math.round((formData.actual_sheet_received / suggestedSheets) * 100)
+    ? Math.round((totalSheetsReceived / suggestedSheets) * 100)
     : 0
 
   const addNGItem = () => setFormData({ ...formData, ng_items: [...formData.ng_items, { qty: 0, type: ERROR_TYPES[0], note: '' }] })
@@ -185,7 +199,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     setMessage(null)
     try {
       const totalNG = formData.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
-      const noInfoSheets = suggestedSheets - formData.actual_sheet_received - totalNG
+      const noInfoSheets = suggestedSheets - totalSheetsReceived - totalNGQty
 
       const plansList = plan.firm_plan.split('|').map(x => x.trim()).filter(Boolean)
 
@@ -199,7 +213,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       if (prevErr) throw prevErr
 
       const previousSheets = prevReports?.reduce((sum, r) => sum + (r.actual_sheet_received || 0), 0) || 0
-      const currentInputSheets = Number(formData.actual_sheet_received)
+      const currentInputSheets = totalSheetsReceived
       const totalInputSheets = previousSheets + currentInputSheets
 
       // Query previous separate reports to check cumulative separated buns (only main reports)
@@ -213,7 +227,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       const previousMainBuns = prevSepReports
         ?.filter(r => !r.is_compensation)
         .reduce((sum, r) => sum + (r.actual_bun_separated || 0), 0) || 0
-      const currentInputBuns = Number(formData.actual_bun_separated)
+      const currentInputBuns = totalBunsSeparated
       const totalInputBuns = previousMainBuns + currentInputBuns
 
       let maxOptimalSheets = 0
@@ -278,62 +292,69 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           return p ? (p.sl_bun_can_tach || 0) : 0
         })
 
-        // Phân bổ số lượng bun thực tế, sheet nhận và NG
-        const distributedBun = distributeInteger(Number(formData.actual_bun_separated), targets)
-        const distributedSheet = distributeInteger(Number(formData.actual_sheet_received), targets)
-        const distributedNG = distributeInteger(totalNG, targets)
+        const recordsToInsert: any[] = []
 
-        const recordsToInsert = plansList.map((fp, idx) => {
-          const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`
-          const finalNote = formData.note.trim() 
-            ? `${formData.note.trim()} ${groupNote}`
-            : groupNote
+        formData.items.forEach(item => {
+          const distributedBun = distributeInteger(Number(item.actual_bun_separated), targets)
+          const distributedSheet = distributeInteger(Number(item.actual_sheet_received), targets)
+          const distributedNG = distributeInteger(Number(item.ng_qty), targets)
 
-          return {
-            firm_plan: fp,
-            shift: formData.shift,
-            machine_id: formData.machine_id,
-            operator_name: formData.operator_name,
-            bun_thickness_mm: Number(formData.bun_thickness_mm),
-            sheet_thickness_mm: Number(formData.sheet_thickness_mm),
-            actual_bun_separated: distributedBun[idx],
-            actual_sheet_received: distributedSheet[idx],
-            lot_no: formData.lot_no,
-            report_date: getReportDateISO(new Date(), formData.shift),
-            ng_qty: distributedNG[idx],
-            ng_bun_qty: 0,
-            error_type: combinedError || '',
-            manager_name: formData.manager_name,
-            product_type: productType,
-            note: finalNote,
-            is_compensation: formData.is_compensation,
-            recorder_id: user.id,
-          }
+          plansList.forEach((fp, idx) => {
+            const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`
+            const finalNote = formData.note.trim() 
+              ? `${formData.note.trim()} ${groupNote}`
+              : groupNote
+
+            recordsToInsert.push({
+              firm_plan: fp,
+              shift: formData.shift,
+              machine_id: formData.machine_id,
+              operator_name: formData.operator_name,
+              bun_thickness_mm: Number(formData.bun_thickness_mm),
+              sheet_thickness_mm: Number(formData.sheet_thickness_mm),
+              actual_bun_separated: distributedBun[idx],
+              actual_sheet_received: distributedSheet[idx],
+              lot_no: formData.lot_no,
+              report_date: getReportDateISO(new Date(), formData.shift),
+              ng_qty: distributedNG[idx],
+              ng_bun_qty: 0,
+              error_type: combinedError || '',
+              manager_name: formData.manager_name,
+              product_type: productType,
+              product_type_abbrev: item.product_type_abbrev,
+              note: finalNote,
+              is_compensation: formData.is_compensation,
+              recorder_id: user.id,
+            })
+          })
         })
 
         const { error: insertErr } = await supabase.from('foaming_separate_reports').insert(recordsToInsert)
         if (insertErr) throw insertErr
       } else {
-        const { error } = await supabase.from('foaming_separate_reports').insert({
+        const recordsToInsert = formData.items.map(item => ({
           firm_plan: plan.firm_plan,
           shift: formData.shift,
           machine_id: formData.machine_id,
           operator_name: formData.operator_name,
           bun_thickness_mm: Number(formData.bun_thickness_mm),
           sheet_thickness_mm: Number(formData.sheet_thickness_mm),
-          actual_bun_separated: Number(formData.actual_bun_separated),
-          actual_sheet_received: Number(formData.actual_sheet_received),
+          actual_bun_separated: Number(item.actual_bun_separated),
+          actual_sheet_received: Number(item.actual_sheet_received),
           lot_no: formData.lot_no,
           report_date: getReportDateISO(new Date(), formData.shift),
-          ng_qty: totalNG,
+          ng_qty: Number(item.ng_qty),
           ng_bun_qty: 0,
           error_type: combinedError || '',
           manager_name: formData.manager_name,
           product_type: productType,
+          product_type_abbrev: item.product_type_abbrev,
           note: formData.note.trim() || null,
           is_compensation: formData.is_compensation,
           recorder_id: user.id,
-        })
+        }))
+
+        const { error } = await supabase.from('foaming_separate_reports').insert(recordsToInsert)
         if (error) throw error
       }
       const label = isTP ? 'Thành phẩm' : 'Bán thành phẩm'
@@ -483,22 +504,119 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           </div>
         </div>
 
-        {/* Số bun + sheet */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Số bun thực tế Tách</label>
-            <input type="number" value={formData.actual_bun_separated}
-              required
-              min="1"
-              onChange={e => setFormData({ ...formData, actual_bun_separated: Number(e.target.value) })}
-              className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} />
+        {/* --- Phần khai báo Loại hàng & Số lượng (Mới) --- */}
+        <div className="space-y-4 bg-blue-500/5 p-4 rounded-xl border border-blue-500/10">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-bold text-blue-600 uppercase">Khai báo loại hàng & Số lượng</h4>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData(prev => ({
+                  ...prev,
+                  items: [...prev.items, { product_type_abbrev: 'A', actual_bun_separated: 0, actual_sheet_received: 0, ng_qty: 0 }]
+                }))
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-all shadow-sm"
+            >
+              <Plus size={14} /> THÊM LOẠI HÀNG
+            </button>
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Số sheet thực tế nhận</label>
-            <input type="number" value={formData.actual_sheet_received}
-              required
-              onChange={e => setFormData({ ...formData, actual_sheet_received: Number(e.target.value) })}
-              className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all font-mono`} />
+
+          <div className="space-y-4">
+            {formData.items.map((item, index) => (
+              <div key={index} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pb-3 border-b border-blue-500/10 last:border-b-0 last:pb-0 last:mb-0">
+                {/* Loại hàng */}
+                <div className="sm:col-span-3 space-y-1.5">
+                  <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Loại hàng</label>
+                  <select
+                    value={item.product_type_abbrev}
+                    onChange={e => {
+                      const updated = [...formData.items]
+                      updated[index].product_type_abbrev = e.target.value as any
+                      setFormData({ ...formData, items: updated })
+                    }}
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                  >
+                    {PRODUCT_TYPE_ABBREVS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Số bun thực tế Tách */}
+                <div className="sm:col-span-3 space-y-1.5">
+                  <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Số bun Tách</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={item.actual_bun_separated || ''}
+                    onChange={e => {
+                      const updated = [...formData.items]
+                      updated[index].actual_bun_separated = Number(e.target.value)
+                      setFormData({ ...formData, items: updated })
+                    }}
+                    placeholder="Số bun..."
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+
+                {/* Số sheet thực tế nhận */}
+                <div className="sm:col-span-3 space-y-1.5">
+                  <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Số sheet Nhận</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={item.actual_sheet_received || ''}
+                    onChange={e => {
+                      const updated = [...formData.items]
+                      updated[index].actual_sheet_received = Number(e.target.value)
+                      setFormData({ ...formData, items: updated })
+                    }}
+                    placeholder="Số sheet..."
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+
+                {/* Phế (NG) */}
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Phế (NG)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    required
+                    value={item.ng_qty || ''}
+                    onChange={e => {
+                      const updated = [...formData.items]
+                      updated[index].ng_qty = Number(e.target.value)
+                      setFormData({ ...formData, items: updated })
+                    }}
+                    placeholder="Số phế..."
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+
+                {/* Nút Xoá */}
+                <div className="sm:col-span-1 flex justify-center sm:justify-start pb-1">
+                  {formData.items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          items: prev.items.filter((_, idx) => idx !== index)
+                        }))
+                      }}
+                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all"
+                      title="Xoá dòng"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

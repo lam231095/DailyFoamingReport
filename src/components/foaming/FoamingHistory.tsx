@@ -223,7 +223,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Mã Bun", "Sản phẩm", "Dòng sản phẩm", "Người nhập", "MSNV", "Quản lý", "Đơn bù"]
     if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
     if (activeStage === 'separate') {
-      headers.push("Ca", "Máy", "Operator", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
+      headers.push("Ca", "Máy", "Operator", "Viết tắt loại hàng", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
       headers.push(...ERROR_TYPES)
     }
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
@@ -347,6 +347,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           row.shift, 
           row.machine_id || '---',
           row.operator_name || '---',
+          row.product_type_abbrev || '---',
           row.bun_thickness_mm || 0,
           actualBunThickness.toFixed(2),
           totalActualSheetThickness.toFixed(2),
@@ -698,6 +699,15 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                           <div>
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Tách / Nhận</p>
                             <p className="text-sm font-bold text-purple-600">{row.actual_bun_separated}B / {row.actual_sheet_received}S</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Loại hàng</p>
+                            <p className="text-sm font-bold text-blue-600">
+                               {row.product_type_abbrev === 'A' ? 'Thường (A)' :
+                                row.product_type_abbrev === 'T' ? 'Test (T)' :
+                                row.product_type_abbrev === 'M' ? 'Đổ tay (M)' :
+                                row.product_type_abbrev === 'B' ? 'Xấu (B)' : (row.product_type_abbrev || '---')}
+                            </p>
                           </div>
                           <div>
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Hiệu suất (%)</p>
