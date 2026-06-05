@@ -683,7 +683,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
                     </div>
                   </div>
 
-                  {efficiency < 85 && formData.actual_sheet_received > 0 && (
+                  {efficiency < 85 && totalSheetsReceived > 0 && (
                     <div className="flex items-center gap-2 text-[10px] text-red-600 font-medium bg-red-500/5 p-2 rounded-lg">
                       <Info size={12} />
                       Số lượng sheet thực tế thấp hơn tiêu chuẩn ({suggestedSheets} sheet). Vui lòng kiểm tra lại.
