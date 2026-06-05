@@ -1208,6 +1208,120 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
       .sort((a, b) => a.bunThickness - b.bunThickness) // thấp nhất lên đầu
   }, [separateReports, shiftFilter, managerFilter])
 
+  // Phân tích dòng sản phẩm có độ dày bun thực tế > 140mm
+  const HIGH_BUN_THRESHOLD = 140
+  const highBunByProductLine = useMemo(() => {
+    // Gom nhóm theo product line, dùng TẤT CẢ đơn (không lọc productLineFilter để thấy toàn bộ)
+    const plMap = new Map<string, {
+      totalSheetThickSum: number
+      totalBunSep: number
+      targetSum: number
+      targetCount: number
+      orderCount: number
+      dates: Set<string>
+      firmPlans: string[]
+      details: Array<{
+        id: string
+        report_date: string
+        shift: string
+        firm_plan: string
+        actual_bun_separated: number
+        actual_sheet_received: number
+        sheet_thickness_mm: number
+        bun_thickness_mm: number
+        expected_sheets: number
+        deficit: number
+        ng_qty: number
+        error_type: string
+        note: string
+        operator_name: string
+        reason: string
+      }>
+    }>()
+
+    separateReports
+      .filter(r => {
+        if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
+        if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
+        return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
+      })
+      .forEach(r => {
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham) || 'Không rõ'
+        const sheetThickSum = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        const bunSep = r.actual_bun_separated || 0
+        const target = r.bun_thickness_mm || 0
+        const reportDate = r.report_date
+          ? r.report_date.split('-').reverse().slice(0, 2).join('/')
+          : formatReportDate(r.created_at, r.shift).split('/').slice(0, 2).join('/')
+
+        const expectedSheets = target && r.sheet_thickness_mm ? Math.round((target / r.sheet_thickness_mm) * bunSep) : 0
+        const deficit = expectedSheets > 0 ? expectedSheets - (r.actual_sheet_received || 0) : 0
+        const ngQty = r.ng_qty || 0
+
+        let reason = 'Bình thường'
+        if (deficit > 5) {
+          if (ngQty > 0 && (ngQty >= 0.3 * deficit || ngQty > 5)) {
+            reason = 'Lỗi chất lượng (NG)'
+          } else {
+            reason = 'Lỗi nhập liệu / Thiếu báo cáo'
+          }
+        }
+
+        if (!plMap.has(pl)) {
+          plMap.set(pl, {
+            totalSheetThickSum: 0,
+            totalBunSep: 0,
+            targetSum: 0,
+            targetCount: 0,
+            orderCount: 0,
+            dates: new Set(),
+            firmPlans: [],
+            details: []
+          })
+        }
+        const entry = plMap.get(pl)!
+        entry.totalSheetThickSum += sheetThickSum
+        entry.totalBunSep += bunSep
+        if (target > 0) { entry.targetSum += target; entry.targetCount++ }
+        entry.orderCount++
+        entry.dates.add(reportDate)
+        if (r.firm_plan && !entry.firmPlans.includes(r.firm_plan)) entry.firmPlans.push(r.firm_plan)
+        
+        entry.details.push({
+          id: r.id,
+          report_date: r.report_date ? r.report_date.split('-').reverse().slice(0, 2).join('/') : formatReportDate(r.created_at, r.shift).split('/').slice(0, 2).join('/'),
+          shift: r.shift || '',
+          firm_plan: r.firm_plan || '',
+          actual_bun_separated: bunSep,
+          actual_sheet_received: r.actual_sheet_received || 0,
+          sheet_thickness_mm: r.sheet_thickness_mm || 0,
+          bun_thickness_mm: target,
+          expected_sheets: expectedSheets,
+          deficit: deficit,
+          ng_qty: ngQty,
+          error_type: r.error_type || '',
+          note: r.note || '',
+          operator_name: r.operator_name || '',
+          reason: reason
+        })
+      })
+
+    return Array.from(plMap.entries())
+      .map(([productLine, v]) => ({
+        productLine,
+        bunThickness: v.totalBunSep > 0 ? Math.round((v.totalSheetThickSum / v.totalBunSep) * 10) / 10 : 0,
+        targetThickness: v.targetCount > 0 ? Math.round((v.targetSum / v.targetCount) * 10) / 10 : 0,
+        orderCount: v.orderCount,
+        totalBunSep: v.totalBunSep,
+        totalSheetThickSum: v.totalSheetThickSum,
+        dateCount: v.dates.size,
+        firmPlans: v.firmPlans.slice(0, 5),
+        details: v.details.sort((a, b) => b.deficit - a.deficit) // Lệch nhiều nhất lên đầu
+      }))
+      .filter(d => d.bunThickness > HIGH_BUN_THRESHOLD && d.bunThickness < 250) // Lọc bỏ outlier
+      .sort((a, b) => b.bunThickness - a.bunThickness) // cao nhất lên đầu
+  }, [separateReports, shiftFilter, managerFilter])
+
   // Collect unique product lines from separate reports
   const productLineOptions = useMemo(() => {
     const set = new Set<string>()
@@ -1968,269 +2082,540 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
             )}
           </div>
 
-          {/* ── Phân tích dòng SP có độ dày bun < 136mm ── */}
-          {lowBunByProductLine.length > 0 && (
-            <div className="card p-5 border-2 border-red-300/50" style={{ background: 'linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%)' }}>
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
-                  <span className="text-xl">⚠️</span>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-sm font-black uppercase tracking-tight text-red-700">
-                    Dòng sản phẩm có độ dày bun &lt; {LOW_BUN_THRESHOLD}mm — cần chú ý
-                  </h3>
-                  <p className="text-[10px] text-red-500 mt-0.5">
-                    {lowBunByProductLine.length} dòng SP · Sắp xếp từ thấp nhất · Áp dụng filter ca & quản lý hiện tại
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className="text-[9px] font-bold text-red-400 uppercase">Ngưỡng cảnh báo</span>
-                  <p className="text-2xl font-black text-red-600">&lt; {LOW_BUN_THRESHOLD}<span className="text-sm font-normal"> mm</span></p>
-                </div>
-              </div>
-
-              {/* Horizontal bar chart */}
-              <div className="space-y-2 mb-5">
-                {lowBunByProductLine.map((item, idx) => {
-                  const pct = Math.min(100, (item.bunThickness / LOW_BUN_THRESHOLD) * 100)
-                  const gap = LOW_BUN_THRESHOLD - item.bunThickness
-                  const severity = gap >= 20 ? 'critical' : gap >= 10 ? 'warning' : 'mild'
-                  const barColor = severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f97316' : '#eab308'
-                  const bgColor = severity === 'critical' ? 'bg-red-50' : severity === 'warning' ? 'bg-orange-50' : 'bg-yellow-50'
-                  const badgeColor = severity === 'critical' ? 'bg-red-100 text-red-700' : severity === 'warning' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700'
-                  return (
-                    <div key={item.productLine} className={`rounded-xl p-3 ${bgColor} border border-white/80`}>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[10px] font-black text-gray-500 w-5 text-right shrink-0">#{idx + 1}</span>
-                        <span className="flex-1 text-xs font-black text-gray-800 truncate" title={item.productLine}>
-                          {item.productLine}
-                        </span>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${badgeColor}`}>
-                          {item.bunThickness} mm
-                        </span>
-                        <span className="text-[10px] font-bold text-gray-400 shrink-0">/ {LOW_BUN_THRESHOLD}mm</span>
-                      </div>
-                      {/* Progress bar */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] text-gray-500 w-5 shrink-0"></span>
-                        <div className="flex-1 h-2 rounded-full bg-gray-200/70 overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%`, backgroundColor: barColor }}
-                          />
-                        </div>
-                        <span className={`text-[10px] font-black shrink-0`} style={{ color: barColor }}>
-                          -{gap.toFixed(1)}mm
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1.5 ml-7 flex-wrap">
-                        <span className="text-[9px] text-gray-400">
-                          📦 {item.orderCount} đơn · {item.dateCount} ngày
-                        </span>
-                        {item.targetThickness > 0 && (
-                          <span className="text-[9px] text-gray-400">
-                            🎯 Chuẩn: {item.targetThickness}mm
-                          </span>
-                        )}
-                        <span className="text-[9px] text-gray-400">
-                          🔢 Tổng bun: {item.totalBunSep.toLocaleString()}
-                        </span>
-                        <button
-                          onClick={() => toggleExpand(item.productLine)}
-                          className="ml-auto flex items-center gap-1 text-[9px] font-bold text-red-700 hover:text-red-950 transition-colors bg-white/80 hover:bg-white px-2 py-0.5 rounded-lg border border-red-200 shadow-sm"
-                          type="button"
-                        >
-                          {expandedProductLines[item.productLine] ? (
-                            <>Ẩn chi tiết <ChevronUp size={10} /></>
-                          ) : (
-                            <>Xem chi tiết lỗi <ChevronDown size={10} /></>
-                          )}
-                        </button>
-                      </div>
-
-                      {expandedProductLines[item.productLine] && (
-                        <div className="mt-3 ml-7 bg-white/70 dark:bg-black/30 rounded-xl p-2.5 border border-red-200/30 space-y-2 text-[10px]">
-                          <p className="font-black text-red-800 uppercase tracking-widest text-[8px] mb-1 border-b border-red-200 pb-1 flex justify-between">
-                            <span>Chi tiết chẩn đoán từng đơn hàng</span>
-                            <span className="text-red-600 font-bold">Lưu ý: chỉ hiển thị đơn lệch &gt; 5 tấm</span>
-                          </p>
-                          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                            {item.details.map((detail) => {
-                              const hasError = detail.deficit > 5;
-                              if (!hasError) return null;
-                              const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
-
-                              return (
-                                <div key={detail.id} className="p-2 rounded-lg bg-white/95 dark:bg-black/40 border border-red-100 flex flex-col gap-1 shadow-sm text-left">
-                                  <div className="flex items-center justify-between flex-wrap gap-1.5">
-                                    <span className="font-black text-gray-700 font-mono">{detail.report_date} · {detail.shift}</span>
-                                    <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600">{detail.firm_plan}</span></span>
-                                    {isQualityErr ? (
-                                      <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
-                                    ) : (
-                                      <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
-                                    )}
-                                  </div>
-
-                                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 py-1 my-0.5 border-t border-b border-dashed border-gray-100">
-                                    <div>Tách: <span className="font-bold text-gray-800 font-mono">{detail.actual_bun_separated} bun</span></div>
-                                    <div>Nhận: <span className="font-bold text-gray-800 font-mono">{detail.actual_sheet_received} sheet</span></div>
-                                    <div>Chuẩn/tấm: <span className="font-bold text-gray-800 font-mono">{detail.sheet_thickness_mm}mm</span></div>
-                                    <div className="text-right text-red-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
-                                  </div>
-
-                                  <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
-                                    <div className="flex-1 min-w-[200px]">
-                                      {isQualityErr ? (
-                                        <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
-                                          Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
-                                        </span>
-                                      ) : (
-                                        <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
-                                          Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
-                                        </span>
-                                      )}
-                                      {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
-                                    </div>
-                                    <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 font-black">{detail.operator_name || 'Không rõ'}</span></div>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </div>
-                      )}
+          {/* ── Phân tích độ dày Bun (Thấp < 136mm & Cao > 140mm) ── */}
+          {(lowBunByProductLine.length > 0 || highBunByProductLine.length > 0) && (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 mt-4">
+              {/* Card 1: < 136mm */}
+              {lowBunByProductLine.length > 0 && (
+                <div className={`card p-5 border-2 border-red-300/50 ${highBunByProductLine.length === 0 ? 'xl:col-span-2' : ''}`} style={{ background: 'linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%)' }}>
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
+                      <span className="text-xl">⚠️</span>
                     </div>
-                  )
-                })}
-              </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black uppercase tracking-tight text-red-700">
+                        Dòng sản phẩm có độ dày bun &lt; {LOW_BUN_THRESHOLD}mm — cần chú ý
+                      </h3>
+                      <p className="text-[10px] text-red-500 mt-0.5">
+                        {lowBunByProductLine.length} dòng SP · Sắp xếp từ thấp nhất · Áp dụng filter ca & quản lý hiện tại
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-[9px] font-bold text-red-400 uppercase">Ngưỡng cảnh báo</span>
+                      <p className="text-2xl font-black text-red-600">&lt; {LOW_BUN_THRESHOLD}<span className="text-sm font-normal"> mm</span></p>
+                    </div>
+                  </div>
 
-              {/* Summary table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-[11px] border-collapse">
-                  <thead>
-                    <tr className="bg-red-500/8 text-[10px] font-black uppercase text-red-700 border-b border-red-200/50">
-                      <th className="p-2">#</th>
-                      <th className="p-2">Dòng sản phẩm</th>
-                      <th className="p-2 text-center">Số đơn</th>
-                      <th className="p-2 text-center">Tổng Bun Tách</th>
-                      <th className="p-2 text-center">Chuẩn TB (mm)</th>
-                      <th className="p-2 text-center">Thực tế TB (mm)</th>
-                      <th className="p-2 text-center">Thiếu (mm)</th>
-                      <th className="p-2 text-center">Mức độ</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-red-100">
+                  {/* Horizontal bar chart */}
+                  <div className="space-y-2 mb-5">
                     {lowBunByProductLine.map((item, idx) => {
+                      const pct = Math.min(100, (item.bunThickness / LOW_BUN_THRESHOLD) * 100)
                       const gap = LOW_BUN_THRESHOLD - item.bunThickness
                       const severity = gap >= 20 ? 'critical' : gap >= 10 ? 'warning' : 'mild'
+                      const barColor = severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f97316' : '#eab308'
+                      const bgColor = severity === 'critical' ? 'bg-red-50' : severity === 'warning' ? 'bg-orange-50' : 'bg-yellow-50'
+                      const badgeColor = severity === 'critical' ? 'bg-red-100 text-red-700' : severity === 'warning' ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700'
                       return (
-                        <React.Fragment key={item.productLine}>
-                          <tr
-                            onClick={() => toggleExpand(item.productLine)}
-                            className="hover:bg-red-500/5 transition-colors cursor-pointer select-none border-b border-red-100"
-                          >
-                            <td className="p-2 font-black text-gray-400">#{idx + 1}</td>
-                            <td className="p-2 font-bold text-gray-800 max-w-[200px]">
-                              <div className="flex items-center gap-1.5">
-                                {expandedProductLines[item.productLine] ? (
-                                  <ChevronUp size={12} className="text-red-500 shrink-0" />
-                                ) : (
-                                  <ChevronDown size={12} className="text-gray-400 shrink-0" />
-                                )}
-                                <span className="truncate block" title={item.productLine}>{item.productLine}</span>
-                              </div>
-                            </td>
-                            <td className="p-2 text-center text-gray-500">{item.orderCount}</td>
-                            <td className="p-2 text-center font-mono text-gray-600">{item.totalBunSep.toLocaleString()}</td>
-                            <td className="p-2 text-center font-mono text-gray-500">{item.targetThickness > 0 ? item.targetThickness : '—'}</td>
-                            <td className="p-2 text-center font-mono font-black" style={{
-                              color: severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f97316' : '#eab308'
-                            }}>
-                              {item.bunThickness}
-                            </td>
-                            <td className="p-2 text-center font-mono font-black text-red-600">-{gap.toFixed(1)}</td>
-                            <td className="p-2 text-center">
-                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
-                                severity === 'critical' ? 'bg-red-100 text-red-700' :
-                                severity === 'warning' ? 'bg-orange-100 text-orange-700' :
-                                'bg-yellow-100 text-yellow-700'
-                              }`}>
-                                {severity === 'critical' ? '🔴 Nghiêm trọng' : severity === 'warning' ? '🟠 Cảnh báo' : '🟡 Nhẹ'}
+                        <div key={item.productLine} className={`rounded-xl p-3 ${bgColor} border border-white/80`}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[10px] font-black text-gray-500 w-5 text-right shrink-0">#{idx + 1}</span>
+                            <span className="flex-1 text-xs font-black text-gray-800 truncate" title={item.productLine}>
+                              {item.productLine}
+                            </span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${badgeColor}`}>
+                              {item.bunThickness} mm
+                            </span>
+                            <span className="text-[10px] font-bold text-gray-400 shrink-0">/ {LOW_BUN_THRESHOLD}mm</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-gray-500 w-5 shrink-0"></span>
+                            <div className="flex-1 h-2 rounded-full bg-gray-200/70 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${pct}%`, backgroundColor: barColor }}
+                              />
+                            </div>
+                            <span className={`text-[10px] font-black shrink-0`} style={{ color: barColor }}>
+                              -{gap.toFixed(1)}mm
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1.5 ml-7 flex-wrap">
+                            <span className="text-[9px] text-gray-400">
+                              📦 {item.orderCount} đơn · {item.dateCount} ngày
+                            </span>
+                            {item.targetThickness > 0 && (
+                              <span className="text-[9px] text-gray-400">
+                                🎯 Chuẩn: {item.targetThickness}mm
                               </span>
-                            </td>
-                          </tr>
-                          
+                            )}
+                            <span className="text-[9px] text-gray-400">
+                              🔢 Tổng bun: {item.totalBunSep.toLocaleString()}
+                            </span>
+                            <button
+                              onClick={() => toggleExpand(item.productLine)}
+                              className="ml-auto flex items-center gap-1 text-[9px] font-bold text-red-700 hover:text-red-950 transition-colors bg-white/80 hover:bg-white px-2 py-0.5 rounded-lg border border-red-200 shadow-sm"
+                              type="button"
+                            >
+                              {expandedProductLines[item.productLine] ? (
+                                <>Ẩn chi tiết <ChevronUp size={10} /></>
+                              ) : (
+                                <>Xem chi tiết lỗi <ChevronDown size={10} /></>
+                              )}
+                            </button>
+                          </div>
+
                           {expandedProductLines[item.productLine] && (
-                            <tr className="bg-red-500/[0.01]">
-                              <td colSpan={8} className="p-3">
-                                <div className="bg-white/90 dark:bg-black/40 rounded-xl p-3 border border-red-100 space-y-2 text-[10px]">
-                                  <p className="font-black text-red-800 uppercase tracking-widest text-[8px] mb-1.5 border-b border-red-150 pb-1.5 flex justify-between">
-                                    <span>Chi tiết chẩn đoán từng đơn hàng của dòng: {item.productLine}</span>
-                                    <span className="text-red-600 font-bold">Chỉ hiển thị đơn lệch &gt; 5 tấm</span>
-                                  </p>
-                                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                                    {item.details.map((detail) => {
-                                      const hasError = detail.deficit > 5;
-                                      if (!hasError) return null;
-                                      const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
+                            <div className="mt-3 ml-7 bg-white/70 dark:bg-black/30 rounded-xl p-2.5 border border-red-200/30 space-y-2 text-[10px]">
+                              <p className="font-black text-red-800 uppercase tracking-widest text-[8px] mb-1 border-b border-red-200 pb-1 flex justify-between">
+                                <span>Chi tiết chẩn đoán từng đơn hàng</span>
+                                <span className="text-red-600 font-bold">Lưu ý: chỉ hiển thị đơn lệch &gt; 5 tấm</span>
+                              </p>
+                              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                {item.details.map((detail) => {
+                                  const hasError = detail.deficit > 5;
+                                  if (!hasError) return null;
+                                  const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
 
-                                      return (
-                                        <div key={detail.id} className="p-2 rounded-lg bg-white dark:bg-black/60 border border-red-100/60 flex flex-col gap-1 shadow-sm text-left">
-                                          <div className="flex items-center justify-between flex-wrap gap-1.5">
-                                            <span className="font-black text-gray-700 font-mono">{detail.report_date} · {detail.shift}</span>
-                                            <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600">{detail.firm_plan}</span></span>
-                                            {isQualityErr ? (
-                                              <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
-                                            ) : (
-                                              <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
-                                            )}
-                                          </div>
+                                  return (
+                                    <div key={detail.id} className="p-2 rounded-lg bg-white/95 dark:bg-black/40 border border-red-100 flex flex-col gap-1 shadow-sm text-left">
+                                      <div className="flex items-center justify-between flex-wrap gap-1.5">
+                                        <span className="font-black text-gray-700 font-mono">{detail.report_date} · {detail.shift}</span>
+                                        <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600">{detail.firm_plan}</span></span>
+                                        {isQualityErr ? (
+                                          <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
+                                        ) : (
+                                          <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
+                                        )}
+                                      </div>
 
-                                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 py-1 my-0.5 border-t border-b border-dashed border-gray-100">
-                                            <div>Tách: <span className="font-bold text-gray-800 font-mono">{detail.actual_bun_separated} bun</span></div>
-                                            <div>Nhận: <span className="font-bold text-gray-800 font-mono">{detail.actual_sheet_received} sheet</span></div>
-                                            <div>Chuẩn/tấm: <span className="font-bold text-gray-800 font-mono">{detail.sheet_thickness_mm}mm</span></div>
-                                            <div className="text-right text-red-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
-                                          </div>
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 py-1 my-0.5 border-t border-b border-dashed border-gray-100">
+                                        <div>Tách: <span className="font-bold text-gray-800 font-mono">{detail.actual_bun_separated} bun</span></div>
+                                        <div>Nhận: <span className="font-bold text-gray-800 font-mono">{detail.actual_sheet_received} sheet</span></div>
+                                        <div>Chuẩn/tấm: <span className="font-bold text-gray-800 font-mono">{detail.sheet_thickness_mm}mm</span></div>
+                                        <div className="text-right text-red-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
+                                      </div>
 
-                                          <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
-                                            <div className="flex-1 min-w-[200px]">
-                                              {isQualityErr ? (
-                                                <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
-                                                  Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
-                                                </span>
-                                              ) : (
-                                                <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
-                                                  Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
-                                                </span>
-                                              )}
-                                              {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
-                                            </div>
-                                            <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 font-black">{detail.operator_name || 'Không rõ'}</span></div>
-                                          </div>
+                                      <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
+                                        <div className="flex-1 min-w-[200px]">
+                                          {isQualityErr ? (
+                                            <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
+                                              Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
+                                            </span>
+                                          ) : (
+                                            <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
+                                              Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
+                                            </span>
+                                          )}
+                                          {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
                                         </div>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
+                                        <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 font-black">{detail.operator_name || 'Không rõ'}</span></div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
                           )}
-                        </React.Fragment>
+                        </div>
                       )
                     })}
-                  </tbody>
-                </table>
-              </div>
+                  </div>
 
-              {/* Ghi chú mức độ */}
-              <div className="flex items-center gap-4 mt-3 flex-wrap">
-                <p className="text-[9px] font-bold text-gray-400 uppercase">Phân loại mức độ:</p>
-                <span className="text-[9px] font-bold text-red-600">🔴 Nghiêm trọng: thiếu ≥ 20mm</span>
-                <span className="text-[9px] font-bold text-orange-600">🟠 Cảnh báo: thiếu 10–19mm</span>
-                <span className="text-[9px] font-bold text-yellow-600">🟡 Nhẹ: thiếu &lt; 10mm</span>
-              </div>
+                  {/* Summary table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-[11px] border-collapse">
+                      <thead>
+                        <tr className="bg-red-500/8 text-[10px] font-black uppercase text-red-700 border-b border-red-200/50">
+                          <th className="p-2">#</th>
+                          <th className="p-2">Dòng sản phẩm</th>
+                          <th className="p-2 text-center">Số đơn</th>
+                          <th className="p-2 text-center">Tổng Bun Tách</th>
+                          <th className="p-2 text-center">Chuẩn TB (mm)</th>
+                          <th className="p-2 text-center">Thực tế TB (mm)</th>
+                          <th className="p-2 text-center">Thiếu (mm)</th>
+                          <th className="p-2 text-center">Mức độ</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-red-100">
+                        {lowBunByProductLine.map((item, idx) => {
+                          const gap = LOW_BUN_THRESHOLD - item.bunThickness
+                          const severity = gap >= 20 ? 'critical' : gap >= 10 ? 'warning' : 'mild'
+                          return (
+                            <React.Fragment key={item.productLine}>
+                              <tr
+                                onClick={() => toggleExpand(item.productLine)}
+                                className="hover:bg-red-500/5 transition-colors cursor-pointer select-none border-b border-red-100"
+                              >
+                                <td className="p-2 font-black text-gray-400">#{idx + 1}</td>
+                                <td className="p-2 font-bold text-gray-800 max-w-[200px]">
+                                  <div className="flex items-center gap-1.5">
+                                    {expandedProductLines[item.productLine] ? (
+                                      <ChevronUp size={12} className="text-red-500 shrink-0" />
+                                    ) : (
+                                      <ChevronDown size={12} className="text-gray-400 shrink-0" />
+                                    )}
+                                    <span className="truncate block" title={item.productLine}>{item.productLine}</span>
+                                  </div>
+                                </td>
+                                <td className="p-2 text-center text-gray-500">{item.orderCount}</td>
+                                <td className="p-2 text-center font-mono text-gray-600">{item.totalBunSep.toLocaleString()}</td>
+                                <td className="p-2 text-center font-mono text-gray-500">{item.targetThickness > 0 ? item.targetThickness : '—'}</td>
+                                <td className="p-2 text-center font-mono font-black" style={{
+                                  color: severity === 'critical' ? '#ef4444' : severity === 'warning' ? '#f97316' : '#eab308'
+                                }}>
+                                  {item.bunThickness}
+                                </td>
+                                <td className="p-2 text-center font-mono font-black text-red-600">-{gap.toFixed(1)}</td>
+                                <td className="p-2 text-center">
+                                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                    severity === 'critical' ? 'bg-red-100 text-red-700' :
+                                    severity === 'warning' ? 'bg-orange-100 text-orange-700' :
+                                    'bg-yellow-100 text-yellow-700'
+                                  }`}>
+                                    {severity === 'critical' ? '🔴 Nghiêm trọng' : severity === 'warning' ? '🟠 Cảnh báo' : '🟡 Nhẹ'}
+                                  </span>
+                                </td>
+                              </tr>
+                              
+                              {expandedProductLines[item.productLine] && (
+                                <tr className="bg-red-500/[0.01]">
+                                  <td colSpan={8} className="p-3">
+                                    <div className="bg-white/90 dark:bg-black/40 rounded-xl p-3 border border-red-100 space-y-2 text-[10px]">
+                                      <p className="font-black text-red-800 uppercase tracking-widest text-[8px] mb-1.5 border-b border-red-150 pb-1.5 flex justify-between">
+                                        <span>Chi tiết chẩn đoán từng đơn hàng của dòng: {item.productLine}</span>
+                                        <span className="text-red-600 font-bold">Chỉ hiển thị đơn lệch &gt; 5 tấm</span>
+                                      </p>
+                                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                                        {item.details.map((detail) => {
+                                          const hasError = detail.deficit > 5;
+                                          if (!hasError) return null;
+                                          const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
+
+                                          return (
+                                            <div key={detail.id} className="p-2 rounded-lg bg-white dark:bg-black/60 border border-red-100/60 flex flex-col gap-1 shadow-sm text-left">
+                                              <div className="flex items-center justify-between flex-wrap gap-1.5">
+                                                <span className="font-black text-gray-700 font-mono">{detail.report_date} · {detail.shift}</span>
+                                                <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600">{detail.firm_plan}</span></span>
+                                                {isQualityErr ? (
+                                                  <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
+                                                ) : (
+                                                  <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
+                                                )}
+                                              </div>
+
+                                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 py-1 my-0.5 border-t border-b border-dashed border-gray-100">
+                                                <div>Tách: <span className="font-bold text-gray-800 font-mono">{detail.actual_bun_separated} bun</span></div>
+                                                <div>Nhận: <span className="font-bold text-gray-800 font-mono">{detail.actual_sheet_received} sheet</span></div>
+                                                <div>Chuẩn/tấm: <span className="font-bold text-gray-800 font-mono">{detail.sheet_thickness_mm}mm</span></div>
+                                                <div className="text-right text-red-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
+                                              </div>
+
+                                              <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
+                                                <div className="flex-1 min-w-[200px]">
+                                                  {isQualityErr ? (
+                                                    <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
+                                                      Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
+                                                    </span>
+                                                  ) : (
+                                                    <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
+                                                      Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
+                                                    </span>
+                                                  )}
+                                                  {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
+                                                </div>
+                                                <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 font-black">{detail.operator_name || 'Không rõ'}</span></div>
+                                              </div>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Ghi chú mức độ */}
+                  <div className="flex items-center gap-4 mt-3 flex-wrap">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase">Phân loại mức độ:</p>
+                    <span className="text-[9px] font-bold text-red-600">🔴 Nghiêm trọng: thiếu ≥ 20mm</span>
+                    <span className="text-[9px] font-bold text-orange-600">🟠 Cảnh báo: thiếu 10–19mm</span>
+                    <span className="text-[9px] font-bold text-yellow-600">🟡 Nhẹ: thiếu &lt; 10mm</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Card 2: > 140mm */}
+              {highBunByProductLine.length > 0 && (
+                <div className={`card p-5 border-2 border-indigo-300/50 ${lowBunByProductLine.length === 0 ? 'xl:col-span-2' : ''}`} style={{ background: 'linear-gradient(135deg, #e0e7ff 0%, #f0fdfa 100%)' }}>
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center shrink-0">
+                      <span className="text-xl">📈</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-sm font-black uppercase tracking-tight text-indigo-700">
+                        Dòng sản phẩm có độ dày bun &gt; {HIGH_BUN_THRESHOLD}mm — độ dày cao
+                      </h3>
+                      <p className="text-[10px] text-indigo-500 mt-0.5">
+                        {highBunByProductLine.length} dòng SP · Sắp xếp từ cao nhất · Áp dụng filter ca & quản lý hiện tại
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-[9px] font-bold text-indigo-400 uppercase">Ngưỡng độ dày cao</span>
+                      <p className="text-2xl font-black text-indigo-600">&gt; {HIGH_BUN_THRESHOLD}<span className="text-sm font-normal"> mm</span></p>
+                    </div>
+                  </div>
+
+                  {/* Horizontal bar chart */}
+                  <div className="space-y-2 mb-5">
+                    {highBunByProductLine.map((item, idx) => {
+                      const excess = item.bunThickness - HIGH_BUN_THRESHOLD
+                      const level = excess >= 20 ? 'purple' : excess >= 10 ? 'indigo' : 'teal'
+                      const barColor = level === 'purple' ? '#a855f7' : level === 'indigo' ? '#6366f1' : '#14b8a6'
+                      const bgColor = level === 'purple' ? 'bg-purple-50/70' : level === 'indigo' ? 'bg-indigo-50/70' : 'bg-teal-50/70'
+                      const badgeColor = level === 'purple' ? 'bg-purple-100 text-purple-700' : level === 'indigo' ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700'
+                      
+                      // Calculate percentage relative to a max thickness (e.g. 180mm)
+                      const maxBarVal = Math.max(180, ...highBunByProductLine.map(d => d.bunThickness))
+                      const pct = Math.min(100, (item.bunThickness / maxBarVal) * 100)
+
+                      return (
+                        <div key={item.productLine} className={`rounded-xl p-3 ${bgColor} border border-white/80`}>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[10px] font-black text-gray-500 w-5 text-right shrink-0">#{idx + 1}</span>
+                            <span className="flex-1 text-xs font-black text-gray-800 truncate" title={item.productLine}>
+                              {item.productLine}
+                            </span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${badgeColor}`}>
+                              {item.bunThickness} mm
+                            </span>
+                            <span className="text-[10px] font-bold text-gray-400 shrink-0">/ {HIGH_BUN_THRESHOLD}mm</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-gray-500 w-5 shrink-0"></span>
+                            <div className="flex-1 h-2 rounded-full bg-gray-200/70 overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${pct}%`, backgroundColor: barColor }}
+                              />
+                            </div>
+                            <span className={`text-[10px] font-black shrink-0`} style={{ color: barColor }}>
+                              +{excess.toFixed(1)}mm
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1.5 ml-7 flex-wrap">
+                            <span className="text-[9px] text-gray-400">
+                              📦 {item.orderCount} đơn · {item.dateCount} ngày
+                            </span>
+                            {item.targetThickness > 0 && (
+                              <span className="text-[9px] text-gray-400">
+                                🎯 Chuẩn: {item.targetThickness}mm
+                              </span>
+                            )}
+                            <span className="text-[9px] text-gray-400">
+                              🔢 Tổng bun: {item.totalBunSep.toLocaleString()}
+                            </span>
+                            <button
+                              onClick={() => toggleExpand(item.productLine)}
+                              className="ml-auto flex items-center gap-1 text-[9px] font-bold text-indigo-700 hover:text-indigo-950 transition-colors bg-white/80 hover:bg-white px-2 py-0.5 rounded-lg border border-indigo-200 shadow-sm"
+                              type="button"
+                            >
+                              {expandedProductLines[item.productLine] ? (
+                                <>Ẩn chi tiết <ChevronUp size={10} /></>
+                              ) : (
+                                <>Xem chi tiết lệch <ChevronDown size={10} /></>
+                              )}
+                            </button>
+                          </div>
+
+                          {expandedProductLines[item.productLine] && (
+                            <div className="mt-3 ml-7 bg-white/70 dark:bg-black/30 rounded-xl p-2.5 border border-indigo-200/30 space-y-2 text-[10px]">
+                              <p className="font-black text-indigo-800 uppercase tracking-widest text-[8px] mb-1 border-b border-indigo-200 pb-1 flex justify-between">
+                                <span>Chi tiết từng đơn hàng</span>
+                                <span className="text-indigo-600 font-bold">Lưu ý: chỉ hiển thị đơn lệch &gt; 5 tấm</span>
+                              </p>
+                              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                {item.details.map((detail) => {
+                                  const hasError = detail.deficit > 5;
+                                  if (!hasError) return null;
+                                  const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
+
+                                  return (
+                                    <div key={detail.id} className="p-2 rounded-lg bg-white/95 dark:bg-black/40 border border-indigo-100 flex flex-col gap-1 shadow-sm text-left">
+                                      <div className="flex items-center justify-between flex-wrap gap-1.5">
+                                        <span className="font-black text-gray-700 font-mono">{detail.report_date} · {detail.shift}</span>
+                                        <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600">{detail.firm_plan}</span></span>
+                                        {isQualityErr ? (
+                                          <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
+                                        ) : (
+                                          <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
+                                        )}
+                                      </div>
+
+                                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 py-1 my-0.5 border-t border-b border-dashed border-indigo-100">
+                                        <div>Tách: <span className="font-bold text-gray-800 font-mono">{detail.actual_bun_separated} bun</span></div>
+                                        <div>Nhận: <span className="font-bold text-gray-800 font-mono">{detail.actual_sheet_received} sheet</span></div>
+                                        <div>Chuẩn/tấm: <span className="font-bold text-gray-800 font-mono">{detail.sheet_thickness_mm}mm</span></div>
+                                        <div className="text-right text-indigo-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
+                                      </div>
+
+                                      <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
+                                        <div className="flex-1 min-w-[200px]">
+                                          {isQualityErr ? (
+                                            <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
+                                              Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
+                                            </span>
+                                          ) : (
+                                            <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
+                                              Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
+                                            </span>
+                                          )}
+                                          {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
+                                        </div>
+                                        <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 font-black">{detail.operator_name || 'Không rõ'}</span></div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Summary table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-[11px] border-collapse">
+                      <thead>
+                        <tr className="bg-indigo-500/8 text-[10px] font-black uppercase text-indigo-700 border-b border-indigo-200/50">
+                          <th className="p-2">#</th>
+                          <th className="p-2">Dòng sản phẩm</th>
+                          <th className="p-2 text-center">Số đơn</th>
+                          <th className="p-2 text-center">Tổng Bun Tách</th>
+                          <th className="p-2 text-center">Chuẩn TB (mm)</th>
+                          <th className="p-2 text-center">Thực tế TB (mm)</th>
+                          <th className="p-2 text-center">Vượt ngưỡng (mm)</th>
+                          <th className="p-2 text-center">Mức độ vượt</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-indigo-100">
+                        {highBunByProductLine.map((item, idx) => {
+                          const excess = item.bunThickness - HIGH_BUN_THRESHOLD
+                          const level = excess >= 20 ? 'purple' : excess >= 10 ? 'indigo' : 'teal'
+                          return (
+                            <React.Fragment key={item.productLine}>
+                              <tr
+                                onClick={() => toggleExpand(item.productLine)}
+                                className="hover:bg-indigo-500/5 transition-colors cursor-pointer select-none border-b border-indigo-100"
+                              >
+                                <td className="p-2 font-black text-gray-400">#{idx + 1}</td>
+                                <td className="p-2 font-bold text-gray-800 max-w-[200px]">
+                                  <div className="flex items-center gap-1.5">
+                                    {expandedProductLines[item.productLine] ? (
+                                      <ChevronUp size={12} className="text-indigo-500 shrink-0" />
+                                    ) : (
+                                      <ChevronDown size={12} className="text-gray-400 shrink-0" />
+                                    )}
+                                    <span className="truncate block" title={item.productLine}>{item.productLine}</span>
+                                  </div>
+                                </td>
+                                <td className="p-2 text-center text-gray-500">{item.orderCount}</td>
+                                <td className="p-2 text-center font-mono text-gray-600">{item.totalBunSep.toLocaleString()}</td>
+                                <td className="p-2 text-center font-mono text-gray-500">{item.targetThickness > 0 ? item.targetThickness : '—'}</td>
+                                <td className="p-2 text-center font-mono font-black" style={{
+                                  color: level === 'purple' ? '#a855f7' : level === 'indigo' ? '#6366f1' : '#14b8a6'
+                                }}>
+                                  {item.bunThickness}
+                                </td>
+                                <td className="p-2 text-center font-mono font-black text-indigo-600">+{excess.toFixed(1)}</td>
+                                <td className="p-2 text-center">
+                                  <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                    level === 'purple' ? 'bg-purple-100 text-purple-700' :
+                                    level === 'indigo' ? 'bg-indigo-100 text-indigo-700' :
+                                    'bg-teal-100 text-teal-700'
+                                  }`}>
+                                    {level === 'purple' ? '🟣 Cực cao' : level === 'indigo' ? '🔵 Rất cao' : '🟢 Cao'}
+                                  </span>
+                                </td>
+                              </tr>
+                              {expandedProductLines[item.productLine] && (
+                                <tr className="bg-indigo-500/[0.01]">
+                                  <td colSpan={8} className="p-3">
+                                    <div className="bg-white/90 dark:bg-black/40 rounded-xl p-3 border border-indigo-100 space-y-2 text-[10px]">
+                                      <p className="font-black text-indigo-800 uppercase tracking-widest text-[8px] mb-1.5 border-b border-indigo-150 pb-1.5 flex justify-between">
+                                        <span>Chi tiết từng đơn hàng của dòng: {item.productLine}</span>
+                                        <span className="text-indigo-600 font-bold">Chỉ hiển thị đơn lệch &gt; 5 tấm</span>
+                                      </p>
+                                      <div className="space-y-2 max-h-64 overflow-y-auto">
+                                        {item.details.map((detail) => {
+                                          const hasError = detail.deficit > 5;
+                                          if (!hasError) return null;
+                                          const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
+
+                                          return (
+                                            <div key={detail.id} className="p-2 rounded-lg bg-white dark:bg-black/60 border border-indigo-100/60 flex flex-col gap-1 shadow-sm text-left">
+                                              <div className="flex items-center justify-between flex-wrap gap-1.5">
+                                                <span className="font-black text-gray-700 font-mono">{detail.report_date} · {detail.shift}</span>
+                                                <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600">{detail.firm_plan}</span></span>
+                                                {isQualityErr ? (
+                                                  <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
+                                                ) : (
+                                                  <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
+                                                )}
+                                              </div>
+
+                                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 py-1 my-0.5 border-t border-b border-dashed border-gray-100">
+                                                <div>Tách: <span className="font-bold text-gray-800 font-mono">{detail.actual_bun_separated} bun</span></div>
+                                                <div>Nhận: <span className="font-bold text-gray-800 font-mono">{detail.actual_sheet_received} sheet</span></div>
+                                                <div>Chuẩn/tấm: <span className="font-bold text-gray-800 font-mono">{detail.sheet_thickness_mm}mm</span></div>
+                                                <div className="text-right text-indigo-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
+                                              </div>
+
+                                              <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
+                                                <div className="flex-1 min-w-[200px]">
+                                                  {isQualityErr ? (
+                                                    <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
+                                                      Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
+                                                    </span>
+                                                  ) : (
+                                                    <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
+                                                      Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
+                                                    </span>
+                                                  )}
+                                                  {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
+                                                </div>
+                                                <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 font-black">{detail.operator_name || 'Không rõ'}</span></div>
+                                              </div>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex items-center gap-4 mt-3 flex-wrap">
+                    <p className="text-[9px] font-bold text-gray-400 uppercase">Phân loại mức độ vượt:</p>
+                    <span className="text-[9px] font-bold text-purple-600">🟣 Cực cao: vượt ≥ 20mm</span>
+                    <span className="text-[9px] font-bold text-indigo-600">🔵 Rất cao: vượt 10–19mm</span>
+                    <span className="text-[9px] font-bold text-teal-600">🟢 Cao: vượt &lt; 10mm</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
