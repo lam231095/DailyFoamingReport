@@ -115,8 +115,18 @@ try {
 
     $records = [System.Collections.Generic.List[object]]::new()
 
+    $consecutiveEmpty = 0
     for ($r = $DATA_START; $r -le $nr; $r++) {
         $firmPlan = $ws.Cells.Item($r, $COL_FIRM_PLAN).Text.Trim()
+        if ([string]::IsNullOrWhiteSpace($firmPlan)) {
+            $consecutiveEmpty++
+            if ($consecutiveEmpty -ge 15) {
+                break
+            }
+            continue
+        }
+        $consecutiveEmpty = 0
+
         $noOrder  = $ws.Cells.Item($r, $COL_NO_ORDER).Text.Trim()
         $bunCode  = $ws.Cells.Item($r, $COL_BUN_CODE).Text.Trim()
         $puCode   = $ws.Cells.Item($r, $COL_PU_CODE).Text.Trim()
@@ -126,9 +136,6 @@ try {
         $slDo     = $ws.Cells.Item($r, $COL_SL_DO).Text.Trim()
         $compDate = $ws.Cells.Item($r, $COL_COMPLETION).Text.Trim()
         $delDate  = $ws.Cells.Item($r, $COL_DELIVERY).Text.Trim()
-
-        # Bỏ qua dòng không có Firm Plan
-        if ([string]::IsNullOrWhiteSpace($firmPlan)) { continue }
 
         $record = [ordered]@{
             firm_plan       = $firmPlan
