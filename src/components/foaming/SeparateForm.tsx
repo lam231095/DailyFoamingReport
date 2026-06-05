@@ -35,6 +35,12 @@ const TABS: { id: ProductType; label: string; color: string; bg: string }[] = [
   { id: 'ban_thanh_pham', label: '🔶 Bán thành phẩm', color: 'amber', bg: 'bg-amber-500' },
 ]
 
+interface NGItem {
+  qty: number;
+  type: string;
+  note: string;
+}
+
 const defaultForm = (plan: ProductionPlan) => {
   const match = plan.ten_san_pham?.match(/([0-9.]+)\s*mm/i)
   const thickness = match ? parseFloat(match[1]) : null
@@ -56,11 +62,10 @@ const defaultForm = (plan: ProductionPlan) => {
     bun_thickness_mm: initialBunThickness,
     sheet_thickness_mm: finalThickness,
     items: [
-      { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_qty: 0 }
+      { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_items: [] as NGItem[] }
     ],
     lot_no: '',
     manager_name: '',
-    ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
     note: '',
     is_compensation: false,
   }
@@ -130,7 +135,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       bun_thickness_mm: initialBunThickness,
       sheet_thickness_mm: identifiedThickness !== null ? identifiedThickness : 14,
       items: [
-        { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_qty: 0 }
+        { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_items: [] as NGItem[] }
       ],
     }))
   }, [plan, standards, identifiedThickness, dbStd, localStd])
@@ -152,9 +157,8 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       bun_thickness_mm: initialBunThickness,
       sheet_thickness_mm: identifiedThickness !== null ? identifiedThickness : 14,
       items: [
-        { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_qty: 0 }
+        { product_type_abbrev: 'A' as const, actual_bun_separated: plan.sl_bun_can_tach || 0, actual_sheet_received: plan.sl_sheet || 0, ng_items: [] as NGItem[] }
       ],
-      ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
       note: '',
       is_compensation: false,
     }))
@@ -166,7 +170,10 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
   const totalBunsSeparated = formData.items.reduce((sum, item) => sum + Number(item.actual_bun_separated || 0), 0)
   const totalSheetsReceived = formData.items.reduce((sum, item) => sum + Number(item.actual_sheet_received || 0), 0)
-  const totalNGQty = formData.items.reduce((sum, item) => sum + Number(item.ng_qty || 0), 0)
+  const totalNGQty = formData.items.reduce((sum, item) => {
+    const itemNGSum = item.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
+    return sum + itemNGSum
+  }, 0)
 
   const suggestedSheets = optimalPerBun > 0
     ? Math.round(totalBunsSeparated * optimalPerBun)
@@ -175,15 +182,25 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     ? Math.round((totalSheetsReceived / suggestedSheets) * 100)
     : 0
 
-  const addNGItem = () => setFormData({ ...formData, ng_items: [...formData.ng_items, { qty: 0, type: ERROR_TYPES[0], note: '' }] })
-  const removeNGItem = (i: number) => {
-    if (formData.ng_items.length <= 1) return
-    setFormData({ ...formData, ng_items: formData.ng_items.filter((_, idx) => idx !== i) })
+  const addNGItem = (itemIndex: number) => {
+    const updated = [...formData.items]
+    updated[itemIndex].ng_items.push({ qty: 0, type: ERROR_TYPES[0], note: '' })
+    setFormData({ ...formData, items: updated })
   }
-  const updateNGItem = (i: number, field: 'qty' | 'type' | 'note', value: any) => {
-    const items = [...formData.ng_items]
-    items[i] = { ...items[i], [field]: value }
-    setFormData({ ...formData, ng_items: items })
+
+  const removeNGItem = (itemIndex: number, ngIndex: number) => {
+    const updated = [...formData.items]
+    updated[itemIndex].ng_items = updated[itemIndex].ng_items.filter((_, idx) => idx !== ngIndex)
+    setFormData({ ...formData, items: updated })
+  }
+
+  const updateNGItem = (itemIndex: number, ngIndex: number, field: 'qty' | 'type' | 'note', value: any) => {
+    const updated = [...formData.items]
+    updated[itemIndex].ng_items[ngIndex] = {
+      ...updated[itemIndex].ng_items[ngIndex],
+      [field]: value
+    }
+    setFormData({ ...formData, items: updated })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -198,7 +215,6 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
     setLoading(true)
     setMessage(null)
     try {
-      const totalNG = formData.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
       const noInfoSheets = suggestedSheets - totalSheetsReceived - totalNGQty
 
       const plansList = plan.firm_plan.split('|').map(x => x.trim()).filter(Boolean)
@@ -281,11 +297,6 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         }
       }
 
-      const combinedError = formData.ng_items
-        .filter(x => x.qty > 0)
-        .map(x => x.type === 'Lỗi khác' && x.note ? `${x.type}: ${x.note.trim()} (${x.qty})` : `${x.type} (${x.qty})`)
-        .join(', ')
-
       if (plansList.length > 1) {
         const targets = plansList.map(fp => {
           const p = plansData.find(x => x.firm_plan === fp)
@@ -295,9 +306,15 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         const recordsToInsert: any[] = []
 
         formData.items.forEach(item => {
+          const itemNGSum = item.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
+          const itemCombinedError = item.ng_items
+            .filter(x => x.qty > 0)
+            .map(x => x.type === 'Lỗi khác' && x.note ? `${x.type}: ${x.note.trim()} (${x.qty})` : `${x.type} (${x.qty})`)
+            .join(', ')
+
           const distributedBun = distributeInteger(Number(item.actual_bun_separated), targets)
           const distributedSheet = distributeInteger(Number(item.actual_sheet_received), targets)
-          const distributedNG = distributeInteger(Number(item.ng_qty), targets)
+          const distributedNG = distributeInteger(itemNGSum, targets)
 
           plansList.forEach((fp, idx) => {
             const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`
@@ -318,7 +335,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               report_date: getReportDateISO(new Date(), formData.shift),
               ng_qty: distributedNG[idx],
               ng_bun_qty: 0,
-              error_type: combinedError || '',
+              error_type: itemCombinedError || '',
               manager_name: formData.manager_name,
               product_type: productType,
               product_type_abbrev: item.product_type_abbrev,
@@ -332,27 +349,35 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         const { error: insertErr } = await supabase.from('foaming_separate_reports').insert(recordsToInsert)
         if (insertErr) throw insertErr
       } else {
-        const recordsToInsert = formData.items.map(item => ({
-          firm_plan: plan.firm_plan,
-          shift: formData.shift,
-          machine_id: formData.machine_id,
-          operator_name: formData.operator_name,
-          bun_thickness_mm: Number(formData.bun_thickness_mm),
-          sheet_thickness_mm: Number(formData.sheet_thickness_mm),
-          actual_bun_separated: Number(item.actual_bun_separated),
-          actual_sheet_received: Number(item.actual_sheet_received),
-          lot_no: formData.lot_no,
-          report_date: getReportDateISO(new Date(), formData.shift),
-          ng_qty: Number(item.ng_qty),
-          ng_bun_qty: 0,
-          error_type: combinedError || '',
-          manager_name: formData.manager_name,
-          product_type: productType,
-          product_type_abbrev: item.product_type_abbrev,
-          note: formData.note.trim() || null,
-          is_compensation: formData.is_compensation,
-          recorder_id: user.id,
-        }))
+        const recordsToInsert = formData.items.map(item => {
+          const itemNGSum = item.ng_items.reduce((s, x) => s + (x.qty || 0), 0)
+          const itemCombinedError = item.ng_items
+            .filter(x => x.qty > 0)
+            .map(x => x.type === 'Lỗi khác' && x.note ? `${x.type}: ${x.note.trim()} (${x.qty})` : `${x.type} (${x.qty})`)
+            .join(', ')
+
+          return {
+            firm_plan: plan.firm_plan,
+            shift: formData.shift,
+            machine_id: formData.machine_id,
+            operator_name: formData.operator_name,
+            bun_thickness_mm: Number(formData.bun_thickness_mm),
+            sheet_thickness_mm: Number(formData.sheet_thickness_mm),
+            actual_bun_separated: Number(item.actual_bun_separated),
+            actual_sheet_received: Number(item.actual_sheet_received),
+            lot_no: formData.lot_no,
+            report_date: getReportDateISO(new Date(), formData.shift),
+            ng_qty: itemNGSum,
+            ng_bun_qty: 0,
+            error_type: itemCombinedError || '',
+            manager_name: formData.manager_name,
+            product_type: productType,
+            product_type_abbrev: item.product_type_abbrev,
+            note: formData.note.trim() || null,
+            is_compensation: formData.is_compensation,
+            recorder_id: user.id,
+          }
+        })
 
         const { error } = await supabase.from('foaming_separate_reports').insert(recordsToInsert)
         if (error) throw error
@@ -513,7 +538,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               onClick={() => {
                 setFormData(prev => ({
                   ...prev,
-                  items: [...prev.items, { product_type_abbrev: 'A', actual_bun_separated: 0, actual_sheet_received: 0, ng_qty: 0 }]
+                  items: [...prev.items, { product_type_abbrev: 'A', actual_bun_separated: 0, actual_sheet_received: 0, ng_items: [] }]
                 }))
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-[10px] font-bold hover:bg-blue-700 transition-all shadow-sm"
@@ -524,97 +549,148 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
           <div className="space-y-4">
             {formData.items.map((item, index) => (
-              <div key={index} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pb-3 border-b border-blue-500/10 last:border-b-0 last:pb-0 last:mb-0">
-                {/* Loại hàng */}
-                <div className="sm:col-span-3 space-y-1.5">
-                  <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Loại hàng</label>
-                  <select
-                    value={item.product_type_abbrev}
-                    onChange={e => {
-                      const updated = [...formData.items]
-                      updated[index].product_type_abbrev = e.target.value as any
-                      setFormData({ ...formData, items: updated })
-                    }}
-                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm font-bold focus:border-blue-500 outline-none transition-all"
-                  >
-                    {PRODUCT_TYPE_ABBREVS.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
+              <div key={index} className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-4 space-y-4 shadow-sm hover:shadow-md transition-all">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                  {/* Loại hàng */}
+                  <div className="sm:col-span-3 space-y-1.5">
+                    <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Loại hàng</label>
+                    <select
+                      value={item.product_type_abbrev}
+                      onChange={e => {
+                        const updated = [...formData.items]
+                        updated[index].product_type_abbrev = e.target.value as any
+                        setFormData({ ...formData, items: updated })
+                      }}
+                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2.5 text-sm font-bold focus:border-blue-500 outline-none transition-all"
+                    >
+                      {PRODUCT_TYPE_ABBREVS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* Số bun thực tế Tách */}
-                <div className="sm:col-span-3 space-y-1.5">
-                  <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Số bun Tách</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={item.actual_bun_separated || ''}
-                    onChange={e => {
-                      const updated = [...formData.items]
-                      updated[index].actual_bun_separated = Number(e.target.value)
-                      setFormData({ ...formData, items: updated })
-                    }}
-                    placeholder="Số bun..."
-                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
+                  {/* Số bun thực tế Tách */}
+                  <div className="sm:col-span-3 space-y-1.5">
+                    <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Số bun Tách</label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      value={item.actual_bun_separated || ''}
+                      onChange={e => {
+                        const updated = [...formData.items]
+                        updated[index].actual_bun_separated = Number(e.target.value)
+                        setFormData({ ...formData, items: updated })
+                      }}
+                      placeholder="Số bun..."
+                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2.5 text-sm font-mono font-bold focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
 
-                {/* Số sheet thực tế nhận */}
-                <div className="sm:col-span-3 space-y-1.5">
-                  <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Số sheet Nhận</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={item.actual_sheet_received || ''}
-                    onChange={e => {
-                      const updated = [...formData.items]
-                      updated[index].actual_sheet_received = Number(e.target.value)
-                      setFormData({ ...formData, items: updated })
-                    }}
-                    placeholder="Số sheet..."
-                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
+                  {/* Số sheet thực tế nhận */}
+                  <div className="sm:col-span-3 space-y-1.5">
+                    <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Số sheet Nhận</label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      value={item.actual_sheet_received || ''}
+                      onChange={e => {
+                        const updated = [...formData.items]
+                        updated[index].actual_sheet_received = Number(e.target.value)
+                        setFormData({ ...formData, items: updated })
+                      }}
+                      placeholder="Số sheet..."
+                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2.5 text-sm font-mono font-bold focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
 
-                {/* Phế (NG) */}
-                <div className="sm:col-span-2 space-y-1.5">
-                  <label className="text-[10px] font-bold text-blue-600 uppercase ml-1">Phế (NG)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={item.ng_qty || ''}
-                    onChange={e => {
-                      const updated = [...formData.items]
-                      updated[index].ng_qty = Number(e.target.value)
-                      setFormData({ ...formData, items: updated })
-                    }}
-                    placeholder="Số phế..."
-                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm font-mono font-bold focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
-
-                {/* Nút Xoá */}
-                <div className="sm:col-span-1 flex justify-center sm:justify-start pb-1">
-                  {formData.items.length > 1 && (
+                  {/* Nút Thêm Lỗi / Xoá */}
+                  <div className="sm:col-span-3 flex gap-2 justify-end pb-1">
                     <button
                       type="button"
-                      onClick={() => {
-                        setFormData(prev => ({
-                          ...prev,
-                          items: prev.items.filter((_, idx) => idx !== index)
-                        }))
-                      }}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all"
-                      title="Xoá dòng"
+                      onClick={() => addNGItem(index)}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-red-500/10 text-red-600 rounded-xl text-xs font-bold hover:bg-red-500/15 transition-all"
                     >
-                      <Trash2 size={18} />
+                      <Plus size={14} /> THÊM LỖI PHẾ
                     </button>
-                  )}
+                    {formData.items.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            items: prev.items.filter((_, idx) => idx !== index)
+                          }))
+                        }}
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-xl transition-all"
+                        title="Xoá dòng"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Danh sách lỗi phế phẩm của loại hàng này */}
+                {item.ng_items.length > 0 && (
+                  <div className="bg-red-500/5 p-4 rounded-xl border border-red-500/10 space-y-3">
+                    <p className="text-[9px] font-bold text-red-600 uppercase ml-1">Chi tiết phế phẩm (NG):</p>
+                    <div className="space-y-3">
+                      {item.ng_items.map((ng, ngIdx) => (
+                        <div key={ngIdx} className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pb-3 border-b border-red-500/10 last:border-b-0 last:pb-0">
+                          <div className="sm:col-span-3 space-y-1.5">
+                            <label className="text-[9px] font-semibold text-red-500/60 uppercase ml-1">Số lượng (Sheet)</label>
+                            <input
+                              type="number"
+                              min="1"
+                              required
+                              value={ng.qty || ''}
+                              onChange={e => updateNGItem(index, ngIdx, 'qty', Number(e.target.value))}
+                              placeholder="Số phế..."
+                              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs font-mono focus:border-red-500 outline-none transition-all"
+                            />
+                          </div>
+                          <div className="sm:col-span-5 space-y-1.5">
+                            <label className="text-[9px] font-semibold text-red-500/60 uppercase ml-1">Loại lỗi</label>
+                            <select
+                              value={ng.type}
+                              onChange={e => updateNGItem(index, ngIdx, 'type', e.target.value)}
+                              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-lg px-2.5 py-1.5 text-xs focus:border-red-500 outline-none transition-all"
+                            >
+                              {ERROR_TYPES.map(t => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="sm:col-span-3 space-y-1.5">
+                            {ng.type === 'Lỗi khác' && (
+                              <>
+                                <label className="text-[9px] font-semibold text-red-500/60 uppercase ml-1">Chi tiết lỗi khác</label>
+                                <input
+                                  type="text"
+                                  value={ng.note || ''}
+                                  onChange={e => updateNGItem(index, ngIdx, 'note', e.target.value)}
+                                  placeholder="Mô tả lỗi khác..."
+                                  className="w-full bg-[var(--bg-card)] border-2 border-red-500/20 rounded-lg px-3 py-1.5 text-xs focus:border-red-500 outline-none transition-all"
+                                />
+                              </>
+                            )}
+                          </div>
+                          <div className="sm:col-span-1 flex justify-center pb-0.5">
+                            <button
+                              type="button"
+                              onClick={() => removeNGItem(index, ngIdx)}
+                              className="p-1.5 text-red-400 hover:text-red-500 rounded transition-all"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -705,56 +781,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           )}
         </AnimatePresence>
 
-        {/* NG Section */}
-        <div className="space-y-4 bg-red-500/5 p-4 rounded-xl border border-red-500/10">
 
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-bold text-red-600 uppercase">Ghi nhận phế phẩm (NG khác)</h4>
-            <button type="button" onClick={addNGItem}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white rounded-lg text-[10px] font-bold hover:bg-red-700 transition-all shadow-sm">
-              <Plus size={14} /> THÊM LỖI
-            </button>
-          </div>
-          <div className="space-y-4">
-            {formData.ng_items.map((item, index) => (
-              <div key={index} className="space-y-3 pb-3 border-b border-red-500/10 last:border-b-0 last:pb-0">
-                <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
-                  <div className="flex-1 w-full space-y-1.5">
-                    <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Số lượng (Sheet)</label>
-                    <input type="number" value={item.qty || ''}
-                      onChange={e => updateNGItem(index, 'qty', Number(e.target.value))}
-                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm" />
-                  </div>
-                  <div className="flex-[2] w-full space-y-1.5">
-                    <label className="text-[10px] font-bold text-red-500/60 uppercase ml-1">Loại lỗi</label>
-                    <select value={item.type} onChange={e => updateNGItem(index, 'type', e.target.value)}
-                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-sm">
-                      {ERROR_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  {formData.ng_items.length > 1 && (
-                    <button type="button" onClick={() => removeNGItem(index)}
-                      className="p-2.5 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-all mb-0.5">
-                      <Trash2 size={18} />
-                    </button>
-                  )}
-                </div>
-                {item.type === 'Lỗi khác' && (
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-red-500/80 uppercase ml-1">Chi tiết lỗi khác</label>
-                    <input 
-                      type="text" 
-                      value={(item as any).note || ''}
-                      onChange={e => updateNGItem(index, 'note', e.target.value)}
-                      placeholder="Ghi chú chi tiết lỗi khác..."
-                      className="w-full bg-[var(--bg-card)] border-2 border-red-500/20 rounded-xl px-4 py-2.5 text-[var(--text-1)] font-medium focus:border-red-500 outline-none transition-all text-xs" 
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* General Note */}
         <div className="space-y-2">
