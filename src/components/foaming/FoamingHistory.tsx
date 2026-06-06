@@ -16,12 +16,13 @@ interface FoamingHistoryProps {
   user: SessionUser
 }
 
-type StageType = 'pour' | 'separate' | 'warehouse'
+type StageType = 'pour' | 'separate' | 'warehouse' | 'transfer'
 
 const STAGE_CONFIG = {
   pour: { table: 'foaming_pour_reports', label: 'Công đoạn Đổ' },
   separate: { table: 'foaming_separate_reports', label: 'Công đoạn Tách' },
   warehouse: { table: 'foaming_warehouse_reports', label: 'Nhập kho' },
+  transfer: { table: 'foaming_transfer_reports', label: 'Giao hàng Đổ - Tách' },
 }
 
 const ERROR_TYPES = [
@@ -99,7 +100,28 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     setError(null)
     try {
       const config = STAGE_CONFIG[activeStage]
-      
+
+      // Transfer stage has its own simple query (no production_plan join)
+      if (activeStage === 'transfer') {
+        let query = supabase
+          .from('foaming_transfer_reports')
+          .select(`*, users ( full_name, msnv )`)
+          .gte('pour_date', filters.startDate)
+          .lte('pour_date', filters.endDate)
+
+        if (filters.shift !== 'Tất cả') {
+          query = query.eq('shift', filters.shift)
+        }
+        if (filters.msnv.trim()) {
+          query = query.ilike('users.msnv', `%${filters.msnv.trim()}%`)
+        }
+
+        const { data: result, error: sbError } = await query.order('created_at', { ascending: false })
+        if (sbError) throw sbError
+        setData(result || [])
+        return
+      }
+
       // Khởi tạo query
       let query = supabase
         .from(config.table)
@@ -464,7 +486,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         : 'text-[var(--text-3)] hover:bg-white/50 dark:hover:bg-black/20'
                     }`}
                   >
-                    {s === 'pour' ? 'ĐỔ' : s === 'separate' ? 'TÁCH' : 'KHO'}
+                    {s === 'pour' ? 'ĐỔ' : s === 'separate' ? 'TÁCH' : s === 'transfer' ? 'GH Đ-T' : 'KHO'}
                   </button>
                 ))}
               </div>
@@ -611,7 +633,65 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-[var(--bg-card)] rounded-2xl p-4 border border-[var(--border)] shadow-sm hover:border-brand-500/30 transition-all group"
                 >
-                <div className="flex items-start justify-between gap-4">
+                {activeStage === 'transfer' ? (
+                  /* ── Transfer card ──────────────── */
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-3 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase"
+                          style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+                          GH Đổ → Tách
+                        </span>
+                        <span className="text-xs font-bold text-[var(--text-2)]">{row.machine_id || '---'}</span>
+                        <span className="text-xs text-[var(--text-3)] font-medium">• {row.shift}</span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 pt-3 border-t border-[var(--border)]">
+                        <div>
+                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ngày đổ</p>
+                          <p className="text-sm font-bold text-amber-600">
+                            {row.pour_date ? row.pour_date.split('-').reverse().join('/') : '---'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ca đổ</p>
+                          <p className="text-sm font-bold text-[var(--text-1)]">{row.shift}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Máy đổ</p>
+                          <p className="text-sm font-bold text-[var(--text-1)]">{row.machine_id || '---'}</p>
+                        </div>
+                        <div className="col-span-2 sm:col-span-3">
+                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Số lượng bun giao</p>
+                          <p className="text-xl font-black" style={{ color: '#f59e0b' }}>{(row.actual_bun_qty || 0).toLocaleString()} Bun</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Người khai báo</p>
+                          <p className="text-xs font-bold text-[var(--text-2)]">{row.users?.full_name || '---'}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 flex flex-col items-end justify-between self-stretch">
+                      <div>
+                        <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">
+                          {row.pour_date ? row.pour_date.split('-').reverse().join('/') : '---'}
+                        </p>
+                        <p className="text-[10px] text-[var(--text-3)]">
+                          {new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      {isAuthorized && (
+                        <button
+                          onClick={() => handleRevertClick(row)}
+                          className="mt-3 flex items-center gap-1 px-2 py-1 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-red-500/20 active:scale-95 cursor-pointer"
+                        >
+                          <RotateCcw size={12} /> Hồi lại
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Normal stages card ──────────── */
+                  <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 text-[10px] font-bold uppercase">
@@ -829,6 +909,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     )}
                   </div>
                 </div>
+                )}
               </motion.div>
             )})}
           </>

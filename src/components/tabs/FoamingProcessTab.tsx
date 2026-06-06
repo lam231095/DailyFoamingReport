@@ -2,19 +2,21 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Droplets, Scissors, Warehouse, FileText } from 'lucide-react'
+import { Droplets, Scissors, Warehouse, FileText, Truck } from 'lucide-react'
 import { ProductionPlan, SessionUser } from '@/types'
 import FoamingHeader from '../foaming/FoamingHeader'
 import PourForm from '../foaming/PourForm'
 import SeparateForm from '../foaming/SeparateForm'
 import WarehouseForm from '../foaming/WarehouseForm'
+import TransferForm from '../foaming/TransferForm'
 import FoamingHistory from '../foaming/FoamingHistory'
 
 const STAGES = [
   { id: 'pour', label: 'C.Đoạn ĐỔ', icon: Droplets, color: '#3b82f6' },
   { id: 'separate', label: 'C.Đoạn TÁCH', icon: Scissors, color: '#a855f7' },
+  { id: 'transfer', label: 'G.H ĐỔ-TÁCH', icon: Truck, color: '#f59e0b' },
   { id: 'warehouse', label: 'NHẬP KHO', icon: Warehouse, color: '#10b981' },
-  { id: 'history', label: 'BÁO CÁO', icon: FileText, color: '#f59e0b' },
+  { id: 'history', label: 'BÁO CÁO', icon: FileText, color: '#64748b' },
 ]
 
 interface FoamingProcessTabProps {
@@ -80,6 +82,15 @@ export default function FoamingProcessTab({ user }: FoamingProcessTabProps) {
             exit={{ opacity: 0, y: -15 }}
           >
             <FoamingHistory user={user} />
+          </motion.div>
+        ) : activeStage === 'transfer' ? (
+          <motion.div
+            key="transfer"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+          >
+            <TransferForm user={user} />
           </motion.div>
         ) : !selectedPlan ? (
           <motion.div
