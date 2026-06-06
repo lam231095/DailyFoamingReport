@@ -262,6 +262,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
               <option>Máy 1</option>
               <option>Máy 2</option>
               <option>Máy 3</option>
+              <option>Máy đổ tay</option>
             </select>
           </div>
 
