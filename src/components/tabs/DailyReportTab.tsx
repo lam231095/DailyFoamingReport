@@ -342,6 +342,7 @@ function calcManagerPerf(
   const d = parseInt(parts[0], 10)
   const m = parseInt(parts[1], 10)
   const y = parseInt(parts[2], 10)
+  const isExactJune5th2026 = d === 5 && m === 6 && y === 2026
   const isExactJune3rd2026 = d === 3 && m === 6 && y === 2026
   const isExactJune2nd2026 = d === 2 && m === 6 && y === 2026
 
@@ -350,6 +351,8 @@ function calcManagerPerf(
     let targetPour = TARGET_POUR
     if (isExactJune2nd2026 && manager === 'Tuấn Anh') {
       targetPour = 210
+    } else if (isExactJune5th2026 && (manager === 'Linh' || manager === 'Thảo' || manager === 'Tuấn Anh')) {
+      targetPour = 214
     }
     compositeTarget += targetPour
   }
@@ -362,7 +365,13 @@ function calcManagerPerf(
 
     let targetSeparate = TARGET_SEPARATE
 
-    if (isExactJune3rd2026) {
+    if (isExactJune5th2026) {
+      if (manager === 'Linh' || manager === 'Thảo') {
+        targetSeparate = 300
+      } else if (manager === 'Tuấn Anh') {
+        targetSeparate = 250
+      }
+    } else if (isExactJune3rd2026) {
       if (manager === 'Linh') {
         targetSeparate = 175
       } else if (manager === 'Thảo') {
