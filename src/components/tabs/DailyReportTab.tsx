@@ -1012,6 +1012,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           day.separatedByManager[m].actualSheets += (r.actual_sheet_received || 0)
           day.separatedByManager[m].shifts.add(s)
         }
+      })
     }
 
     // Override pouring data for June 1st to 4th, 2026 to match Excel report exactly
