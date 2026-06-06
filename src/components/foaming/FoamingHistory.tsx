@@ -101,11 +101,28 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     try {
       const config = STAGE_CONFIG[activeStage]
 
-      // Transfer stage has its own simple query (no production_plan join)
+      // Transfer stage has its own query (with optional production_plan join since we now save firm_plan)
       if (activeStage === 'transfer') {
         let query = supabase
           .from('foaming_transfer_reports')
-          .select(`*, users ( full_name, msnv )`)
+          .select(`
+            *,
+            production_plan (
+              pu_code,
+              ten_san_pham,
+              bun_code,
+              no_order,
+              week_label,
+              sl_bun_can_tach,
+              sl_bun_can_do,
+              completion_date,
+              delivery_date
+            ),
+            users (
+              full_name,
+              msnv
+            )
+          `)
           .gte('pour_date', filters.startDate)
           .lte('pour_date', filters.endDate)
 
@@ -248,6 +265,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       headers.push("Ca", "Máy", "Operator", "Viết tắt loại hàng", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
       headers.push(...ERROR_TYPES)
     }
+    if (activeStage === 'transfer') headers.push("Ca", "Máy", "SL Giao (Bun)", "Ngày Đổ")
     if (activeStage === 'warehouse') headers.push("SL Giao (Sheet)", "Ngày Giao", "Người Giao")
 
     const csvContentRaw = headers.map(escapeCSV).join(",") + "\r\n" + data.map(row => {
@@ -387,6 +405,12 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           ...errorDetails
         ]
       }
+      if (activeStage === 'transfer') specific = [
+        row.shift,
+        row.machine_id || '---',
+        row.actual_bun_qty || 0,
+        row.pour_date ? row.pour_date.split('-').reverse().join('/') : '---'
+      ]
       if (activeStage === 'warehouse') specific = [row.qty_delivered_sheet, row.delivery_date, row.users?.full_name || '---']
       
       return [...common, ...specific].map(escapeCSV).join(",")
@@ -636,40 +660,108 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                 {activeStage === 'transfer' ? (
                   /* ── Transfer card ──────────────── */
                   <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-3 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase"
-                          style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
-                          GH Đổ → Tách
-                        </span>
-                        <span className="text-xs font-bold text-[var(--text-2)]">{row.machine_id || '---'}</span>
-                        <span className="text-xs text-[var(--text-3)] font-medium">• {row.shift}</span>
+                    {row.firm_plan ? (
+                      /* New style card with plan details */
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase"
+                            style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+                            GH Đổ → Tách
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 text-[10px] font-bold uppercase">
+                            {row.firm_plan}
+                          </span>
+                          <span className="text-[11px] font-bold text-[var(--text-1)] font-mono">
+                            {row.production_plan?.pu_code || '---'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold">
+                            {row.production_plan?.no_order || '---'}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-3)] font-bold">
+                            {row.production_plan?.week_label || '---'}
+                          </span>
+                          <span className="text-[10px] text-[var(--text-3)] font-medium">
+                            • {row.shift} {row.machine_id ? `• ${row.machine_id}` : ''}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
+                          <div>
+                            <span className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-wider block mb-0.5">Sản phẩm (Gốc)</span>
+                            <h4 className="text-sm font-semibold text-[var(--text-2)] leading-tight">
+                              {row.production_plan?.ten_san_pham || '---'}
+                            </h4>
+                          </div>
+                          <div>
+                            <span className="text-[10px] font-bold text-brand-500 uppercase tracking-wider block mb-0.5">Dòng sản phẩm</span>
+                            <h4 className="text-sm font-bold text-brand-500 leading-tight">
+                              {cleanProductName(row.production_plan?.ten_san_pham)}
+                            </h4>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 pt-3 border-t border-[var(--border)]">
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ngày đổ</p>
+                            <p className="text-sm font-bold text-amber-600">
+                              {row.pour_date ? row.pour_date.split('-').reverse().join('/') : '---'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ca đổ</p>
+                            <p className="text-sm font-bold text-[var(--text-1)]">{row.shift}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Máy đổ</p>
+                            <p className="text-sm font-bold text-[var(--text-1)]">{row.machine_id || '---'}</p>
+                          </div>
+                          <div className="col-span-2 sm:col-span-3">
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Số lượng bun giao</p>
+                            <p className="text-xl font-black" style={{ color: '#f59e0b' }}>{(row.actual_bun_qty || 0).toLocaleString()} Bun</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Người khai báo</p>
+                            <p className="text-xs font-bold text-[var(--text-2)]">{row.users?.full_name || '---'}</p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 pt-3 border-t border-[var(--border)]">
-                        <div>
-                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ngày đổ</p>
-                          <p className="text-sm font-bold text-amber-600">
-                            {row.pour_date ? row.pour_date.split('-').reverse().join('/') : '---'}
-                          </p>
+                    ) : (
+                      /* Old style card without plan details */
+                      <div className="space-y-3 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase"
+                            style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+                            GH Đổ → Tách
+                          </span>
+                          <span className="text-xs font-bold text-[var(--text-2)]">{row.machine_id || '---'}</span>
+                          <span className="text-xs text-[var(--text-3)] font-medium">• {row.shift}</span>
                         </div>
-                        <div>
-                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ca đổ</p>
-                          <p className="text-sm font-bold text-[var(--text-1)]">{row.shift}</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Máy đổ</p>
-                          <p className="text-sm font-bold text-[var(--text-1)]">{row.machine_id || '---'}</p>
-                        </div>
-                        <div className="col-span-2 sm:col-span-3">
-                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Số lượng bun giao</p>
-                          <p className="text-xl font-black" style={{ color: '#f59e0b' }}>{(row.actual_bun_qty || 0).toLocaleString()} Bun</p>
-                        </div>
-                        <div>
-                          <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Người khai báo</p>
-                          <p className="text-xs font-bold text-[var(--text-2)]">{row.users?.full_name || '---'}</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 pt-3 border-t border-[var(--border)]">
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ngày đổ</p>
+                            <p className="text-sm font-bold text-amber-600">
+                              {row.pour_date ? row.pour_date.split('-').reverse().join('/') : '---'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Ca đổ</p>
+                            <p className="text-sm font-bold text-[var(--text-1)]">{row.shift}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Máy đổ</p>
+                            <p className="text-sm font-bold text-[var(--text-1)]">{row.machine_id || '---'}</p>
+                          </div>
+                          <div className="col-span-2 sm:col-span-3">
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Số lượng bun giao</p>
+                            <p className="text-xl font-black" style={{ color: '#f59e0b' }}>{(row.actual_bun_qty || 0).toLocaleString()} Bun</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Người khai báo</p>
+                            <p className="text-xs font-bold text-[var(--text-2)]">{row.users?.full_name || '---'}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                     <div className="text-right shrink-0 flex flex-col items-end justify-between self-stretch">
                       <div>
                         <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">

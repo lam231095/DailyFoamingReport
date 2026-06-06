@@ -6,6 +6,7 @@
 
 CREATE TABLE IF NOT EXISTS foaming_transfer_reports (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  firm_plan     TEXT REFERENCES production_plan(firm_plan) ON DELETE CASCADE,
   pour_date     DATE NOT NULL,
   shift         TEXT NOT NULL CHECK (shift IN ('Ca 1', 'Ca 2', 'Ca 3', 'Ca HC')),
   machine_id    TEXT NOT NULL,
@@ -16,6 +17,7 @@ CREATE TABLE IF NOT EXISTS foaming_transfer_reports (
 );
 
 -- Indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_transfer_reports_firm_plan   ON foaming_transfer_reports(firm_plan);
 CREATE INDEX IF NOT EXISTS idx_transfer_reports_pour_date   ON foaming_transfer_reports(pour_date);
 CREATE INDEX IF NOT EXISTS idx_transfer_reports_recorder_id ON foaming_transfer_reports(recorder_id);
 CREATE INDEX IF NOT EXISTS idx_transfer_reports_created_at  ON foaming_transfer_reports(created_at DESC);

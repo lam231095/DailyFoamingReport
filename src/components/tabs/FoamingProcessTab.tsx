@@ -83,15 +83,6 @@ export default function FoamingProcessTab({ user }: FoamingProcessTabProps) {
           >
             <FoamingHistory user={user} />
           </motion.div>
-        ) : activeStage === 'transfer' ? (
-          <motion.div
-            key="transfer"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-          >
-            <TransferForm user={user} />
-          </motion.div>
         ) : !selectedPlan ? (
           <motion.div
             key="empty"
@@ -124,6 +115,9 @@ export default function FoamingProcessTab({ user }: FoamingProcessTabProps) {
             )}
             {activeStage === 'separate' && (
               <SeparateForm plan={selectedPlan} user={user} onSuccess={handleSuccess} />
+            )}
+            {activeStage === 'transfer' && (
+              <TransferForm plan={selectedPlan} user={user} onSuccess={handleSuccess} />
             )}
             {activeStage === 'warehouse' && (
               <WarehouseForm plan={selectedPlan} user={user} onSuccess={handleSuccess} />
