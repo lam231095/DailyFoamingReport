@@ -102,7 +102,26 @@ try {
     $wb = $xl.Workbooks.Open($EXCEL_FILE, 0, $true)  # ReadOnly = true
     
     if ($SheetName -ne "") {
-        $ws = $wb.Worksheets.Item($SheetName)
+        try {
+            $ws = $wb.Worksheets.Item($SheetName)
+        } catch {
+            $ws = $null
+            # Fallback: search for sheet with similar name
+            foreach ($s in $wb.Worksheets) {
+                # Remove accents/weird characters or do fuzzy matching
+                if ($s.Name -match "List pha" -and $s.Name -match "24") {
+                    $ws = $s
+                    break
+                }
+                if ($s.Name -like "*$SheetName*" -or $SheetName -like "*$($s.Name)*") {
+                    $ws = $s
+                    break
+                }
+            }
+            if ($null -eq $ws) {
+                throw $_
+            }
+        }
     } else {
         $ws = $wb.Worksheets.Item(1)
     }
