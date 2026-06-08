@@ -389,7 +389,7 @@ function calcManagerPerf(
       if (manager === 'Linh') {
         targetSeparate = 150
       } else if (manager === 'Thảo') {
-        targetSeparate = 300
+        targetSeparate = 250
       } else if (manager === 'Tuấn Anh') {
         targetSeparate = 278
       }
