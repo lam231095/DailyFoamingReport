@@ -499,12 +499,20 @@ function SvgPerformanceChart({
 }) {
   const activeManagers = managers.filter(m => managerFilter === 'Tất cả' || m === managerFilter)
 
-  // Lấy 10 ngày gần nhất có ít nhất 1 manager có dữ liệu
+  const hasActiveFilter = 
+    shiftFilter !== 'Tất cả' || 
+    managerFilter !== 'Tất cả' || 
+    areaFilter !== 'all' || 
+    startDate !== last7DaysStr() || 
+    endDate !== todayStr()
+  const limit = hasActiveFilter ? 30 : 10
+
+  // Lấy các ngày gần nhất có ít nhất 1 manager có dữ liệu (tối đa 10 ngày mặc định hoặc 30 ngày khi dùng bộ lọc)
   const datesWithData = [...dateList].reverse().filter(date => {
     const day = data.find(d => d.date === date)
     if (!day) return false
     return activeManagers.some(m => calcManagerPerf(day, m, areaFilter, tawnyShifts) !== null)
-  }).slice(0, 10).reverse()
+  }).slice(0, limit).reverse()
 
   const n = datesWithData.length
   if (n === 0) return (
@@ -725,12 +733,19 @@ function SvgManagerSheetsChart({
 }) {
   const activeManagers = managers.filter(m => managerFilter === 'Tất cả' || m === managerFilter)
 
-  // Lấy 10 ngày gần nhất có ít nhất 1 manager có dữ liệu tách
+  const hasActiveFilter = 
+    shiftFilter !== 'Tất cả' || 
+    managerFilter !== 'Tất cả' || 
+    startDate !== last7DaysStr() || 
+    endDate !== todayStr()
+  const limit = hasActiveFilter ? 30 : 10
+
+  // Lấy các ngày gần nhất có ít nhất 1 manager có dữ liệu tách (tối đa 10 ngày mặc định hoặc 30 ngày khi dùng bộ lọc)
   const datesWithData = [...dateList].reverse().filter(date => {
     const day = data.find(d => d.date === date)
     if (!day) return false
     return activeManagers.some(m => (day.separatedByManager[m]?.actualSheets || 0) > 0)
-  }).slice(0, 10).reverse()
+  }).slice(0, limit).reverse()
 
   const n = datesWithData.length
   if (n === 0) return (
