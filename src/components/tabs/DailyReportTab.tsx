@@ -348,11 +348,40 @@ function calcManagerPerf(
   const isExactJune4th2026 = d === 4 && m === 6 && y === 2026
   const isExactJune5th2026 = d === 5 && m === 6 && y === 2026
   const isExactJune6th2026 = d === 6 && m === 6 && y === 2026
+  const isExactMay25th2026 = d === 25 && m === 5 && y === 2026
+  const isExactMay26th2026 = d === 26 && m === 5 && y === 2026
+  const isExactMay27th2026 = d === 27 && m === 5 && y === 2026
+  const isExactMay28th2026 = d === 28 && m === 5 && y === 2026
+  const isExactMay29th2026 = d === 29 && m === 5 && y === 2026
+  const isExactMay30th2026 = d === 30 && m === 5 && y === 2026
 
   if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
     totalActual += day.pouredByManager[manager].actual
     let targetPour = TARGET_POUR
-    if (isExactJune6th2026) {
+    if (isExactMay25th2026) {
+      if (manager === 'Linh') targetPour = 220
+      else if (manager === 'Thảo') targetPour = 320
+    } else if (isExactMay26th2026) {
+      if (manager === 'Tuấn Anh') targetPour = 210
+      else if (manager === 'Linh') targetPour = 320
+      else if (manager === 'Thảo') targetPour = 320
+    } else if (isExactMay27th2026) {
+      if (manager === 'Tuấn Anh') targetPour = 126
+      else if (manager === 'Linh') targetPour = 256
+      else if (manager === 'Thảo') targetPour = 210
+    } else if (isExactMay28th2026) {
+      if (manager === 'Tuấn Anh') targetPour = 195.3
+      else if (manager === 'Linh') targetPour = 210
+      else if (manager === 'Thảo') targetPour = 210
+    } else if (isExactMay29th2026) {
+      if (manager === 'Tuấn Anh') targetPour = 210
+      else if (manager === 'Linh') targetPour = 320
+      else if (manager === 'Thảo') targetPour = 210
+    } else if (isExactMay30th2026) {
+      if (manager === 'Tuấn Anh') targetPour = 210
+      else if (manager === 'Linh') targetPour = 320
+      else if (manager === 'Thảo') targetPour = 210
+    } else if (isExactJune6th2026) {
       if (manager === 'Linh') targetPour = 214
       else if (manager === 'Thảo') targetPour = 120
       else if (manager === 'Tuấn Anh') targetPour = 214
@@ -1030,6 +1059,35 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
     // Override pouring data for June 1st to 4th, 2026 to match Excel report exactly
     const rawOverrides: Record<string, Array<{ shift: string; manager: string; actual: number }>> = {
+      '25/5/2026': [
+        { shift: 'Ca 2', manager: 'Linh', actual: 214 },
+        { shift: 'Ca 3', manager: 'Thảo', actual: 205 }
+      ],
+      '26/5/2026': [
+        { shift: 'Ca 1', manager: 'Tuấn Anh', actual: 168 },
+        { shift: 'Ca 2', manager: 'Linh', actual: 247 },
+        { shift: 'Ca 3', manager: 'Thảo', actual: 254 }
+      ],
+      '27/5/2026': [
+        { shift: 'Ca 1', manager: 'Tuấn Anh', actual: 114 },
+        { shift: 'Ca 2', manager: 'Linh', actual: 244 },
+        { shift: 'Ca 3', manager: 'Thảo', actual: 199 }
+      ],
+      '28/5/2026': [
+        { shift: 'Ca 1', manager: 'Tuấn Anh', actual: 143 },
+        { shift: 'Ca 2', manager: 'Linh', actual: 187 },
+        { shift: 'Ca 3', manager: 'Thảo', actual: 190 }
+      ],
+      '29/5/2026': [
+        { shift: 'Ca 1', manager: 'Tuấn Anh', actual: 156 },
+        { shift: 'Ca 2', manager: 'Linh', actual: 199 },
+        { shift: 'Ca 3', manager: 'Thảo', actual: 182 }
+      ],
+      '30/5/2026': [
+        { shift: 'Ca 1', manager: 'Tuấn Anh', actual: 141 },
+        { shift: 'Ca 2', manager: 'Linh', actual: 280 },
+        { shift: 'Ca 3', manager: 'Thảo', actual: 228 }
+      ],
       '1/6/2026': [
         { shift: 'Ca 1', manager: 'Linh', actual: 71 },
         { shift: 'Ca 2', manager: 'Thảo', actual: 295 },
