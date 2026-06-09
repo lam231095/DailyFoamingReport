@@ -122,6 +122,10 @@ export interface FoamingPourReport {
   storage_carts?: number;
   note?: string | null;
   is_compensation?: boolean;
+  downtime_reason?: string | null;
+  downtime_start?: string | null;
+  downtime_end?: string | null;
+  downtime_duration?: number | null;
   recorder_id: string;
   created_at: string;
   report_date?: string;
@@ -160,6 +164,10 @@ export interface FoamingSeparateReport {
   product_type?: string;
   product_type_abbrev?: string | null;
   is_compensation?: boolean;
+  downtime_reason?: string | null;
+  downtime_start?: string | null;
+  downtime_end?: string | null;
+  downtime_duration?: number | null;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;

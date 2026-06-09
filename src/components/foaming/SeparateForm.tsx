@@ -79,6 +79,26 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
   const [standards, setStandards] = useState<any[]>([])
   const [formData, setFormData] = useState(defaultForm(plan))
 
+  const [hasDowntime, setHasDowntime] = useState(false)
+  const [downtimeReason, setDowntimeReason] = useState('')
+  const [downtimeStartHour, setDowntimeStartHour] = useState('00')
+  const [downtimeStartMinute, setDowntimeStartMinute] = useState('00')
+  const [downtimeEndHour, setDowntimeEndHour] = useState('00')
+  const [downtimeEndMinute, setDowntimeEndMinute] = useState('00')
+
+  const getDowntimeDuration = () => {
+    if (!hasDowntime || !downtimeReason.trim()) return 0
+    const sh = parseInt(downtimeStartHour, 10)
+    const sm = parseInt(downtimeStartMinute, 10)
+    const eh = parseInt(downtimeEndHour, 10)
+    const em = parseInt(downtimeEndMinute, 10)
+    const startTotal = sh * 60 + sm
+    const endTotal = eh * 60 + em
+    return endTotal >= startTotal
+      ? endTotal - startTotal
+      : (24 * 60 - startTotal) + endTotal
+  }
+
   useEffect(() => {
     supabase.from('users').select('*')
       .ilike('department', '%FOAMING Splitting%')
@@ -342,6 +362,10 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               note: finalNote,
               is_compensation: formData.is_compensation,
               recorder_id: user.id,
+              downtime_reason: hasDowntime && downtimeReason.trim() ? downtimeReason.trim() : null,
+              downtime_start: hasDowntime && downtimeReason.trim() ? `${downtimeStartHour}:${downtimeStartMinute}` : null,
+              downtime_end: hasDowntime && downtimeReason.trim() ? `${downtimeEndHour}:${downtimeEndMinute}` : null,
+              downtime_duration: hasDowntime && downtimeReason.trim() ? getDowntimeDuration() : null,
             })
           })
         })
@@ -376,6 +400,10 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
             note: formData.note.trim() || null,
             is_compensation: formData.is_compensation,
             recorder_id: user.id,
+            downtime_reason: hasDowntime && downtimeReason.trim() ? downtimeReason.trim() : null,
+            downtime_start: hasDowntime && downtimeReason.trim() ? `${downtimeStartHour}:${downtimeStartMinute}` : null,
+            downtime_end: hasDowntime && downtimeReason.trim() ? `${downtimeEndHour}:${downtimeEndMinute}` : null,
+            downtime_duration: hasDowntime && downtimeReason.trim() ? getDowntimeDuration() : null,
           }
         })
 
@@ -782,6 +810,105 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
         </AnimatePresence>
 
 
+
+        {/* --- Phần khai báo dừng máy --- */}
+        <div className="space-y-4 bg-gray-500/5 p-4 rounded-xl border border-[var(--border)]">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="has_downtime_sep"
+              checked={hasDowntime}
+              onChange={(e) => setHasDowntime(e.target.checked)}
+              className={`w-5 h-5 rounded border-2 border-[var(--border)] ${isTP ? 'text-purple-600 focus:ring-purple-500 accent-purple-500' : 'text-amber-600 focus:ring-amber-500 accent-amber-500'} cursor-pointer transition-all`}
+            />
+            <label htmlFor="has_downtime_sep" className="text-xs font-black text-[var(--text-2)] uppercase select-none cursor-pointer">
+              Có sự cố dừng máy / Gặp sự cố thiết bị
+            </label>
+          </div>
+
+          <AnimatePresence>
+            {hasDowntime && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-4 pt-2 border-t border-[var(--border)] overflow-hidden"
+              >
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Nguyên nhân dừng máy (nhập tay)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nhập nguyên nhân dừng máy..."
+                    value={downtimeReason}
+                    onChange={(e) => setDowntimeReason(e.target.value)}
+                    className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 
+                      text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Dừng từ lúc</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={downtimeStartHour}
+                        onChange={(e) => setDowntimeStartHour(e.target.value)}
+                        className={`flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2.5 text-sm font-bold ${focusClass} outline-none transition-all`}
+                      >
+                        {Array.from({ length: 24 }).map((_, h) => {
+                          const hs = String(h).padStart(2, '0')
+                          return <option key={hs} value={hs}>{hs} giờ</option>
+                        })}
+                      </select>
+                      <select
+                        value={downtimeStartMinute}
+                        onChange={(e) => setDowntimeStartMinute(e.target.value)}
+                        className={`flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2.5 text-sm font-bold ${focusClass} outline-none transition-all`}
+                      >
+                        {Array.from({ length: 60 }).map((_, m) => {
+                          const ms = String(m).padStart(2, '0')
+                          return <option key={ms} value={ms}>{ms} phút</option>
+                        })}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Dừng đến lúc</label>
+                    <div className="flex gap-2">
+                      <select
+                        value={downtimeEndHour}
+                        onChange={(e) => setDowntimeEndHour(e.target.value)}
+                        className={`flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2.5 text-sm font-bold ${focusClass} outline-none transition-all`}
+                      >
+                        {Array.from({ length: 24 }).map((_, h) => {
+                          const hs = String(h).padStart(2, '0')
+                          return <option key={hs} value={hs}>{hs} giờ</option>
+                        })}
+                      </select>
+                      <select
+                        value={downtimeEndMinute}
+                        onChange={(e) => setDowntimeEndMinute(e.target.value)}
+                        className={`flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2.5 text-sm font-bold ${focusClass} outline-none transition-all`}
+                      >
+                        {Array.from({ length: 60 }).map((_, m) => {
+                          const ms = String(m).padStart(2, '0')
+                          return <option key={ms} value={ms}>{ms} phút</option>
+                        })}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`p-3 rounded-lg border text-xs font-bold flex items-center justify-between ${isTP ? 'bg-purple-500/5 border-purple-500/10 text-purple-600' : 'bg-amber-500/5 border-amber-500/10 text-amber-600'}`}>
+                  <span>Tổng thời gian dừng máy:</span>
+                  <span>{getDowntimeDuration()} phút ({Math.floor(getDowntimeDuration() / 60)}h {getDowntimeDuration() % 60}m)</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* General Note */}
         <div className="space-y-2">

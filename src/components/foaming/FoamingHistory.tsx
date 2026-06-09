@@ -265,9 +265,9 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
 
     // Header dựa trên stage
     const headers = ["Ngày/Giờ", "Ngày Báo Cáo", "Tuần", "NO.ORDER", "Firm Plan", "PU Code", "Mã Bun", "Sản phẩm", "Dòng sản phẩm", "Người nhập", "MSNV", "Quản lý", "Đơn bù"]
-    if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG")
+    if (activeStage === 'pour') headers.push("Ca", "Máy", "Operator", "SL Đổ (Bun)", "Lot No", "Chất rửa (kg)", "Rác (kg)", "Vị trí", "Line", "Thẻ màu", "Số xe", "Ghi chú", "NG", "Nguyên nhân dừng máy", "Dừng từ lúc", "Dừng đến lúc", "Tổng thời gian dừng (phút)")
     if (activeStage === 'separate') {
-      headers.push("Ca", "Máy", "Operator", "Viết tắt loại hàng", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới")
+      headers.push("Ca", "Máy", "Operator", "Viết tắt loại hàng", "Dày Bun (mm)", "Độ dày bun thực tế", "Tổng độ dày sheet thực tế", "Dày Sheet (mm)", "SL Tách (Bun)", "SL Sheet Nhận", "Sheet Tối Ưu (Gợi ý)", "% Hiệu Suất", "Lot No", "Ghi chú", "Sheet không có thông tin", "NG", "Lỗi Cứng Trên", "Lỗi Cứng Dưới", "Nguyên nhân dừng máy", "Dừng từ lúc", "Dừng đến lúc", "Tổng thời gian dừng (phút)")
       headers.push(...ERROR_TYPES)
     }
     if (activeStage === 'transfer') headers.push("Ca", "Máy", "SL Giao (Bun)", "Ngày Đổ")
@@ -362,7 +362,11 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         row.color_tag || '---',
         row.storage_carts || 0,
         row.note || '',
-        row.error_type || ''
+        row.error_type || '',
+        row.downtime_reason || '',
+        row.downtime_start || '',
+        row.downtime_end || '',
+        row.downtime_duration || 0
       ]
       if (activeStage === 'separate') {
         const thickness = parseFloat(row.production_plan?.ten_san_pham?.match(/([0-9.]+)\s*mm/i)?.[1] || "0")
@@ -407,6 +411,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           row.ng_qty, 
           row.error_hardness_above || 0,
           row.error_hardness_below || 0,
+          row.downtime_reason || '',
+          row.downtime_start || '',
+          row.downtime_end || '',
+          row.downtime_duration || 0,
           ...errorDetails
         ]
       }
@@ -864,6 +872,19 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                               </p>
                             </div>
                           </div>
+                          {row.downtime_reason && (
+                            <div className="col-span-2 sm:col-span-3 bg-red-500/5 p-3 rounded-xl border border-red-500/10 mb-2">
+                              <div className="flex justify-between items-center mb-1">
+                                <p className="text-[10px] text-red-600 font-extrabold uppercase">SỰ CỐ DỪNG MÁY</p>
+                                <span className="text-[10px] font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded font-mono">
+                                  {row.downtime_start} - {row.downtime_end} ({row.downtime_duration} phút)
+                                </span>
+                              </div>
+                              <p className="text-xs text-[var(--text-1)] font-medium">
+                                <span className="text-[var(--text-3)] font-bold">Nguyên nhân:</span> {row.downtime_reason}
+                              </p>
+                            </div>
+                          )}
                           {row.note && (
                             <div className="col-span-2 sm:col-span-3 bg-gray-500/5 p-2 rounded-lg border border-gray-500/10">
                               <p className="text-[10px] text-gray-600 font-bold uppercase mb-0.5">Ghi chú</p>
@@ -974,6 +995,19 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Dày Bun / Sheet</p>
                             <p className="text-xs font-bold text-[var(--text-1)]">{row.bun_thickness_mm || 0} / {row.sheet_thickness_mm || 0} mm</p>
                           </div>
+                          {row.downtime_reason && (
+                            <div className="col-span-2 sm:col-span-3 bg-red-500/5 p-3 rounded-xl border border-red-500/10 mb-2">
+                              <div className="flex justify-between items-center mb-1">
+                                <p className="text-[10px] text-red-600 font-extrabold uppercase">SỰ CỐ DỪNG MÁY</p>
+                                <span className="text-[10px] font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded font-mono">
+                                  {row.downtime_start} - {row.downtime_end} ({row.downtime_duration} phút)
+                                </span>
+                              </div>
+                              <p className="text-xs text-[var(--text-1)] font-medium">
+                                <span className="text-[var(--text-3)] font-bold">Nguyên nhân:</span> {row.downtime_reason}
+                              </p>
+                            </div>
+                          )}
                           {row.note && (
                             <div className="col-span-2 sm:col-span-3 bg-gray-500/5 p-2 rounded-lg border border-gray-500/10">
                               <p className="text-[10px] text-gray-600 font-bold uppercase mb-0.5">Ghi chú</p>
