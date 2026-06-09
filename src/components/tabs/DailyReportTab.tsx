@@ -384,7 +384,7 @@ function calcManagerPerf(
       else if (manager === 'Thảo') targetPour = 210
     } else if (isExactJune8th2026) {
       if (manager === 'Linh') targetPour = 107
-      else if (manager === 'Thảo') targetPour = 53.5
+      else if (manager === 'Thảo') targetPour = 100
       else if (manager === 'Tuấn Anh') targetPour = 160.5
     } else if (isExactJune6th2026) {
       if (manager === 'Linh') targetPour = 214
