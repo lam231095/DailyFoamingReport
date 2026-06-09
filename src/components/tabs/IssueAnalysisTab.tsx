@@ -10,6 +10,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { SessionUser, ChangeLog } from '@/types'
 import { formatReportDate, getReportTimeRange } from '@/lib/dateUtils'
+import { canDownloadReport } from '@/lib/permissions'
 
 interface IssueAnalysisTabProps {
   user: SessionUser
@@ -99,6 +100,10 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
   }
 
   const handleDownloadCSV = () => {
+    if (!canDownloadReport(user)) {
+      alert('Bạn không có quyền tải báo cáo!')
+      return
+    }
     if (logs.length === 0) return
 
     // CSV header with BOM for UTF-8 compatibility with Excel
@@ -208,7 +213,7 @@ export default function IssueAnalysisTab({ user }: IssueAnalysisTabProps) {
           >
             {useFilters ? 'Đang lọc' : 'Lọc nâng cao'}
           </button>
-          {logs.length > 0 && (
+          {canDownloadReport(user) && logs.length > 0 && (
             <button 
               onClick={handleDownloadCSV}
               className="btn-ghost p-2 rounded-full text-brand-500 hover:bg-brand-500/10"

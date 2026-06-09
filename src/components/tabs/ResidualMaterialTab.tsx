@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, ResidualMaterial, ResidualMaterialUsage } from '@/types'
+import { canDownloadReport } from '@/lib/permissions'
 
 interface ResidualMaterialTabProps {
   user: SessionUser
@@ -163,6 +164,10 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
   }
 
   const handleDownloadCSV = () => {
+    if (!canDownloadReport(user)) {
+      alert('Bạn không có quyền tải báo cáo!')
+      return
+    }
     if (materials.length === 0) return
 
     // CSV header with BOM
@@ -225,7 +230,7 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
         >
           <Filter size={18} />
         </button>
-        {materials.length > 0 && (
+        {canDownloadReport(user) && materials.length > 0 && (
           <button 
             onClick={handleDownloadCSV}
             className="p-2.5 rounded-xl bg-[var(--bg-card)] border border-[var(--border)] text-brand-500 hover:bg-brand-500/10 transition-all"

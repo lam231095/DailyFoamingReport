@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { SessionUser } from '@/types'
 import { calculateOptimalSheetsPerBun, calculateSuggestedSheets, calculateEfficiency } from '@/lib/calculations'
 import { formatReportDate, getReportTimeRange } from '@/lib/dateUtils'
+import { canDownloadReport } from '@/lib/permissions'
 
 interface FoamingHistoryProps {
   user: SessionUser
@@ -247,6 +248,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
   }
 
   const exportCSV = () => {
+    if (!canDownloadReport(user)) {
+      alert('Bạn không có quyền tải báo cáo!')
+      return
+    }
     if (data.length === 0) return
     
     const escapeCSV = (val: any) => {
@@ -597,15 +602,17 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
             {loading ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
             TRUY XUẤT DỮ LIỆU
           </button>
-          <button 
-            onClick={exportCSV}
-            disabled={loading || data.length === 0}
-            className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 py-2.5 text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-            title="Xuất CSV"
-          >
-            <Download size={16} />
-            <span className="hidden sm:inline">XUẤT FILE</span>
-          </button>
+          {canDownloadReport(user) && (
+            <button 
+              onClick={exportCSV}
+              disabled={loading || data.length === 0}
+              className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 py-2.5 text-sm font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              title="Xuất CSV"
+            >
+              <Download size={16} />
+              <span className="hidden sm:inline">XUẤT FILE</span>
+            </button>
+          )}
         </div>
       </div>
 
