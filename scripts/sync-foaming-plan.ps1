@@ -42,16 +42,19 @@ function Upload-Batch($batch) {
     $headers = @{
         "apikey"        = $SUPABASE_KEY
         "Authorization" = "Bearer $SUPABASE_KEY"
-        "Content-Type"  = "application/json"
+        "Content-Type"  = "application/json; charset=utf-8"
         "Prefer"        = "resolution=merge-duplicates,return=minimal"
     }
+
+    # Convert to UTF-8 bytes to prevent encoding issues (400 Bad Request)
+    $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($json)
 
     try {
         Invoke-RestMethod `
             -Uri "$SUPABASE_URL/rest/v1/production_plan?on_conflict=firm_plan" `
             -Method Post `
             -Headers $headers `
-            -Body $json `
+            -Body $bodyBytes `
             -ErrorAction Stop | Out-Null
         return $true
     } catch {
