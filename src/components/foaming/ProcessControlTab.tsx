@@ -77,7 +77,7 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
         .from('foaming_pour_reports')
         .select(`
           *,
-          production_plan:firm_plan(no_order, bun_code, ten_san_pham, product_type),
+          production_plan:firm_plan(no_order, bun_code, ten_san_pham),
           users:recorder_id(msnv, full_name)
         `)
         .gte('report_date', '2026-06-10')
