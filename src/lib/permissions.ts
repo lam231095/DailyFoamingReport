@@ -8,6 +8,8 @@ export const AUTHORIZED_DOWNLOAD_MSNVS = [
   '04043', // Phạm Việt Hà
   '05091', // Phan Nguyễn Trọng Đức
   '04127', // Dương Vĩnh Lâm
+  '03108', // Nguyễn Thị Cẩm Nguyên
+  '04420', // Nguyễn Quốc Nam
 ]
 
 export function canDownloadReport(user: SessionUser | null | undefined): boolean {
