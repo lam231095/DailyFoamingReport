@@ -12,7 +12,20 @@ export const AUTHORIZED_DOWNLOAD_MSNVS = [
   '04420', // Nguyễn Quốc Nam
 ]
 
+export const AUTHORIZED_PROCESS_CONTROL_MSNVS = [
+  '02271', // Nguyễn Hoài Nam
+  '02320', // Nguyễn Thị Ngọc Lan
+  '02786', // Lê Huỳnh Hân
+  '03514', // Giáp Thị Kiều
+]
+
 export function canDownloadReport(user: SessionUser | null | undefined): boolean {
   if (!user || !user.msnv) return false
   return AUTHORIZED_DOWNLOAD_MSNVS.includes(user.msnv)
 }
+
+export function canAccessProcessControl(user: SessionUser | null | undefined): boolean {
+  if (!user || !user.msnv) return false
+  return AUTHORIZED_PROCESS_CONTROL_MSNVS.includes(user.msnv)
+}
+
