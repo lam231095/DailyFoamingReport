@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, FoamingPourReport } from '@/types'
+import { canAccessProcessControl } from '@/lib/permissions'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2,
@@ -59,6 +60,7 @@ function formatDate(dateStr: string | undefined) {
 }
 
 export default function ProcessControlTab({ user }: ProcessControlTabProps) {
+  const isAuthorized = canAccessProcessControl(user)
   const [records, setRecords] = useState<FoamingPourReport[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'confirmed'>('all')
@@ -377,6 +379,10 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[11px]">
+                      <div className="col-span-2 sm:col-span-4 border-b border-[var(--border)]/50 pb-1.5 mb-1 flex items-center gap-1.5">
+                        <span className="text-[var(--text-3)] font-bold shrink-0">Dòng sản phẩm:</span>
+                        <span className="font-extrabold text-[var(--text-1)] text-xs truncate">{(record.production_plan as any)?.ten_san_pham || '—'}</span>
+                      </div>
                       <div>
                         <span className="text-[var(--text-3)]">Ngày BC: </span>
                         <span className="font-bold text-[var(--text-1)]">{formatDate(record.report_date)}</span>
@@ -432,7 +438,7 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-2 shrink-0">
-                    {!isConfirmed && !isEditing && (
+                    {!isConfirmed && !isEditing && isAuthorized && (
                       <button
                         onClick={() => startEdit(record)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border border-[var(--border)] text-[var(--text-2)] hover:text-orange-600 hover:border-orange-300 transition-all bg-[var(--bg-card)]"
@@ -635,7 +641,7 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
                 </AnimatePresence>
 
                 {/* Confirm Button (when not editing) */}
-                {!isConfirmed && !isEditing && (
+                {!isConfirmed && !isEditing && isAuthorized && (
                   <div className="px-4 pb-4">
                     <button
                       onClick={() => confirmReport(record.id)}

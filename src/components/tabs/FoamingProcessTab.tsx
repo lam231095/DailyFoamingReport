@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Droplets, Scissors, Warehouse, FileText, Truck, ShieldCheck } from 'lucide-react'
 import { ProductionPlan, SessionUser } from '@/types'
-import { canAccessProcessControl } from '@/lib/permissions'
 import FoamingHeader from '../foaming/FoamingHeader'
 import PourForm from '../foaming/PourForm'
 import SeparateForm from '../foaming/SeparateForm'
@@ -39,15 +38,12 @@ export default function FoamingProcessTab({ user }: FoamingProcessTabProps) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const isPCAuthorized = canAccessProcessControl(user)
-  const visibleStages = STAGES.filter(stage => stage.id !== 'process-control' || isPCAuthorized)
-
   return (
     <div className="space-y-6">
       <FoamingHeader onPlanFound={handlePlanFound} />
 
       <div className="flex bg-[var(--bg-card)] rounded-2xl p-1.5 border border-[var(--border)] shadow-sm">
-        {visibleStages.map((stage) => {
+        {STAGES.map((stage) => {
           const active = activeStage === stage.id
           return (
             <button
@@ -96,17 +92,7 @@ export default function FoamingProcessTab({ user }: FoamingProcessTabProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
           >
-            {isPCAuthorized ? (
-              <ProcessControlTab user={user} />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 px-8 text-center bg-[var(--bg-card)]/40 rounded-3xl border border-[var(--border)]">
-                <ShieldCheck size={40} className="text-red-500 mb-3" />
-                <h4 className="text-[var(--text-2)] font-bold mb-1">Không có quyền truy cập</h4>
-                <p className="text-xs text-[var(--text-3)] max-w-[240px]">
-                  Bạn không có quyền truy cập tab kiểm tra xác nhận Process Control đổ.
-                </p>
-              </div>
-            )}
+            <ProcessControlTab user={user} />
           </motion.div>
         ) : !selectedPlan ? (
           <motion.div
