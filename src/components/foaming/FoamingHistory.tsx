@@ -897,7 +897,9 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                                {row.product_type_abbrev === 'A' ? 'Thường (A)' :
                                 row.product_type_abbrev === 'T' ? 'Test (T)' :
                                 row.product_type_abbrev === 'M' ? 'Đổ tay (M)' :
-                                row.product_type_abbrev === 'B' ? 'Xấu (B)' : (row.product_type_abbrev || '---')}
+                                row.product_type_abbrev === 'B' ? 'Xấu (B)' :
+                                row.product_type_abbrev === 'G' ? 'Xấu (G)' :
+                                row.product_type_abbrev === 'S' ? 'Sửa (S)' : (row.product_type_abbrev || '---')}
                             </p>
                           </div>
                           <div>

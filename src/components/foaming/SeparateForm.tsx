@@ -25,7 +25,8 @@ const PRODUCT_TYPE_ABBREVS = [
   { value: 'A', label: 'Hàng thường (A)' },
   { value: 'T', label: 'Test (T)' },
   { value: 'M', label: 'Đổ tay (M)' },
-  { value: 'B', label: 'Hàng xấu (B)' },
+  { value: 'G', label: 'Hàng xấu (G)' },
+  { value: 'S', label: 'Hàng sửa (S)' },
 ]
 
 type ProductType = 'thanh_pham' | 'ban_thanh_pham'
