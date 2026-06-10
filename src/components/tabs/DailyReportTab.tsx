@@ -993,7 +993,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     setLoading(true)
     const [pourRes, sepRes] = await Promise.all([
       supabase.from('foaming_pour_reports').select('*')
-        .gte('report_date', startDate).lte('report_date', endDate),
+        .gte('report_date', startDate).lte('report_date', endDate)
+        .or('is_pc_confirmed.eq.true,report_date.lt.2026-06-10'),
       supabase.from('foaming_separate_reports')
         .select('*, production_plan(ten_san_pham)')
         .gte('report_date', startDate).lte('report_date', endDate),

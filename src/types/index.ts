@@ -132,6 +132,10 @@ export interface FoamingPourReport {
   working_hours?: number;
   actual_quantity?: number;
   productivity_points?: number;
+  is_pc_confirmed?: boolean;
+  pc_confirmed_at?: string | null;
+  pc_confirmed_by?: string | null;
+  pc_note?: string | null;
   production_plan?: ProductionPlan;
   users?: { msnv: string; full_name: string };
   skus?: SKU;
