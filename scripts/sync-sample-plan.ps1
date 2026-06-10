@@ -125,7 +125,17 @@ if (![string]::IsNullOrEmpty($TargetSheet)) {
 }
 Write-Host "========================================" -ForegroundColor Cyan
 
-Write-Host "[1/3] Mở file: $EXCEL_FILE" -ForegroundColor Yellow
+# Sao chép file Excel thành bản tạm để tránh bị khóa (lock) bởi Excel của người dùng
+$TEMP_EXCEL_FILE = Join-Path $PROJECT_ROOT "Kế hoach sản xuất Sample_temp.xlsx"
+try {
+    Copy-Item -Path $EXCEL_FILE -Destination $TEMP_EXCEL_FILE -Force -ErrorAction Stop
+    Write-Host "  -> Đã tạo bản sao tạm thời để đọc dữ liệu." -ForegroundColor Green
+} catch {
+    Write-Host "  -> [WARNING] Không thể tạo bản sao tạm thời, thử đọc trực tiếp: $($_.Exception.Message)" -ForegroundColor Yellow
+    $TEMP_EXCEL_FILE = $EXCEL_FILE
+}
+
+Write-Host "[1/3] Mở file: $TEMP_EXCEL_FILE" -ForegroundColor Yellow
 
 $xl = New-Object -ComObject Excel.Application
 $xl.Visible       = $false
@@ -134,7 +144,7 @@ $xl.DisplayAlerts = $false
 $planMap = [System.Collections.Generic.Dictionary[string,object]]::new()
 
 try {
-    $wb         = $xl.Workbooks.Open($EXCEL_FILE, 0, $true)
+    $wb         = $xl.Workbooks.Open($TEMP_EXCEL_FILE, 0, $true)
     $sheetCount = $wb.Worksheets.Count
 
     Write-Host "[1/3] Tìm thấy $sheetCount sheet(s)" -ForegroundColor Green
