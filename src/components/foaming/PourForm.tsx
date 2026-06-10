@@ -75,7 +75,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
     shift: initialShift,
     machine_id: 'Máy 1',
     operator_name: '',
-    actual_bun_poured: plan.sl_bun_can_do || 0,
+    actual_bun_poured: plan.sl_bun_can_do || plan.sl_bun_can_tach || 0,
     ng_items: [{ qty: 0, type: ERROR_TYPES[0], note: '' }],
     cleaning_agent_kg: 0,
     waste_kg: 0,
@@ -131,16 +131,16 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
       if (plansList.length > 1) {
         const { data, error: fetchErr } = await supabase
           .from('production_plan')
-          .select('firm_plan, sl_bun_can_do')
+          .select('firm_plan, sl_bun_can_do, sl_bun_can_tach')
           .in('firm_plan', plansList)
         if (fetchErr) throw fetchErr
         plansData = data || []
         plansList.forEach(fp => {
           const p = plansData.find(x => x.firm_plan === fp)
-          targetBuns += p ? (p.sl_bun_can_do || 0) : 0
+          targetBuns += p ? (p.sl_bun_can_do || p.sl_bun_can_tach || 0) : 0
         })
       } else {
-        targetBuns = plan.sl_bun_can_do || 0
+        targetBuns = plan.sl_bun_can_do || plan.sl_bun_can_tach || 0
       }
 
       if (targetBuns > 0 && !formData.is_compensation && totalInputBuns > targetBuns) {
@@ -152,7 +152,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
       if (plansList.length > 1) {
         const targets = plansList.map(fp => {
           const p = plansData.find(x => x.firm_plan === fp)
-          return p ? (p.sl_bun_can_do || 0) : 0
+          return p ? (p.sl_bun_can_do || p.sl_bun_can_tach || 0) : 0
         })
 
         // Phân bổ số lượng bun thực tế và NG
