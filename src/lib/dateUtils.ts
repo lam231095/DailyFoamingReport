@@ -11,18 +11,9 @@ export function formatReportDate(dateInput: string | Date, shift?: string): stri
   const date = new Date(dateInput);
   const hours = date.getHours();
 
-  let subtract = false;
-  if (shift === 'Ca 3') {
-    subtract = hours < 22;
-  } else if (shift === 'Ca 2') {
-    subtract = hours < 14;
-  } else if (shift === 'Ca 1') {
-    subtract = hours < 6;
-  } else if (shift === 'Ca HC') {
-    subtract = hours < 8;
-  } else {
-    subtract = hours < 6;
-  }
+  // Ngày làm việc được tính từ 6h sáng hôm nay tới 6h sáng ngày hôm sau.
+  // Do đó, nếu giờ nộp báo cáo < 6h sáng, ta lùi lại 1 ngày.
+  const subtract = hours < 6;
 
   if (subtract) {
     date.setDate(date.getDate() - 1);
@@ -46,18 +37,9 @@ export function getReportDateISO(dateInput: string | Date, shift?: string): stri
   const date = new Date(dateInput);
   const hours = date.getHours();
 
-  let subtract = false;
-  if (shift === 'Ca 3') {
-    subtract = hours < 22;
-  } else if (shift === 'Ca 2') {
-    subtract = hours < 14;
-  } else if (shift === 'Ca 1') {
-    subtract = hours < 6;
-  } else if (shift === 'Ca HC') {
-    subtract = hours < 8;
-  } else {
-    subtract = hours < 6;
-  }
+  // Ngày làm việc được tính từ 6h sáng hôm nay tới 6h sáng ngày hôm sau.
+  // Do đó, nếu giờ nộp báo cáo < 6h sáng, ta lùi lại 1 ngày.
+  const subtract = hours < 6;
 
   if (subtract) {
     date.setDate(date.getDate() - 1);
