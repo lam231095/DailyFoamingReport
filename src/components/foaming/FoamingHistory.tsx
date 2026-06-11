@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, Filter, Calendar, Clock, User, 
   ChevronDown, FileText, Download, Loader2,
-  AlertCircle, ArrowRight, RotateCcw
+  AlertCircle, ArrowRight, RotateCcw, Pencil, Save, X
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser } from '@/types'
@@ -72,6 +72,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
   
   const [revertingItem, setRevertingItem] = useState<any | null>(null)
   const [revertLoading, setRevertLoading] = useState(false)
+  const [editingItem, setEditingItem] = useState<any | null>(null)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editMsg, setEditMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [editForm, setEditForm] = useState<Record<string, any>>({})
 
   const isAuthorized = AUTHORIZED_REVERT_MSNVS.includes(user?.msnv || '')
 
@@ -224,6 +228,73 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
 
   const handleRevertClick = (item: any) => {
     setRevertingItem(item)
+  }
+
+  const handleEditClick = (item: any) => {
+    // Pre-populate edit form with current values based on stage
+    const base: Record<string, any> = {
+      shift: item.shift || 'Ca 1',
+      machine_id: item.machine_id || '',
+      manager_name: item.manager_name || '',
+      operator_name: item.operator_name || '',
+      note: item.note || '',
+      report_date: item.report_date || new Date().toISOString().split('T')[0],
+      is_compensation: item.is_compensation || false,
+    }
+    if (activeStage === 'pour') {
+      base.actual_bun_poured = item.actual_bun_poured || 0
+      base.ng_bun_qty = item.ng_bun_qty || 0
+      base.error_type = item.error_type || ''
+      base.cleaning_agent_kg = item.cleaning_agent_kg || 0
+      base.waste_kg = item.waste_kg || 0
+    }
+    if (activeStage === 'separate') {
+      base.actual_bun_separated = item.actual_bun_separated || 0
+      base.actual_sheet_received = item.actual_sheet_received || 0
+      base.bun_thickness_mm = item.bun_thickness_mm || 0
+      base.sheet_thickness_mm = item.sheet_thickness_mm || 0
+      base.ng_qty = item.ng_qty || 0
+      base.ng_bun_qty = item.ng_bun_qty || 0
+      base.error_type = item.error_type || ''
+    }
+    if (activeStage === 'warehouse') {
+      base.qty_delivered_sheet = item.qty_delivered_sheet || 0
+      base.delivery_date = item.delivery_date || new Date().toISOString().split('T')[0]
+      base.ng_bun_qty = item.ng_bun_qty || 0
+      base.error_type = item.error_type || ''
+    }
+    setEditForm(base)
+    setEditMsg(null)
+    setEditingItem(item)
+  }
+
+  const handleConfirmEdit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingItem) return
+    setEditLoading(true)
+    setEditMsg(null)
+    try {
+      const config = STAGE_CONFIG[activeStage]
+      let payload: Record<string, any> = { ...editForm }
+      // Remove undefined / empty fields carefully
+      if (!payload.note?.trim()) payload.note = null
+      if (!payload.error_type?.trim()) payload.error_type = null
+      if (!payload.manager_name?.trim()) payload.manager_name = null
+      if (!payload.operator_name?.trim()) payload.operator_name = null
+
+      const { error } = await supabase
+        .from(config.table)
+        .update(payload)
+        .eq('id', editingItem.id)
+      if (error) throw error
+      setEditMsg({ type: 'success', text: 'Đã cập nhật báo cáo thành công!' })
+      await fetchData()
+      setTimeout(() => setEditingItem(null), 1200)
+    } catch (err: any) {
+      setEditMsg({ type: 'error', text: 'Lỗi khi cập nhật: ' + err.message })
+    } finally {
+      setEditLoading(false)
+    }
   }
 
   const handleConfirmRevert = async () => {
@@ -778,12 +849,20 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         </p>
                       </div>
                       {isAuthorized && (
-                        <button
-                          onClick={() => handleRevertClick(row)}
-                          className="mt-3 flex items-center gap-1 px-2 py-1 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-red-500/20 active:scale-95 cursor-pointer"
-                        >
-                          <RotateCcw size={12} /> Hồi lại
-                        </button>
+                        <div className="flex flex-col gap-1.5 mt-3">
+                          <button
+                            onClick={() => handleEditClick(row)}
+                            className="flex items-center gap-1 px-2 py-1 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-indigo-500/20 active:scale-95 cursor-pointer"
+                          >
+                            <Pencil size={12} /> Sửa
+                          </button>
+                          <button
+                            onClick={() => handleRevertClick(row)}
+                            className="mt-0 flex items-center gap-1 px-2 py-1 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-red-500/20 active:scale-95 cursor-pointer"
+                          >
+                            <RotateCcw size={12} /> Hồi lại
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1026,12 +1105,20 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                       </p>
                     </div>
                     {isAuthorized && (
-                      <button
-                        onClick={() => handleRevertClick(row)}
-                        className="mt-3 flex items-center gap-1 px-2 py-1 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-red-500/20 active:scale-95 cursor-pointer"
-                      >
-                        <RotateCcw size={12} /> Hồi lại
-                      </button>
+                      <div className="flex flex-col gap-1.5 mt-3">
+                        <button
+                          onClick={() => handleEditClick(row)}
+                          className="flex items-center gap-1 px-2 py-1 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-500 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-indigo-500/20 active:scale-95 cursor-pointer"
+                        >
+                          <Pencil size={12} /> Sửa
+                        </button>
+                        <button
+                          onClick={() => handleRevertClick(row)}
+                          className="flex items-center gap-1 px-2 py-1 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-red-500/20 active:scale-95 cursor-pointer"
+                        >
+                          <RotateCcw size={12} /> Hồi lại
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1041,6 +1128,233 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           </>
         )}
       </div>
+
+      {/* ── Edit Modal ────────────────────────────────── */}
+      <AnimatePresence>
+        {editingItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !editLoading && setEditingItem(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl shadow-2xl z-10 overflow-hidden"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]"
+                style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.04))' }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                    <Pencil size={16} className="text-indigo-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-[var(--text-1)]">Chỉnh sửa báo cáo</h3>
+                    <p className="text-[10px] text-[var(--text-3)] font-mono">{editingItem.firm_plan} · {STAGE_CONFIG[activeStage].label}</p>
+                  </div>
+                </div>
+                <button onClick={() => setEditingItem(null)} disabled={editLoading}
+                  className="p-2 rounded-lg hover:bg-[var(--border)] transition-colors">
+                  <X size={16} className="text-[var(--text-3)]" />
+                </button>
+              </div>
+
+              {/* Form */}
+              <form onSubmit={handleConfirmEdit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                {/* Common: shift, machine, report_date */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ca làm việc</label>
+                    <select value={editForm.shift || 'Ca 1'} onChange={e => setEditForm({ ...editForm, shift: e.target.value })}
+                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
+                      <option>Ca 1</option><option>Ca 2</option><option>Ca 3</option><option>Ca HC</option>
+                    </select>
+                  </div>
+                  {activeStage !== 'warehouse' && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Máy</label>
+                      <select value={editForm.machine_id || ''} onChange={e => setEditForm({ ...editForm, machine_id: e.target.value })}
+                        className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
+                        <option value="">-- Chọn máy --</option>
+                        <option>Máy 1</option><option>Máy 2</option><option>Máy 3</option><option>Máy đổ tay</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ngày báo cáo</label>
+                  <input type="date" value={editForm.report_date || editForm.delivery_date || ''}
+                    onChange={e => setEditForm({ ...editForm, report_date: e.target.value, delivery_date: e.target.value })}
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono" />
+                </div>
+
+                {/* Stage-specific fields */}
+                {activeStage === 'pour' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Quản lý</label>
+                        <select value={editForm.manager_name || ''} onChange={e => setEditForm({ ...editForm, manager_name: e.target.value })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
+                          <option value="">-- Chọn --</option>
+                          <option>Linh</option><option>Thảo</option><option>Tuấn Anh</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">SL Đổ (Bun)</label>
+                        <input type="number" min="0" value={editForm.actual_bun_poured || 0}
+                          onChange={e => setEditForm({ ...editForm, actual_bun_poured: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">NG (Bun)</label>
+                        <input type="number" min="0" value={editForm.ng_bun_qty || 0}
+                          onChange={e => setEditForm({ ...editForm, ng_bun_qty: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Loại lỗi</label>
+                        <select value={editForm.error_type || ''} onChange={e => setEditForm({ ...editForm, error_type: e.target.value })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
+                          <option value="">-- Không có --</option>
+                          {ERROR_TYPES.map(t => <option key={t}>{t}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Chất rửa (kg)</label>
+                        <input type="number" step="0.1" min="0" value={editForm.cleaning_agent_kg || 0}
+                          onChange={e => setEditForm({ ...editForm, cleaning_agent_kg: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Rác (kg)</label>
+                        <input type="number" step="0.1" min="0" value={editForm.waste_kg || 0}
+                          onChange={e => setEditForm({ ...editForm, waste_kg: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all" />
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {activeStage === 'separate' && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Quản lý</label>
+                        <select value={editForm.manager_name || ''} onChange={e => setEditForm({ ...editForm, manager_name: e.target.value })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
+                          <option value="">-- Chọn --</option>
+                          <option>Linh</option><option>Thảo</option><option>Tuấn Anh</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">SL Tách (Bun)</label>
+                        <input type="number" min="0" value={editForm.actual_bun_separated || 0}
+                          onChange={e => setEditForm({ ...editForm, actual_bun_separated: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">SL Sheet Nhận</label>
+                        <input type="number" min="0" value={editForm.actual_sheet_received || 0}
+                          onChange={e => setEditForm({ ...editForm, actual_sheet_received: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">NG Sheet</label>
+                        <input type="number" min="0" value={editForm.ng_qty || 0}
+                          onChange={e => setEditForm({ ...editForm, ng_qty: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Dày Bun (mm)</label>
+                        <input type="number" step="0.1" min="0" value={editForm.bun_thickness_mm || 0}
+                          onChange={e => setEditForm({ ...editForm, bun_thickness_mm: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all" />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Dày Sheet (mm)</label>
+                        <input type="number" step="0.1" min="0" value={editForm.sheet_thickness_mm || 0}
+                          onChange={e => setEditForm({ ...editForm, sheet_thickness_mm: Number(e.target.value) })}
+                          className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Loại lỗi</label>
+                      <select value={editForm.error_type || ''} onChange={e => setEditForm({ ...editForm, error_type: e.target.value })}
+                        className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
+                        <option value="">-- Không có --</option>
+                        {ERROR_TYPES.map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {activeStage === 'warehouse' && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">SL Giao (Sheet)</label>
+                    <input type="number" min="0" value={editForm.qty_delivered_sheet || 0}
+                      onChange={e => setEditForm({ ...editForm, qty_delivered_sheet: Number(e.target.value) })}
+                      className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+                  </div>
+                )}
+
+                {/* Đơn bù checkbox */}
+                <div className="flex items-center gap-3 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10">
+                  <input type="checkbox" id="edit_is_comp" checked={editForm.is_compensation || false}
+                    onChange={e => setEditForm({ ...editForm, is_compensation: e.target.checked })}
+                    className="w-4 h-4 accent-amber-500 cursor-pointer" />
+                  <label htmlFor="edit_is_comp" className="text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer">
+                    Đơn bù
+                  </label>
+                </div>
+
+                {/* Note */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ghi chú</label>
+                  <textarea value={editForm.note || ''} onChange={e => setEditForm({ ...editForm, note: e.target.value })}
+                    rows={2} placeholder="Ghi chú..."
+                    className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all resize-none" />
+                </div>
+
+                {editMsg && (
+                  <div className={`p-3 rounded-xl text-xs font-medium flex items-center gap-2 ${
+                    editMsg.type === 'success' ? 'bg-green-500/10 text-green-600 border border-green-500/20' : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                  }`}>
+                    {editMsg.type === 'success' ? <Save size={14} /> : <AlertCircle size={14} />}
+                    {editMsg.text}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setEditingItem(null)} disabled={editLoading}
+                    className="flex-1 py-2.5 rounded-xl border-2 border-[var(--border)] text-sm font-bold text-[var(--text-2)] hover:bg-[var(--border)] transition-all disabled:opacity-50">
+                    Hủy
+                  </button>
+                  <button type="submit" disabled={editLoading}
+                    className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                    {editLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    Lưu thay đổi
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Confirmation Modal ──────────────────────── */}
       <AnimatePresence>

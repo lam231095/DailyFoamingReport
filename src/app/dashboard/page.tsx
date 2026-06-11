@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BarChart3, Package, Factory, TrendingUp, ClipboardList } from 'lucide-react'
+import { BarChart3, Package, Factory, TrendingUp, ClipboardList, FileText, Lock } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
@@ -13,6 +13,7 @@ import DailyReportTab from '@/components/tabs/DailyReportTab'
 import ResidualMaterialTab from '@/components/tabs/ResidualMaterialTab'
 import FoamingProcessTab from '@/components/tabs/FoamingProcessTab'
 import ProductionProgressTab from '@/components/tabs/ProductionProgressTab'
+import SupplementaryReportTab from '@/components/tabs/SupplementaryReportTab'
 
 const TABS = [
   {
@@ -21,6 +22,7 @@ const TABS = [
     shortLabel: 'Foaming',
     icon: Factory,
     color: '#f43f5e',
+    adminOnly: false,
   },
   {
     id: 'daily-report',
@@ -28,6 +30,15 @@ const TABS = [
     shortLabel: 'Báo cáo',
     icon: BarChart3,
     color: '#3b82f6',
+    adminOnly: false,
+  },
+  {
+    id: 'supplementary-report',
+    label: 'Báo cáo bổ sung',
+    shortLabel: 'BC Bổ sung',
+    icon: FileText,
+    color: '#6366f1',
+    adminOnly: true,
   },
   {
     id: 'utilization',
@@ -35,6 +46,7 @@ const TABS = [
     shortLabel: 'Hiệu Suất',
     icon: TrendingUp,
     color: '#8b5cf6',
+    adminOnly: false,
   },
   {
     id: 'production-progress',
@@ -42,6 +54,7 @@ const TABS = [
     shortLabel: 'Tiến Độ',
     icon: ClipboardList,
     color: '#0ea5e9',
+    adminOnly: false,
   },
   {
     id: 'residual',
@@ -49,6 +62,7 @@ const TABS = [
     shortLabel: 'Liệu Tồn',
     icon: Package,
     color: '#10b981',
+    adminOnly: false,
   },
 ]
 
@@ -56,6 +70,8 @@ export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<SessionUser | null>(null)
   const [activeTab, setActiveTab] = useState('foaming')
+
+  const ADMIN_MSNV = '04127'
 
   useEffect(() => {
     const session = getSession()
@@ -82,6 +98,10 @@ export default function DashboardPage() {
   }
 
   const activeTabData = TABS.find((t) => t.id === activeTab)!
+  const isAdmin = user?.msnv === ADMIN_MSNV
+  const visibleTabs = TABS.filter(t => !t.adminOnly || isAdmin)
+
+  const isWide = activeTab === 'production-progress' || activeTab === 'daily-report' || activeTab === 'supplementary-report'
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)]">
@@ -90,10 +110,10 @@ export default function DashboardPage() {
       {/* ── Tab Bar ──────────────────────────────────── */}
       <div className="sticky top-16 z-30 bg-[var(--bg-card)]/95 backdrop-blur-md border-b border-[var(--border)]">
         <div className={`mx-auto px-3 transition-all duration-300 ${
-          (activeTab === 'production-progress' || activeTab === 'daily-report') ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
+          isWide ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
         }`}>
           <div className="relative flex gap-0.5">
-            {TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const active = activeTab === tab.id
               return (
                 <button
@@ -105,6 +125,9 @@ export default function DashboardPage() {
                   <tab.icon size={14} className="shrink-0" />
                   <span className="hidden sm:inline">{tab.label}</span>
                   <span className="sm:hidden">{tab.shortLabel}</span>
+                  {tab.adminOnly && (
+                    <Lock size={8} className="shrink-0 opacity-50" />
+                  )}
                   {active && (
                     <motion.div
                       layoutId="tab-indicator"
@@ -122,7 +145,7 @@ export default function DashboardPage() {
 
       {/* ── Tab Content ──────────────────────────────── */}
       <div className={`mx-auto px-4 py-4 pb-20 transition-all duration-300 ${
-        (activeTab === 'production-progress' || activeTab === 'daily-report') ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
+        isWide ? 'max-w-[1400px] w-full px-6' : 'max-w-2xl w-full'
       }`}>
         {/* Welcome bar */}
         <div className="flex items-center justify-between mb-5 px-4 py-3 rounded-2xl"
@@ -159,11 +182,12 @@ export default function DashboardPage() {
                 display: activeTab === tab.id ? 'block' : 'none',
               }}
             >
-              {tab.id === 'daily-report'          && <DailyReportTab user={user} />}
-              {tab.id === 'utilization'             && <UtilizationAnalysisTab user={user} />}
-              {tab.id === 'production-progress'     && <ProductionProgressTab user={user} />}
-              {tab.id === 'residual'                && <ResidualMaterialTab user={user} />}
-              {tab.id === 'foaming'                 && <FoamingProcessTab user={user} />}
+              {tab.id === 'daily-report'             && <DailyReportTab user={user} />}
+              {tab.id === 'supplementary-report'     && <SupplementaryReportTab user={user} />}
+              {tab.id === 'utilization'              && <UtilizationAnalysisTab user={user} />}
+              {tab.id === 'production-progress'      && <ProductionProgressTab user={user} />}
+              {tab.id === 'residual'                 && <ResidualMaterialTab user={user} />}
+              {tab.id === 'foaming'                  && <FoamingProcessTab user={user} />}
             </div>
           ))}
         </div>
@@ -173,7 +197,7 @@ export default function DashboardPage() {
       <div className="fixed bottom-0 left-0 right-0 sm:hidden z-30
         border-t border-[var(--border)] bg-[var(--bg-card)]/95 backdrop-blur-md">
         <div className="flex">
-          {TABS.map((tab) => {
+          {visibleTabs.map((tab) => {
             const active = activeTab === tab.id
             return (
               <button
