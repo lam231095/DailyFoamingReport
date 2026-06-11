@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Save, Loader2, CheckCircle2, Search, Calendar,
   Pencil, Trash2, X, Filter, AlertCircle, FileText,
-  ChevronDown, RefreshCw, Lock
+  ChevronDown, RefreshCw, Lock, Info
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser } from '@/types'
@@ -16,25 +16,26 @@ interface SupplementaryReportTabProps {
   user: SessionUser
 }
 
-interface SupplementaryReport {
+// Dùng lại cấu trúc pour_report, map working_date <-> report_date
+interface PourReport {
   id: string
   firm_plan: string
   shift: string
   machine_id: string | null
   actual_bun_poured: number
-  working_date: string
+  report_date: string         // ← hiển thị là "Ngày làm việc"
   cleaning_agent_kg: number
   waste_kg: number
   is_compensation: boolean
   note: string | null
   recorder_id: string
   created_at: string
-  updated_at: string
   production_plan?: {
     ten_san_pham: string | null
     no_order: string | null
     bun_code: string | null
     week_label: string
+    sl_bun_can_do: number | null
   }
   users?: { full_name: string; msnv: string }
 }
@@ -60,13 +61,12 @@ function last30DaysStr() {
   return d.toISOString().split('T')[0]
 }
 
-// ─── EMPTY FORM STATE ────────────────────────────────────────────────────────
 const emptyForm = () => ({
   firm_plan: '',
   shift: 'Ca 1',
   machine_id: 'Máy 1',
   actual_bun_poured: 0,
-  working_date: todayStr(),
+  working_date: todayStr(),   // → report_date in DB
   cleaning_agent_kg: 0,
   waste_kg: 0,
   is_compensation: false,
@@ -76,21 +76,22 @@ const emptyForm = () => ({
 // ─── EDIT MODAL ──────────────────────────────────────────────────────────────
 function EditModal({
   report,
+  user,
   onClose,
   onSaved,
 }: {
-  report: SupplementaryReport
+  report: PourReport
+  user: SessionUser
   onClose: () => void
   onSaved: () => void
 }) {
   const [form, setForm] = useState({
-    firm_plan: report.firm_plan,
     shift: report.shift,
     machine_id: report.machine_id || 'Máy 1',
     actual_bun_poured: report.actual_bun_poured,
-    working_date: report.working_date,
-    cleaning_agent_kg: report.cleaning_agent_kg,
-    waste_kg: report.waste_kg,
+    working_date: report.report_date,
+    cleaning_agent_kg: report.cleaning_agent_kg || 0,
+    waste_kg: report.waste_kg || 0,
     is_compensation: report.is_compensation,
     note: report.note || '',
   })
@@ -103,16 +104,19 @@ function EditModal({
     setMsg(null)
     try {
       const { error } = await supabase
-        .from('foaming_supplementary_reports')
+        .from('foaming_pour_reports')
         .update({
           shift: form.shift,
           machine_id: form.machine_id,
           actual_bun_poured: Number(form.actual_bun_poured),
-          working_date: form.working_date,
+          report_date: form.working_date,      // working_date → report_date
           cleaning_agent_kg: Number(form.cleaning_agent_kg),
           waste_kg: Number(form.waste_kg),
           is_compensation: form.is_compensation,
           note: form.note.trim() || null,
+          is_pc_confirmed: true,
+          pc_confirmed_at: new Date().toISOString(),
+          pc_confirmed_by: user.id,
         })
         .eq('id', report.id)
       if (error) throw error
@@ -128,9 +132,7 @@ function EditModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
@@ -147,7 +149,7 @@ function EditModal({
               <Pencil size={16} className="text-indigo-500" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-[var(--text-1)]">Chỉnh sửa báo cáo bổ sung</h3>
+              <h3 className="font-bold text-sm text-[var(--text-1)]">Chỉnh sửa báo cáo đổ</h3>
               <p className="text-[10px] text-[var(--text-3)] font-mono">{report.firm_plan}</p>
             </div>
           </div>
@@ -175,7 +177,7 @@ function EditModal({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ngày làm việc</label>
+            <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ngày làm việc (report_date)</label>
             <input type="date" value={form.working_date}
               onChange={e => setForm({ ...form, working_date: e.target.value })}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono" />
@@ -204,11 +206,11 @@ function EditModal({
           </div>
 
           <div className="flex items-center gap-3 bg-amber-500/5 p-3 rounded-xl border border-amber-500/10">
-            <input type="checkbox" id="edit_is_compensation" checked={form.is_compensation}
+            <input type="checkbox" id="edit_is_compensation_supp" checked={form.is_compensation}
               onChange={e => setForm({ ...form, is_compensation: e.target.checked })}
               className="w-4 h-4 accent-amber-500 cursor-pointer" />
-            <label htmlFor="edit_is_compensation" className="text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer">
-              Đơn bù (Báo cáo này bù cho hàng phế phẩm NG)
+            <label htmlFor="edit_is_compensation_supp" className="text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer">
+              Đơn bù
             </label>
           </div>
 
@@ -244,13 +246,7 @@ function EditModal({
 }
 
 // ─── ADD FORM ─────────────────────────────────────────────────────────────────
-function AddReportForm({
-  user,
-  onSuccess,
-}: {
-  user: SessionUser
-  onSuccess: () => void
-}) {
+function AddReportForm({ user, onSuccess }: { user: SessionUser; onSuccess: () => void }) {
   const [form, setForm] = useState(emptyForm())
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -288,20 +284,35 @@ function AddReportForm({
     setLoading(true)
     setMsg(null)
     try {
-      const { error } = await supabase.from('foaming_supplementary_reports').insert({
+      const storageCarts = Math.ceil(Number(form.actual_bun_poured) / 6)
+      // Lưu vào foaming_pour_reports, working_date → report_date
+      const { error } = await supabase.from('foaming_pour_reports').insert({
         firm_plan: form.firm_plan,
         shift: form.shift,
         machine_id: form.machine_id,
         actual_bun_poured: Number(form.actual_bun_poured),
-        working_date: form.working_date,
+        report_date: form.working_date,         // Ngày làm việc → report_date
         cleaning_agent_kg: Number(form.cleaning_agent_kg),
         waste_kg: Number(form.waste_kg),
         is_compensation: form.is_compensation,
         note: form.note.trim() || null,
         recorder_id: user.id,
+        // Các trường bắt buộc nhưng không nhập trong form bổ sung:
+        ng_bun_qty: 0,
+        error_type: null,
+        operator_name: null,
+        manager_name: null,
+        lot_no: null,
+        storage_location: null,
+        storage_line: null,
+        color_tag: null,
+        storage_carts: storageCarts,
+        is_pc_confirmed: true,
+        pc_confirmed_at: new Date().toISOString(),
+        pc_confirmed_by: user.id,
       })
       if (error) throw error
-      setMsg({ type: 'success', text: 'Đã lưu báo cáo bổ sung thành công!' })
+      setMsg({ type: 'success', text: 'Đã lưu vào báo cáo đổ thành công!' })
       setForm(emptyForm())
       setPlanSearch('')
       setTimeout(() => { setMsg(null); onSuccess() }, 1500)
@@ -321,8 +332,16 @@ function AddReportForm({
         </div>
         <div>
           <h3 className="font-bold text-base text-[var(--text-1)]">Thêm báo cáo bổ sung</h3>
-          <p className="text-[10px] text-[var(--text-3)]">Chỉ dành cho Admin · MSNV: {user.msnv}</p>
+          <p className="text-[10px] text-[var(--text-3)]">Dữ liệu sẽ lưu vào bảng báo cáo đổ · MSNV: {user.msnv}</p>
         </div>
+      </div>
+
+      {/* Thông báo rõ ràng */}
+      <div className="flex items-start gap-2 p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/15">
+        <Info size={14} className="text-indigo-500 mt-0.5 shrink-0" />
+        <p className="text-[11px] text-indigo-700 dark:text-indigo-300">
+          Báo cáo bổ sung sẽ được lưu trực tiếp vào <strong>bảng báo cáo đổ</strong> (foaming_pour_reports), và sẽ hiển thị cùng với các báo cáo đổ thông thường trong tab <em>Daily report</em> và tab <em>BÁO CÁO</em>.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -340,9 +359,7 @@ function AddReportForm({
               onFocus={() => setShowPlanResults(true)}
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-1)] font-mono outline-none focus:border-indigo-500 transition-all"
             />
-            {searchLoading && (
-              <Loader2 size={16} className="absolute right-3 top-3.5 text-[var(--text-3)] animate-spin" />
-            )}
+            {searchLoading && <Loader2 size={16} className="absolute right-3 top-3.5 text-[var(--text-3)] animate-spin" />}
           </div>
           {form.firm_plan && (
             <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
@@ -358,11 +375,7 @@ function AddReportForm({
             <div className="absolute z-20 w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-xl overflow-hidden mt-1">
               {planResults.map(p => (
                 <button key={p.firm_plan} type="button"
-                  onClick={() => {
-                    setForm({ ...form, firm_plan: p.firm_plan })
-                    setPlanSearch(p.firm_plan)
-                    setShowPlanResults(false)
-                  }}
+                  onClick={() => { setForm({ ...form, firm_plan: p.firm_plan }); setPlanSearch(p.firm_plan); setShowPlanResults(false) }}
                   className="w-full text-left px-4 py-3 hover:bg-indigo-500/5 transition-colors border-b border-[var(--border)] last:border-b-0">
                   <p className="font-mono font-bold text-xs text-[var(--text-1)]">{p.firm_plan}</p>
                   <p className="text-[10px] text-[var(--text-3)] truncate">{cleanProductName(p.ten_san_pham)}</p>
@@ -419,10 +432,10 @@ function AddReportForm({
         </div>
 
         <div className="flex items-center gap-3 bg-amber-500/5 p-4 rounded-xl border border-amber-500/10">
-          <input type="checkbox" id="add_is_compensation" checked={form.is_compensation}
+          <input type="checkbox" id="add_is_compensation_supp" checked={form.is_compensation}
             onChange={e => setForm({ ...form, is_compensation: e.target.checked })}
             className="w-5 h-5 accent-amber-500 cursor-pointer" />
-          <label htmlFor="add_is_compensation" className="text-xs font-black text-amber-700 dark:text-amber-400 cursor-pointer">
+          <label htmlFor="add_is_compensation_supp" className="text-xs font-black text-amber-700 dark:text-amber-400 cursor-pointer">
             Đơn bù (Báo cáo này bù cho hàng phế phẩm NG)
           </label>
         </div>
@@ -445,7 +458,7 @@ function AddReportForm({
           className="w-full py-4 rounded-xl text-white font-bold text-sm shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-3 hover:scale-[1.01] active:scale-[0.98]"
           style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', boxShadow: '0 8px 24px rgba(99,102,241,0.3)' }}>
           {loading ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-          LƯU BÁO CÁO BỔ SUNG
+          LƯU VÀO BÁO CÁO ĐỔ
         </button>
       </form>
     </div>
@@ -456,37 +469,38 @@ function AddReportForm({
 export default function SupplementaryReportTab({ user }: SupplementaryReportTabProps) {
   const isAdmin = user?.msnv === ADMIN_MSNV
 
-  const [reports, setReports] = useState<SupplementaryReport[]>([])
+  const [reports, setReports] = useState<PourReport[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingReport, setEditingReport] = useState<SupplementaryReport | null>(null)
+  const [editingReport, setEditingReport] = useState<PourReport | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Filters
   const [startDate, setStartDate] = useState(last30DaysStr())
   const [endDate, setEndDate] = useState(todayStr())
   const [shiftFilter, setShiftFilter] = useState('Tất cả')
   const [showFilters, setShowFilters] = useState(false)
   const [activeView, setActiveView] = useState<'add' | 'list'>('list')
 
+  // Fetch từ foaming_pour_reports, lọc theo report_date (ngày làm việc)
   const fetchReports = useCallback(async () => {
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('foaming_supplementary_reports')
+        .from('foaming_pour_reports')
         .select(`
           *,
           production_plan (
             ten_san_pham,
             no_order,
             bun_code,
-            week_label
+            week_label,
+            sl_bun_can_do
           ),
           users (full_name, msnv)
         `)
-        .gte('working_date', startDate)
-        .lte('working_date', endDate)
-        .order('working_date', { ascending: false })
+        .gte('report_date', startDate)
+        .lte('report_date', endDate)
+        .order('report_date', { ascending: false })
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -494,9 +508,9 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
       if (shiftFilter !== 'Tất cả') {
         result = result.filter((r: any) => r.shift === shiftFilter)
       }
-      setReports(result)
+      setReports(result as PourReport[])
     } catch (err: any) {
-      console.error('Error fetching supplementary reports:', err)
+      console.error('Error fetching pour reports:', err)
     } finally {
       setLoading(false)
     }
@@ -508,7 +522,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
     setDeleteLoading(true)
     try {
       const { error } = await supabase
-        .from('foaming_supplementary_reports')
+        .from('foaming_pour_reports')
         .delete()
         .eq('id', id)
       if (error) throw error
@@ -521,7 +535,6 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
     }
   }
 
-  // ── Guard: only admin can access ─────────────────────────────────────────
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-6 text-center">
@@ -531,7 +544,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
         <div>
           <h3 className="text-xl font-black text-[var(--text-1)] mb-2">Không có quyền truy cập</h3>
           <p className="text-sm text-[var(--text-3)] max-w-xs">
-            Tab này chỉ dành cho quản trị viên. Vui lòng liên hệ admin để được cấp quyền.
+            Tab này chỉ dành cho quản trị viên.
           </p>
         </div>
       </div>
@@ -554,7 +567,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
           <div>
             <h2 className="text-base font-black text-[var(--text-1)]">Báo cáo bổ sung</h2>
             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase tracking-widest flex items-center gap-1">
-              <Lock size={9} /> Chỉ dành cho Admin · {user.full_name}
+              <Lock size={9} /> Dữ liệu từ bảng Báo cáo Đổ · {user.full_name}
             </p>
           </div>
         </div>
@@ -576,29 +589,26 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
       <AnimatePresence>
         {activeView === 'add' && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
+            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
             <AddReportForm user={user} onSuccess={() => { fetchReports(); setActiveView('list') }} />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* KPI Cards */}
+      {/* KPI */}
       {!loading && reports.length > 0 && (
         <div className="grid grid-cols-3 gap-4">
           {[
             { label: 'Tổng Bun Đổ', value: totalBun.toLocaleString(), unit: 'bun', color: '#6366f1', bg: 'rgba(99,102,241,0.08)' },
-            { label: 'Tổng Chất Rửa', value: totalCleaning.toFixed(1), unit: 'kg', color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)' },
-            { label: 'Tổng Rác', value: totalWaste.toFixed(1), unit: 'kg', color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
+            { label: 'Chất Rửa', value: totalCleaning.toFixed(1), unit: 'kg', color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)' },
+            { label: 'Rác', value: totalWaste.toFixed(1), unit: 'kg', color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
           ].map(kpi => (
             <div key={kpi.label} className="rounded-2xl p-4 border"
               style={{ background: kpi.bg, borderColor: `${kpi.color}20` }}>
               <p className="text-[10px] font-bold uppercase" style={{ color: kpi.color }}>{kpi.label}</p>
-              <p className="text-2xl font-black mt-1" style={{ color: kpi.color }}>{kpi.value}
-                <span className="text-sm font-normal ml-1 opacity-75">{kpi.unit}</span>
+              <p className="text-2xl font-black mt-1" style={{ color: kpi.color }}>
+                {kpi.value}<span className="text-sm font-normal ml-1 opacity-75">{kpi.unit}</span>
               </p>
               <p className="text-[10px] text-[var(--text-3)] mt-1">{reports.length} báo cáo</p>
             </div>
@@ -622,7 +632,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
 
         <div className="bg-indigo-500/5 p-3 rounded-xl border border-indigo-500/10">
           <p className="text-[10px] font-bold text-indigo-600 uppercase mb-2 flex items-center gap-1">
-            <Calendar size={11} /> Khoảng thời gian (Ngày làm việc)
+            <Calendar size={11} /> Khoảng thời gian (theo Ngày làm việc)
           </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
@@ -635,7 +645,8 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
 
         <AnimatePresence>
           {showFilters && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
               <div className="space-y-1.5">
                 <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ca làm việc</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -669,7 +680,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
         </div>
       </div>
 
-      {/* Reports Table */}
+      {/* Table */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border)]">
           <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
@@ -678,10 +689,10 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
       ) : reports.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] border-dashed">
           <FileText size={40} className="text-[var(--text-3)] opacity-30" />
-          <p className="text-sm text-[var(--text-3)] font-medium">Không có báo cáo trong khoảng thời gian này</p>
+          <p className="text-sm text-[var(--text-3)] font-medium">Không có báo cáo đổ trong khoảng thời gian này</p>
           <button onClick={() => setActiveView('add')}
             className="px-4 py-2 rounded-xl bg-indigo-500 text-white text-xs font-bold hover:bg-indigo-600 transition-all">
-            + Thêm báo cáo đầu tiên
+            + Thêm báo cáo
           </button>
         </div>
       ) : (
@@ -690,7 +701,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
             style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.04), transparent)' }}>
             <FileText size={16} className="text-indigo-500" />
             <h3 className="text-sm font-black uppercase tracking-tight text-[var(--text-1)]">
-              Danh sách báo cáo bổ sung
+              Báo cáo đổ (lọc theo ngày làm việc)
             </h3>
             <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600">
               {reports.length} bản ghi
@@ -708,6 +719,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
                   <th className="p-3 text-center">Bun Đổ</th>
                   <th className="p-3 text-center">Chất rửa</th>
                   <th className="p-3 text-center">Rác</th>
+                  <th className="p-3">Người nhập</th>
                   <th className="p-3">Ghi chú</th>
                   <th className="p-3 text-center">Thao tác</th>
                 </tr>
@@ -716,13 +728,13 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
                 {reports.map(r => (
                   <tr key={r.id} className="text-xs hover:bg-indigo-500/5 transition-colors group">
                     <td className="p-3 font-bold text-[var(--text-1)] whitespace-nowrap font-mono">
-                      {r.working_date?.split('-').reverse().join('/')}
+                      {r.report_date?.split('-').reverse().join('/')}
                       {r.is_compensation && (
                         <span className="ml-1 text-[8px] font-black px-1 py-0.5 rounded bg-amber-100 text-amber-700">BÙ</span>
                       )}
                     </td>
                     <td className="p-3 font-mono text-[11px] text-indigo-600 font-bold">{r.firm_plan}</td>
-                    <td className="p-3 text-[var(--text-2)] max-w-[200px]">
+                    <td className="p-3 text-[var(--text-2)] max-w-[180px]">
                       <p className="truncate" title={r.production_plan?.ten_san_pham || ''}>
                         {cleanProductName(r.production_plan?.ten_san_pham)}
                       </p>
@@ -743,12 +755,15 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
                       <span className="font-mono font-black text-indigo-600">{r.actual_bun_poured.toLocaleString()}</span>
                     </td>
                     <td className="p-3 text-center text-[var(--text-2)]">
-                      {r.cleaning_agent_kg > 0 ? `${r.cleaning_agent_kg} kg` : '—'}
+                      {(r.cleaning_agent_kg || 0) > 0 ? `${r.cleaning_agent_kg} kg` : '—'}
                     </td>
                     <td className="p-3 text-center text-[var(--text-2)]">
-                      {r.waste_kg > 0 ? `${r.waste_kg} kg` : '—'}
+                      {(r.waste_kg || 0) > 0 ? `${r.waste_kg} kg` : '—'}
                     </td>
-                    <td className="p-3 text-[var(--text-3)] max-w-[150px]">
+                    <td className="p-3 text-[var(--text-3)] text-[11px]">
+                      {r.users?.full_name || '—'}
+                    </td>
+                    <td className="p-3 text-[var(--text-3)] max-w-[120px]">
                       <span className="truncate block" title={r.note || ''}>{r.note || '—'}</span>
                     </td>
                     <td className="p-3">
@@ -776,34 +791,28 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
         {editingReport && (
           <EditModal
             report={editingReport}
+            user={user}
             onClose={() => setEditingReport(null)}
             onSaved={fetchReports}
           />
         )}
       </AnimatePresence>
 
-      {/* Delete Confirm Modal */}
+      {/* Delete Confirm */}
       <AnimatePresence>
         {deletingId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-              onClick={() => setDeletingId(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
+              onClick={() => setDeletingId(null)} />
+            <motion.div initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.92 }}
-              className="relative w-full max-w-sm bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] shadow-2xl p-6 text-center space-y-4"
-            >
+              className="relative w-full max-w-sm bg-[var(--bg-card)] rounded-2xl border border-[var(--border)] shadow-2xl p-6 text-center space-y-4">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto">
                 <Trash2 size={24} className="text-red-500" />
               </div>
-              <h3 className="font-black text-[var(--text-1)]">Xóa báo cáo?</h3>
-              <p className="text-sm text-[var(--text-3)]">Hành động này không thể hoàn tác.</p>
+              <h3 className="font-black text-[var(--text-1)]">Xóa báo cáo đổ?</h3>
+              <p className="text-sm text-[var(--text-3)]">Hành động này sẽ xóa khỏi bảng báo cáo đổ và không thể hoàn tác.</p>
               <div className="flex gap-3">
                 <button onClick={() => setDeletingId(null)}
                   className="flex-1 py-2.5 rounded-xl border-2 border-[var(--border)] text-sm font-bold text-[var(--text-2)] hover:bg-[var(--border)] transition-all">
