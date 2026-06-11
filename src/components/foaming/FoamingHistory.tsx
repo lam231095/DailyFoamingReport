@@ -33,7 +33,12 @@ const ERROR_TYPES = [
   'Lỗi độ cứng TRÊN chuẩn', 'Lỗi độ cứng DƯỚI chuẩn'
 ]
 
-const AUTHORIZED_REVERT_MSNVS = ['04127']
+const AUTHORIZED_REVERT_MSNVS = [
+  '04127', // Dương Vĩnh Lâm
+  '02075', // Đinh Chi Linh
+  '02603', // Nguyễn Văn Thảo
+  '04820', // Trần Tuấn Anh
+]
 
 function cleanProductName(name: string | null | undefined): string {
   if (!name) return '---'
