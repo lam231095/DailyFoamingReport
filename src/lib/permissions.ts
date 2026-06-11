@@ -13,10 +13,6 @@ export const AUTHORIZED_DOWNLOAD_MSNVS = [
 ]
 
 export const AUTHORIZED_PROCESS_CONTROL_MSNVS = [
-  '02271', // Nguyễn Hoài Nam
-  '02320', // Nguyễn Thị Ngọc Lan
-  '02786', // Lê Huỳnh Hân
-  '03514', // Giáp Thị Kiều
   '04127', // Dương Vĩnh Lâm
 ]
 

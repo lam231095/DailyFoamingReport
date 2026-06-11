@@ -33,7 +33,7 @@ const ERROR_TYPES = [
   'Lỗi độ cứng TRÊN chuẩn', 'Lỗi độ cứng DƯỚI chuẩn'
 ]
 
-const AUTHORIZED_REVERT_MSNVS = ['02075', '02603', '04820', '04127']
+const AUTHORIZED_REVERT_MSNVS = ['04127']
 
 function cleanProductName(name: string | null | undefined): string {
   if (!name) return '---'
