@@ -498,6 +498,8 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
           ),
           users (full_name, msnv)
         `)
+        .eq('recorder_id', user.id)
+        .is('operator_name', null)
         .gte('report_date', startDate)
         .lte('report_date', endDate)
         .order('report_date', { ascending: false })
