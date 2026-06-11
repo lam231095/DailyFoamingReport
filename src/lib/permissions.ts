@@ -14,6 +14,7 @@ export const AUTHORIZED_DOWNLOAD_MSNVS = [
 
 export const AUTHORIZED_PROCESS_CONTROL_MSNVS = [
   '04127', // Dương Vĩnh Lâm
+  '02320', // Nguyễn Thị Ngọc Lan
 ]
 
 export function canDownloadReport(user: SessionUser | null | undefined): boolean {
