@@ -5,6 +5,7 @@ import { Save, Loader2, CheckCircle2, Truck, Plus, Trash2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { SessionUser, ProductionPlan } from '@/types'
+import { getReportDateISO } from '@/lib/dateUtils'
 
 interface TransferFormProps {
   plan: ProductionPlan
@@ -114,7 +115,7 @@ export default function TransferForm({ plan, user, onSuccess }: TransferFormProp
         machine_id: item.machine_id,
         actual_bun_qty: Number(item.actual_bun_qty),
         recorder_id: user.id,
-        report_date: getTodayISO(),
+        report_date: getReportDateISO(new Date()),
         created_at: new Date().toISOString(),
       }))
 
