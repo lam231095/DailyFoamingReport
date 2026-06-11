@@ -256,13 +256,15 @@ function AddReportForm({ user, onSuccess }: { user: SessionUser; onSuccess: () =
   const [showPlanResults, setShowPlanResults] = useState(false)
 
   const searchPlan = useCallback(async (term: string) => {
-    if (!term.trim()) { setPlanResults([]); return }
+    const rawTerm = term.trim()
+    if (!rawTerm) { setPlanResults([]); return }
+    const cleanTerm = rawTerm.replace(/\s+/g, '')
     setSearchLoading(true)
     try {
       const { data } = await supabase
         .from('production_plan')
         .select('firm_plan, ten_san_pham, no_order, bun_code, sl_bun_can_do')
-        .or(`firm_plan.ilike.%${term}%,no_order.ilike.%${term}%`)
+        .or(`firm_plan.ilike.%${rawTerm}%,no_order.ilike.%${rawTerm}%,firm_plan.ilike.%${cleanTerm}%,no_order.ilike.%${cleanTerm}%`)
         .limit(8)
       setPlanResults(data || [])
     } finally {

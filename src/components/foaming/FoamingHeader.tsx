@@ -49,10 +49,15 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
       }
 
       // Xây dựng điều kiện OR để truy vấn tất cả mã đơn khớp
-      const conditions = codes.flatMap(code => [
-        `firm_plan.ilike.%${code}%`,
-        `no_order.ilike.%${code}%`
-      ]).join(',')
+      const conditions = codes.flatMap(code => {
+        const cleanCode = code.replace(/\s+/g, '')
+        return [
+          `firm_plan.ilike.%${code}%`,
+          `no_order.ilike.%${code}%`,
+          `firm_plan.ilike.%${cleanCode}%`,
+          `no_order.ilike.%${cleanCode}%`
+        ]
+      }).join(',')
 
       const { data: rawPlans, error: sbError } = await supabase
         .from('production_plan')
@@ -70,13 +75,18 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
       const plansMap = new Map<string, typeof rawPlans[0]>()
       for (const code of codes) {
         const lowerCode = code.toLowerCase()
+        const cleanLowerCode = lowerCode.replace(/\s+/g, '')
         const matchingPlans = rawPlans.filter(p => 
           (p.firm_plan && p.firm_plan.toLowerCase().includes(lowerCode)) ||
-          (p.no_order && p.no_order.toLowerCase().includes(lowerCode))
+          (p.firm_plan && p.firm_plan.toLowerCase().includes(cleanLowerCode)) ||
+          (p.no_order && p.no_order.toLowerCase().includes(lowerCode)) ||
+          (p.no_order && p.no_order.toLowerCase().includes(cleanLowerCode))
         )
         const exactMatch = matchingPlans.filter(p => 
           (p.firm_plan && p.firm_plan.toLowerCase() === lowerCode) ||
-          (p.no_order && p.no_order.toLowerCase() === lowerCode)
+          (p.firm_plan && p.firm_plan.toLowerCase() === cleanLowerCode) ||
+          (p.no_order && p.no_order.toLowerCase() === lowerCode) ||
+          (p.no_order && p.no_order.toLowerCase() === cleanLowerCode)
         )
         const selectedForCode = exactMatch.length > 0 ? exactMatch : matchingPlans
         for (const p of selectedForCode) {
