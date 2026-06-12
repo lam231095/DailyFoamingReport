@@ -28,6 +28,7 @@ interface PourReport {
   waste_kg: number
   is_compensation: boolean
   note: string | null
+  manager_name: string | null
   recorder_id: string
   created_at: string
   production_plan?: {
@@ -71,6 +72,7 @@ const emptyForm = () => ({
   waste_kg: 0,
   is_compensation: false,
   note: '',
+  manager_name: '',
 })
 
 // ─── EDIT MODAL ──────────────────────────────────────────────────────────────
@@ -94,6 +96,7 @@ function EditModal({
     waste_kg: report.waste_kg || 0,
     is_compensation: report.is_compensation,
     note: report.note || '',
+    manager_name: report.manager_name || '',
   })
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -114,6 +117,7 @@ function EditModal({
           waste_kg: Number(form.waste_kg),
           is_compensation: form.is_compensation,
           note: form.note.trim() || null,
+          manager_name: form.manager_name.trim() || null,
           is_pc_confirmed: true,
           pc_confirmed_at: new Date().toISOString(),
           pc_confirmed_by: user.id,
@@ -183,11 +187,23 @@ function EditModal({
               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono" />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Số bun thực tế đổ</label>
-            <input type="number" value={form.actual_bun_poured} min="0"
-              onChange={e => setForm({ ...form, actual_bun_poured: Number(e.target.value) })}
-              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Số bun thực tế đổ</label>
+              <input type="number" value={form.actual_bun_poured} min="0"
+                onChange={e => setForm({ ...form, actual_bun_poured: Number(e.target.value) })}
+                className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Quản lý</label>
+              <select value={form.manager_name} onChange={e => setForm({ ...form, manager_name: e.target.value })}
+                className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
+                <option value="">-- Chọn quản lý --</option>
+                <option value="Linh">Linh</option>
+                <option value="Thảo">Thảo</option>
+                <option value="Tuấn Anh">Tuấn Anh</option>
+              </select>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -303,7 +319,7 @@ function AddReportForm({ user, onSuccess }: { user: SessionUser; onSuccess: () =
         ng_bun_qty: 0,
         error_type: null,
         operator_name: null,
-        manager_name: null,
+        manager_name: form.manager_name.trim() || null,
         lot_no: null,
         storage_location: null,
         storage_line: null,
@@ -411,11 +427,23 @@ function AddReportForm({ user, onSuccess }: { user: SessionUser; onSuccess: () =
           </div>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Số bun thực tế đổ</label>
-          <input type="number" value={form.actual_bun_poured} min="0" required
-            onChange={e => setForm({ ...form, actual_bun_poured: Number(e.target.value) })}
-            className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Số bun thực tế đổ</label>
+            <input type="number" value={form.actual_bun_poured} min="0" required
+              onChange={e => setForm({ ...form, actual_bun_poured: Number(e.target.value) })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[var(--text-2)] uppercase ml-1">Quản lý</label>
+            <select value={form.manager_name} onChange={e => setForm({ ...form, manager_name: e.target.value })}
+              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
+              <option value="">-- Chọn quản lý (không bắt buộc) --</option>
+              <option value="Linh">Linh</option>
+              <option value="Thảo">Thảo</option>
+              <option value="Tuấn Anh">Tuấn Anh</option>
+            </select>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -480,6 +508,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
   const [startDate, setStartDate] = useState(last30DaysStr())
   const [endDate, setEndDate] = useState(todayStr())
   const [shiftFilter, setShiftFilter] = useState('Tất cả')
+  const [managerFilter, setManagerFilter] = useState('Tất cả')
   const [showFilters, setShowFilters] = useState(false)
   const [activeView, setActiveView] = useState<'add' | 'list'>('list')
 
@@ -512,13 +541,16 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
       if (shiftFilter !== 'Tất cả') {
         result = result.filter((r: any) => r.shift === shiftFilter)
       }
+      if (managerFilter !== 'Tất cả') {
+        result = result.filter((r: any) => (r.manager_name || 'Khác') === managerFilter)
+      }
       setReports(result as PourReport[])
     } catch (err: any) {
       console.error('Error fetching pour reports:', err)
     } finally {
       setLoading(false)
     }
-  }, [startDate, endDate, shiftFilter])
+  }, [startDate, endDate, shiftFilter, managerFilter])
 
   useEffect(() => { fetchReports() }, [fetchReports])
 
@@ -651,15 +683,29 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
           {showFilters && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-              <div className="space-y-1.5">
-                <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ca làm việc</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {['Tất cả', ...SHIFTS].map(s => (
-                    <button key={s} onClick={() => setShiftFilter(s)}
-                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${shiftFilter === s ? 'bg-indigo-500 text-white shadow-md' : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-indigo-500/10'}`}>
-                      {s}
-                    </button>
-                  ))}
+              <div className="space-y-3 pt-3">
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ca làm việc</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Tất cả', ...SHIFTS].map(s => (
+                      <button key={s} onClick={() => setShiftFilter(s)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${shiftFilter === s ? 'bg-indigo-500 text-white shadow-md' : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-indigo-500/10'}`}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">Quản lý</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Tất cả', 'Linh', 'Thảo', 'Tuấn Anh', 'Khác'].map(m => (
+                      <button key={m} onClick={() => setManagerFilter(m)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${managerFilter === m ? 'bg-indigo-500 text-white shadow-md' : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-indigo-500/10'}`}>
+                        {m}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -723,6 +769,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
                   <th className="p-3 text-center">Bun Đổ</th>
                   <th className="p-3 text-center">Chất rửa</th>
                   <th className="p-3 text-center">Rác</th>
+                  <th className="p-3">Quản lý</th>
                   <th className="p-3">Người nhập</th>
                   <th className="p-3">Ghi chú</th>
                   <th className="p-3 text-center">Thao tác</th>
@@ -763,6 +810,9 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
                     </td>
                     <td className="p-3 text-center text-[var(--text-2)]">
                       {(r.waste_kg || 0) > 0 ? `${r.waste_kg} kg` : '—'}
+                    </td>
+                    <td className="p-3 text-[var(--text-2)] font-medium whitespace-nowrap">
+                      {r.manager_name || '—'}
                     </td>
                     <td className="p-3 text-[var(--text-3)] text-[11px]">
                       {r.users?.full_name || '—'}
