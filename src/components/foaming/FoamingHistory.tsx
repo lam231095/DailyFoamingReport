@@ -38,6 +38,7 @@ const AUTHORIZED_REVERT_MSNVS = [
   '02075', // Đinh Chi Linh
   '02603', // Nguyễn Văn Thảo
   '04820', // Trần Tuấn Anh
+  '03108', // Nguyễn Thị Cẩm Nguyên
 ]
 
 function cleanProductName(name: string | null | undefined): string {
