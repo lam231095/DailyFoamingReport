@@ -113,7 +113,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
       // Query previous pour reports to check cumulative poured buns
       const { data: prevPourReports, error: prevPourErr } = await supabase
         .from('foaming_pour_reports')
-        .select('actual_bun_poured, is_compensation')
+        .select('actual_bun_poured, is_compensation, firm_plan')
         .in('firm_plan', plansList)
 
       if (prevPourErr) throw prevPourErr

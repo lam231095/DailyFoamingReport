@@ -255,7 +255,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
       // Query previous separate reports to check cumulative separated buns (only main reports)
       const { data: prevSepReports, error: prevSepErr } = await supabase
         .from('foaming_separate_reports')
-        .select('actual_bun_separated, is_compensation')
+        .select('actual_bun_separated, is_compensation, firm_plan')
         .in('firm_plan', plansList)
 
       if (prevSepErr) throw prevSepErr
