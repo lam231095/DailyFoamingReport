@@ -102,8 +102,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
 
   useEffect(() => {
     supabase.from('users').select('*')
-      .ilike('department', '%FOAMING Splitting%')
-      .in('position', ['team leader', 'Operator', 'Team Leader', 'operator', 'Team leader'])
+      .or('and(department.ilike.%FOAMING Splitting%,position.in.("team leader","Operator","Team Leader","operator","Team leader")),msnv.in.("02126","04462")')
       .order('full_name')
       .then(({ data }) => setOperators(data || []))
 
