@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
 import { Plus, Trash2, Info, Truck } from 'lucide-react'
 import { getReportDateISO } from '@/lib/dateUtils'
-import { distributeInteger } from '@/lib/calculations'
+import { distributeInteger, distributeSequential } from '@/lib/calculations'
 
 const ERROR_TYPES = [
   'Bọt khí', 'Loang trắng', 'Loang đen', 'Lõm mặt',
@@ -154,9 +154,23 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           return p ? (p.sl_bun_can_do || p.sl_bun_can_tach || 0) : 0
         })
 
-        // Phân bổ số lượng bun thực tế và NG
-        const distributedActual = distributeInteger(Number(formData.actual_bun_poured), targets)
-        const distributedNG = distributeInteger(totalNG, targets)
+        // Tính lượng đã đổ trước đó cho mỗi đơn trong nhóm gộp (chỉ tính đơn chính, không tính đơn bù)
+        const alreadyPouredMap = new Map<string, number>()
+        prevPourReports?.filter(r => !r.is_compensation).forEach(r => {
+          alreadyPouredMap.set(r.firm_plan, (alreadyPouredMap.get(r.firm_plan) || 0) + (r.actual_bun_poured || 0))
+        })
+
+        // Tính lượng còn lại cần đổ cho từng đơn
+        const remainingTargets = plansList.map((fp, idx) => {
+          const target = targets[idx] || 0
+          const poured = alreadyPouredMap.get(fp) || 0
+          return Math.max(0, target - poured)
+        })
+
+        // Phân bổ số lượng bun thực tế lũy tiến (FIFO)
+        const distributedActual = distributeSequential(Number(formData.actual_bun_poured), remainingTargets)
+        // Phân bổ NG theo tỷ lệ số lượng thực tế đã phân bổ
+        const distributedNG = distributeInteger(totalNG, distributedActual)
 
         // Phân bổ các số thực (cleaning, waste)
         const totalTarget = targets.reduce((a, b) => a + b, 0)

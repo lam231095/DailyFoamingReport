@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser } from '@/types'
 import { getReportDateISO } from '@/lib/dateUtils'
-import { distributeInteger } from '@/lib/calculations'
+import { distributeInteger, distributeSequential } from '@/lib/calculations'
 
 interface WarehouseFormProps {
   plan: ProductionPlan
@@ -42,14 +42,36 @@ export default function WarehouseForm({ plan, user, onSuccess }: WarehouseFormPr
 
         if (fetchErr) throw fetchErr
 
+        // Query previous warehouse reports to check cumulative delivered sheets
+        const { data: prevWhReports, error: prevWhErr } = await supabase
+          .from('foaming_warehouse_reports')
+          .select('qty_delivered_sheet, firm_plan')
+          .in('firm_plan', plansList)
+
+        if (prevWhErr) throw prevWhErr
+
         const targets = plansList.map(fp => {
           const p = plansData?.find(x => x.firm_plan === fp)
           return p ? (p.sl_sheet || 0) : 0
         })
 
-        // Phân bổ số lượng sheet giao và NG
-        const distributedDelivered = distributeInteger(Number(formData.qty_delivered_sheet), targets)
-        const distributedNG = distributeInteger(Number(formData.ng_bun_qty), targets)
+        // Tính lượng đã giao kho trước đó cho mỗi đơn trong nhóm gộp
+        const alreadyDeliveredMap = new Map<string, number>()
+        prevWhReports?.forEach(r => {
+          alreadyDeliveredMap.set(r.firm_plan, (alreadyDeliveredMap.get(r.firm_plan) || 0) + (r.qty_delivered_sheet || 0))
+        })
+
+        // Tính lượng còn lại cần nhập kho cho từng đơn
+        const remainingTargets = plansList.map((fp, idx) => {
+          const target = targets[idx] || 0
+          const delivered = alreadyDeliveredMap.get(fp) || 0
+          return Math.max(0, target - delivered)
+        })
+
+        // Phân bổ số lượng sheet giao lũy tiến (FIFO)
+        const distributedDelivered = distributeSequential(Number(formData.qty_delivered_sheet), remainingTargets)
+        // Phân bổ NG theo tỷ lệ số lượng thực tế đã phân bổ
+        const distributedNG = distributeInteger(Number(formData.ng_bun_qty), distributedDelivered)
 
         const recordsToInsert = plansList.map((fp, idx) => {
           const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`

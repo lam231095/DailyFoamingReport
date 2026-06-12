@@ -19,7 +19,7 @@ $COL_PU_CODE    = 6
 $COL_TEN_SP     = 7
 $COL_SL_SHEET   = 8
 $COL_SL_TACH    = 9
-$COL_SL_DO      = 14
+$COL_SL_DO      = 10
 $COL_COMPLETION = 17
 $COL_DELIVERY   = 18
 

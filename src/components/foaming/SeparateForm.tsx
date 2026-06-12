@@ -5,7 +5,7 @@ import { Save, Loader2, CheckCircle2, Zap, TrendingUp, Info, Plus, Trash2, Alert
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
-import { calculateSuggestedSheets, calculateEfficiency, getOptimalSheetsPerBun, THICKNESS_TABLE, calculateOptimalSheetsPerBun, distributeInteger } from '@/lib/calculations'
+import { calculateSuggestedSheets, calculateEfficiency, getOptimalSheetsPerBun, THICKNESS_TABLE, calculateOptimalSheetsPerBun, distributeInteger, distributeSequential } from '@/lib/calculations'
 import { getReportDateISO } from '@/lib/dateUtils'
 
 interface SeparateFormProps {
@@ -323,6 +323,37 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           return p ? (p.sl_bun_can_tach || 0) : 0
         })
 
+        // Tính số lượng bun và sheet đã thống kê từ trước cho mỗi đơn thành phần
+        const alreadySeparatedMap = new Map<string, number>()
+        prevSepReports?.filter(r => !r.is_compensation).forEach(r => {
+          alreadySeparatedMap.set(r.firm_plan, (alreadySeparatedMap.get(r.firm_plan) || 0) + (r.actual_bun_separated || 0))
+        })
+
+        const alreadyReceivedSheetsMap = new Map<string, number>()
+        prevReports?.forEach(r => {
+          alreadyReceivedSheetsMap.set(r.firm_plan, (alreadyReceivedSheetsMap.get(r.firm_plan) || 0) + (r.actual_sheet_received || 0))
+        })
+
+        // Tính kế hoạch sheet cho từng đơn hàng
+        const targetSheets = plansList.map(fp => {
+          const p = plansData.find(x => x.firm_plan === fp)
+          if (!p) return 0
+          const opt = (p.sl_bun_can_tach || 0) * optimalPerBun
+          return opt > 0 ? opt : (p.sl_sheet || 0)
+        })
+
+        const remainingTargetBuns = plansList.map((fp, idx) => {
+          const target = targets[idx] || 0
+          const separated = alreadySeparatedMap.get(fp) || 0
+          return Math.max(0, target - separated)
+        })
+
+        const remainingTargetSheets = plansList.map((fp, idx) => {
+          const target = targetSheets[idx] || 0
+          const received = alreadyReceivedSheetsMap.get(fp) || 0
+          return Math.max(0, target - received)
+        })
+
         const recordsToInsert: any[] = []
 
         formData.items.forEach(item => {
@@ -332,9 +363,9 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
             .map(x => x.type === 'Lỗi khác' && x.note ? `${x.type}: ${x.note.trim()} (${x.qty})` : `${x.type} (${x.qty})`)
             .join(', ')
 
-          const distributedBun = distributeInteger(Number(item.actual_bun_separated), targets)
-          const distributedSheet = distributeInteger(Number(item.actual_sheet_received), targets)
-          const distributedNG = distributeInteger(itemNGSum, targets)
+          const distributedBun = distributeSequential(Number(item.actual_bun_separated), remainingTargetBuns)
+          const distributedSheet = distributeSequential(Number(item.actual_sheet_received), remainingTargetSheets)
+          const distributedNG = distributeInteger(itemNGSum, distributedSheet)
 
           plansList.forEach((fp, idx) => {
             const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`

@@ -143,4 +143,30 @@ export function distributeInteger(totalQty: number, targets: number[]): number[]
   return rounded;
 }
 
+/**
+ * Phân bổ số lượng nguyên theo thứ tự lũy tiến (FIFO), 
+ * trừ lần lượt từ phần tử đầu tiên cho đến khi hết lượng ban đầu.
+ */
+export function distributeSequential(totalQty: number, targets: number[]): number[] {
+  if (!targets || targets.length === 0) return [];
+  
+  const result = new Array(targets.length).fill(0);
+  let remaining = totalQty;
+  
+  for (let i = 0; i < targets.length; i++) {
+    const target = targets[i] || 0;
+    const allocated = Math.min(remaining, target);
+    result[i] = allocated;
+    remaining -= allocated;
+  }
+  
+  // Nếu vẫn còn thừa (vượt kế hoạch), cộng lượng thừa vào đơn đầu tiên
+  if (remaining > 0) {
+    result[0] += remaining;
+  }
+  
+  return result;
+}
+
+
 
