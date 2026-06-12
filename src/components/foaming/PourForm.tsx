@@ -218,7 +218,13 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           }
         })
 
-        const { error: insertErr } = await supabase.from('foaming_pour_reports').insert(recordsToInsert)
+        const filteredRecords = recordsToInsert.filter(r => r.actual_bun_poured > 0 || r.ng_bun_qty > 0)
+
+        if (filteredRecords.length === 0) {
+          throw new Error('Không có đơn hàng nào được phân bổ số lượng. Vui lòng nhập số lượng lớn hơn 0.')
+        }
+
+        const { error: insertErr } = await supabase.from('foaming_pour_reports').insert(filteredRecords)
         if (insertErr) throw insertErr
       } else {
         const { error } = await supabase.from('foaming_pour_reports').insert({

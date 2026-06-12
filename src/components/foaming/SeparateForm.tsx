@@ -401,7 +401,15 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
           })
         })
 
-        const { error: insertErr } = await supabase.from('foaming_separate_reports').insert(recordsToInsert)
+        const filteredRecords = recordsToInsert.filter(
+          r => r.actual_bun_separated > 0 || r.actual_sheet_received > 0 || r.ng_qty > 0
+        )
+
+        if (filteredRecords.length === 0) {
+          throw new Error('Không có đơn hàng nào được phân bổ số lượng. Vui lòng nhập số lượng lớn hơn 0.')
+        }
+
+        const { error: insertErr } = await supabase.from('foaming_separate_reports').insert(filteredRecords)
         if (insertErr) throw insertErr
       } else {
         const recordsToInsert = formData.items.map(item => {
