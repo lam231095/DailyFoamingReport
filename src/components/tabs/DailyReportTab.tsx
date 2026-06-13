@@ -352,6 +352,7 @@ function calcManagerPerf(
   const isExactJune9th2026 = d === 9 && m === 6 && y === 2026
   const isExactJune10th2026 = d === 10 && m === 6 && y === 2026
   const isExactJune11th2026 = d === 11 && m === 6 && y === 2026
+  const isExactJune12th2026 = d === 12 && m === 6 && y === 2026
   const isExactMay25th2026 = d === 25 && m === 5 && y === 2026
   const isExactMay26th2026 = d === 26 && m === 5 && y === 2026
   const isExactMay27th2026 = d === 27 && m === 5 && y === 2026
@@ -385,6 +386,10 @@ function calcManagerPerf(
       if (manager === 'Tuấn Anh') targetPour = 210
       else if (manager === 'Linh') targetPour = 320
       else if (manager === 'Thảo') targetPour = 210
+    } else if (isExactJune12th2026) {
+      if (manager === 'Linh') targetPour = 267.5
+      else if (manager === 'Thảo') targetPour = 267.5
+      else if (manager === 'Tuấn Anh') targetPour = 267.5
     } else if (isExactJune11th2026) {
       if (manager === 'Linh') targetPour = 214
       else if (manager === 'Thảo') targetPour = 254.125
@@ -434,7 +439,15 @@ function calcManagerPerf(
 
     let targetSeparate = TARGET_SEPARATE
 
-    if (isExactJune11th2026) {
+    if (isExactJune12th2026) {
+      if (manager === 'Linh') {
+        targetSeparate = 200
+      } else if (manager === 'Thảo') {
+        targetSeparate = 225
+      } else if (manager === 'Tuấn Anh') {
+        targetSeparate = 200
+      }
+    } else if (isExactJune11th2026) {
       if (manager === 'Linh') {
         targetSeparate = 100
       } else if (manager === 'Thảo') {
