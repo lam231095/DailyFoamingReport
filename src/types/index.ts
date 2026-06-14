@@ -27,11 +27,19 @@ export interface SKU {
 export interface ResidualMaterial {
   id: string;
   user_id: string;
-  stage: 'Foaming Đổ' | 'Foaming Tách';
-  material_name: string;
+  bun_code: string;
+  material_name?: string | null;
+  color?: string | null;
+  density?: string | null;
+  hardness?: string | null;
+  powder?: string | null;
+  length?: string | null;
   initial_quantity: number;
   current_quantity: number;
-  unit: 'tấm' | 'bun';
+  unit: 'bun';
+  machine_id?: string | null;
+  shift?: string | null;
+  manager_name?: string | null;
   entry_date: string;
   created_at: string;
   users?: { msnv: string; full_name: string };
