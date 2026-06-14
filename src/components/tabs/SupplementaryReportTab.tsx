@@ -202,6 +202,7 @@ function EditModal({
                 <option value="Linh">Linh</option>
                 <option value="Thảo">Thảo</option>
                 <option value="Tuấn Anh">Tuấn Anh</option>
+                <option value="Lâm">Lâm</option>
               </select>
             </div>
           </div>
@@ -442,6 +443,7 @@ function AddReportForm({ user, onSuccess }: { user: SessionUser; onSuccess: () =
               <option value="Linh">Linh</option>
               <option value="Thảo">Thảo</option>
               <option value="Tuấn Anh">Tuấn Anh</option>
+              <option value="Lâm">Lâm</option>
             </select>
           </div>
         </div>
@@ -699,7 +701,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
                 <div className="space-y-1.5">
                   <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">Quản lý</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {['Tất cả', 'Linh', 'Thảo', 'Tuấn Anh', 'Khác'].map(m => (
+                    {['Tất cả', 'Linh', 'Thảo', 'Tuấn Anh', 'Lâm', 'Khác'].map(m => (
                       <button key={m} onClick={() => setManagerFilter(m)}
                         className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${managerFilter === m ? 'bg-indigo-500 text-white shadow-md' : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-indigo-500/10'}`}>
                         {m}
