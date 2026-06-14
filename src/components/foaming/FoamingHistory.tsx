@@ -155,7 +155,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         .from(config.table)
         .select(`
           *,
-          production_plan!inner (
+          production_plan${activeStage === 'pour' ? '' : '!inner'} (
             pu_code,
             ten_san_pham,
             bun_code,
@@ -294,6 +294,21 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         .update(payload)
         .eq('id', editingItem.id)
       if (error) throw error
+
+      if (activeStage === 'pour') {
+        await supabase
+          .from('residual_materials')
+          .update({
+            shift: payload.shift,
+            machine_id: payload.machine_id,
+            manager_name: payload.manager_name,
+            entry_date: payload.report_date,
+            initial_quantity: Number(payload.actual_bun_poured),
+            current_quantity: Number(payload.actual_bun_poured)
+          })
+          .eq('id', editingItem.id)
+      }
+
       setEditMsg({ type: 'success', text: 'Đã cập nhật báo cáo thành công!' })
       await fetchData()
       setTimeout(() => setEditingItem(null), 1200)
@@ -315,6 +330,13 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         .eq('id', revertingItem.id)
 
       if (deleteError) throw deleteError
+
+      if (activeStage === 'pour') {
+        await supabase
+          .from('residual_materials')
+          .delete()
+          .eq('id', revertingItem.id)
+      }
 
       await fetchData()
       setRevertingItem(null)
@@ -406,11 +428,11 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         reportDateStr,
         row.production_plan?.week_label || '---',
         row.production_plan?.no_order || '---',
-        row.firm_plan,
+        row.firm_plan || 'Liệu tồn dư',
         row.production_plan?.pu_code || '---',
-        row.production_plan?.bun_code || '---',
-        row.production_plan?.ten_san_pham || '---',
-        cleanProductName(row.production_plan?.ten_san_pham),
+        row.production_plan?.bun_code || row.bun_code || '---',
+        row.production_plan?.ten_san_pham || row.material_name || '---',
+        row.production_plan ? cleanProductName(row.production_plan.ten_san_pham) : (row.material_name || '---'),
         row.users?.full_name || '---',
         row.users?.msnv || '---',
         row.manager_name || '---',
@@ -878,8 +900,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                   <div className="flex items-start justify-between gap-4">
                   <div className="space-y-2 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-500 text-[10px] font-bold uppercase">
-                        {row.firm_plan}
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                        !row.firm_plan ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30' : 'bg-brand-500/10 text-brand-500'
+                      }`}>
+                        {row.firm_plan || 'Liệu tồn dư'}
                       </span>
                       {row.is_compensation && (
                         <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 text-[10px] font-black uppercase">
@@ -887,7 +911,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         </span>
                       )}
                       <span className="text-[11px] font-bold text-[var(--text-1)] font-mono">
-                        {row.production_plan?.pu_code}
+                        {row.production_plan?.pu_code || '---'}
                       </span>
                       <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold">
                         {row.production_plan?.no_order || '---'}
@@ -903,13 +927,13 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                       <div>
                         <span className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-wider block mb-0.5">Sản phẩm (Gốc)</span>
                         <h4 className="text-sm font-semibold text-[var(--text-2)] leading-tight">
-                          {row.production_plan?.ten_san_pham}
+                          {row.production_plan?.ten_san_pham || row.material_name || '---'}
                         </h4>
                       </div>
                       <div>
                         <span className="text-[10px] font-bold text-brand-500 uppercase tracking-wider block mb-0.5">Dòng sản phẩm</span>
                         <h4 className="text-sm font-bold text-brand-500 leading-tight">
-                          {cleanProductName(row.production_plan?.ten_san_pham)}
+                          {row.production_plan ? cleanProductName(row.production_plan.ten_san_pham) : (row.material_name || '---')}
                         </h4>
                       </div>
                     </div>
@@ -917,6 +941,34 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 mt-3 pt-3 border-t border-[var(--border)]">
                       {activeStage === 'pour' && (
                         <>
+                          {!row.firm_plan && (
+                            <>
+                              <div>
+                                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Mã Bun</p>
+                                <p className="text-sm font-bold text-indigo-600">{row.bun_code || '---'}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Màu sắc</p>
+                                <p className="text-sm font-bold text-[var(--text-1)]">{row.color || '---'}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Density</p>
+                                <p className="text-sm font-bold text-[var(--text-1)]">{row.density || '---'}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Độ cứng</p>
+                                <p className="text-sm font-bold text-[var(--text-1)]">{row.hardness || '---'}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Bột</p>
+                                <p className="text-sm font-bold text-[var(--text-1)]">{row.powder || '---'}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">Chiều dài</p>
+                                <p className="text-sm font-bold text-[var(--text-1)]">{row.length || '---'}</p>
+                              </div>
+                            </>
+                          )}
                           <div>
                             <p className="text-[10px] text-[var(--text-3)] font-bold uppercase">SL Đổ</p>
                             <p className="text-sm font-bold text-blue-600">{row.actual_bun_poured} Bun</p>

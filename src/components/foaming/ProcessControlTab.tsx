@@ -168,6 +168,19 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
       const { error } = await supabase.from('foaming_pour_reports').update(updatePayload).eq('id', id)
       if (error) throw error
 
+      // Double-update residual_materials if it exists (sharing the same UUID id)
+      await supabase
+        .from('residual_materials')
+        .update({
+          shift: updatePayload.shift,
+          machine_id: updatePayload.machine_id,
+          manager_name: updatePayload.manager_name,
+          entry_date: updatePayload.report_date,
+          initial_quantity: Number(updatePayload.actual_bun_poured),
+          current_quantity: Number(updatePayload.actual_bun_poured)
+        })
+        .eq('id', id)
+
       setMessage({ type: 'success', text: 'Đã lưu chỉnh sửa thành công!' })
       setEditingId(null)
       setEditState(null)
@@ -363,7 +376,9 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
                   {/* Info grid */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <span className="text-xs font-black text-[var(--text-1)] font-mono">{record.firm_plan}</span>
+                      <span className={`text-xs font-black font-mono ${!record.firm_plan ? 'text-amber-600 bg-amber-500/10 px-2.5 py-1 rounded-full' : 'text-[var(--text-1)]'}`}>
+                        {record.firm_plan || 'Liệu tồn dư'}
+                      </span>
                       {(record.production_plan as any)?.no_order && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600">
                           {(record.production_plan as any).no_order}
@@ -381,7 +396,9 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 text-[11px]">
                       <div className="col-span-2 sm:col-span-4 border-b border-[var(--border)]/50 pb-1.5 mb-1 flex items-center gap-1.5">
                         <span className="text-[var(--text-3)] font-bold shrink-0">Dòng sản phẩm:</span>
-                        <span className="font-extrabold text-[var(--text-1)] text-xs truncate">{(record.production_plan as any)?.ten_san_pham || '—'}</span>
+                        <span className="font-extrabold text-[var(--text-1)] text-xs truncate">
+                          {(record.production_plan as any)?.ten_san_pham || record.material_name || '—'}
+                        </span>
                       </div>
                       <div>
                         <span className="text-[var(--text-3)]">Ngày BC: </span>
@@ -389,7 +406,9 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
                       </div>
                       <div>
                         <span className="text-[var(--text-3)]">Mã Bun: </span>
-                        <span className="font-bold text-[var(--text-1)]">{(record.production_plan as any)?.bun_code || '—'}</span>
+                        <span className="font-bold text-[var(--text-1)]">
+                          {(record.production_plan as any)?.bun_code || record.bun_code || '—'}
+                        </span>
                       </div>
                       <div>
                         <span className="text-[var(--text-3)]">Ca: </span>
@@ -683,7 +702,7 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
                       <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
                         <div className="bg-[var(--bg-page)] rounded-xl p-3">
                           <div className="text-[var(--text-3)] mb-1">Dòng sản phẩm</div>
-                          <div className="font-bold text-[var(--text-1)]">{(record.production_plan as any)?.ten_san_pham || '—'}</div>
+                          <div className="font-bold text-[var(--text-1)]">{(record.production_plan as any)?.ten_san_pham || record.material_name || '—'}</div>
                         </div>
                         <div className="bg-[var(--bg-page)] rounded-xl p-3">
                           <div className="text-[var(--text-3)] mb-1">Loại lỗi NG</div>

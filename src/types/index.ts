@@ -114,7 +114,7 @@ export type FourMCategory = 'Man' | 'Machine' | 'Material' | 'Method';
 
 export interface FoamingPourReport {
   id: string;
-  firm_plan: string;
+  firm_plan?: string | null;
   shift: string;
   machine_id: string | null;
   operator_name: string | null;
@@ -138,6 +138,13 @@ export interface FoamingPourReport {
   created_at: string;
   report_date?: string;
   working_hours?: number;
+  bun_code?: string | null;
+  color?: string | null;
+  density?: string | null;
+  hardness?: string | null;
+  powder?: string | null;
+  length?: string | null;
+  material_name?: string | null;
   actual_quantity?: number;
   productivity_points?: number;
   is_pc_confirmed?: boolean;

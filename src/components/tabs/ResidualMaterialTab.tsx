@@ -258,28 +258,68 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
     setSubmitting(true)
     setStatus(null)
 
-    const { error } = await supabase.from('residual_materials').insert({
-      user_id: user.id,
-      bun_code: formData.bun_code.toUpperCase().trim(),
-      material_name: formData.material_name,
-      color: formData.color,
-      density: formData.density,
-      hardness: formData.hardness,
-      powder: formData.powder,
-      length: formData.length,
-      initial_quantity: Number(formData.quantity),
-      current_quantity: Number(formData.quantity),
-      unit: 'bun',
-      machine_id: formData.machine_id,
-      shift: formData.shift,
-      manager_name: formData.manager_name,
-      entry_date: formData.entry_date
-    })
+    // Insert into residual_materials first and get the generated ID
+    const { data: insertedMaterial, error } = await supabase
+      .from('residual_materials')
+      .insert({
+        user_id: user.id,
+        bun_code: formData.bun_code.toUpperCase().trim(),
+        material_name: formData.material_name,
+        color: formData.color,
+        density: formData.density,
+        hardness: formData.hardness,
+        powder: formData.powder,
+        length: formData.length,
+        initial_quantity: Number(formData.quantity),
+        current_quantity: Number(formData.quantity),
+        unit: 'bun',
+        machine_id: formData.machine_id,
+        shift: formData.shift,
+        manager_name: formData.manager_name,
+        entry_date: formData.entry_date
+      })
+      .select('id')
+      .single()
 
     if (error) {
       setStatus({ type: 'error', msg: 'Lỗi khi thêm liệu tồn: ' + error.message })
+      setSubmitting(false)
+      return
+    }
+
+    // Insert into foaming_pour_reports with the SAME ID and firm_plan = null
+    const { error: pourError } = await supabase
+      .from('foaming_pour_reports')
+      .insert({
+        id: insertedMaterial.id,
+        recorder_id: user.id,
+        firm_plan: null,
+        shift: formData.shift,
+        machine_id: formData.machine_id,
+        operator_name: null,
+        actual_bun_poured: Number(formData.quantity),
+        report_date: formData.entry_date,
+        ng_bun_qty: 0,
+        error_type: null,
+        manager_name: formData.manager_name,
+        note: '[LIỆU TỒN DƯ]',
+        is_compensation: false,
+        bun_code: formData.bun_code.toUpperCase().trim(),
+        color: formData.color,
+        density: formData.density,
+        hardness: formData.hardness,
+        powder: formData.powder,
+        length: formData.length,
+        material_name: formData.material_name,
+        is_pc_confirmed: true
+      })
+
+    if (pourError) {
+      // If inserting into pour reports fails, clean up the residual materials table
+      await supabase.from('residual_materials').delete().eq('id', insertedMaterial.id)
+      setStatus({ type: 'error', msg: 'Lỗi khi gộp vào báo cáo đổ: ' + pourError.message })
     } else {
-      setStatus({ type: 'success', msg: 'Đã thêm liệu tồn mới thành công!' })
+      setStatus({ type: 'success', msg: 'Đã thêm liệu tồn mới và gộp vào báo cáo đổ thành công!' })
       // Reset form
       setFormData({
         bun_code: '',
@@ -340,11 +380,18 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
   }
 
   const handleDeleteMaterial = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa liệu tồn này? Thao tác này cũng sẽ xóa toàn bộ lịch sử sử dụng liên quan.')) return
+    if (!confirm('Bạn có chắc chắn muốn xóa liệu tồn này? Thao tác này cũng sẽ xóa toàn bộ lịch sử sử dụng liên quan và gỡ khỏi báo cáo đổ.')) return
     
-    const { error } = await supabase.from('residual_materials').delete().eq('id', id)
-    if (error) {
-      alert('Lỗi khi xóa: ' + error.message)
+    // Delete from both tables (residual_materials and foaming_pour_reports)
+    const [resMat, resPour] = await Promise.all([
+      supabase.from('residual_materials').delete().eq('id', id),
+      supabase.from('foaming_pour_reports').delete().eq('id', id)
+    ])
+    
+    if (resMat.error) {
+      alert('Lỗi khi xóa liệu tồn: ' + resMat.error.message)
+    } else if (resPour.error) {
+      alert('Lỗi khi xóa báo cáo đổ: ' + resPour.error.message)
     } else {
       fetchData()
     }
