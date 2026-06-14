@@ -531,7 +531,6 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
               <option value="Linh">Linh</option>
               <option value="Thảo">Thảo</option>
               <option value="Tuấn Anh">Tuấn Anh</option>
-              <option value="Lâm">Lâm</option>
             </select>
           </div>
           <div className="space-y-2">

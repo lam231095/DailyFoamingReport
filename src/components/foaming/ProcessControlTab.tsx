@@ -34,7 +34,7 @@ const ERROR_TYPES = [
 
 const MACHINES = ['Máy 1', 'Máy 2', 'Máy 3', 'Máy đổ tay']
 const SHIFTS = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca HC']
-const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh', 'Lâm']
+const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh']
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
 const MINUTES = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
 

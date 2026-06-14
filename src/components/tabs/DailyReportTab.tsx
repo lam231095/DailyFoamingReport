@@ -27,13 +27,12 @@ function cleanProductName(name: string | null | undefined): string {
 
 const TARGET_POUR = 320
 const TARGET_SEPARATE = 300
-const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh', 'Lâm']
+const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh']
 const ALL_CHART_MANAGERS = [...MANAGERS, 'Khác']
 const MANAGER_COLORS: Record<string, string> = {
   'Linh': '#3b82f6',
   'Thảo': '#a855f7',
   'Tuấn Anh': '#10b981',
-  'Lâm': '#f59e0b',
   'Khác': '#94a3b8'
 }
 const safeId = (name: string) => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_')
