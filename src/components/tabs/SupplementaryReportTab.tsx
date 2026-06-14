@@ -865,7 +865,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
       if (error) throw error
       let result = data || []
       if (shiftFilter !== 'Tất cả') result = result.filter((r: any) => r.shift === shiftFilter)
-      setSeparateReports(result as SeparateReport[])
+      setSeparateReports(result as unknown as SeparateReport[])
     } catch (err: any) {
       console.error('Error fetching separate reports:', err)
     } finally {
