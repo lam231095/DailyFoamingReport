@@ -1,0 +1,63 @@
+﻿
+firm_plan        shift actual_bun_separated actual_sheet_received manager_name operator_name    machine_id             product_name                                                                                            
+---------        ----- -------------------- --------------------- ------------ -------------    ----------             ------------                                                                                            
+FPRO-260428-0012 Ca 1                    14                   492 Linh         Hoàng Văn Tuấn   Máy tách cơ 3          OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 4mm                    
+FPRO-260416-0008 Ca 1                    15                  1040 Linh         Cao Thanh Ngọc   Máy tách tự động 3     OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 2mm        
+FPRO-260526-0034 Ca 1                     2                    62 Linh         Cao Thanh Ngọc   Máy tách tự động 3     OrthoLite X-35-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.145D 25+/-4 Asker C 1.1M 2M 4.5mm                   
+RPRO-260522-0240 Ca 1                     1                    25 Linh         Cao Thanh Ngọc   Máy tách tự động 3     OrthoLite X-35-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.145D 25+/-4 Asker C 1.1M 2M 5mm                     
+RPRO-260520-0190 Ca 1                     2                    48 Linh         Cao Thanh Ngọc   Máy tách tự động 3     OrthoLite HybridPlus-Recycled CASTLEROCK/18-0201TPX Hybrid Flat Sheet 0.12D 25+/-4 Asker C 1.1M 2M 4.5mm
+RPRO-260522-0244 Ca 1                     2                    42 Linh         Cao Thanh Ngọc   Máy tách tự động 3     OrthoLite X-40-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.16D 25+/-4 Asker C 1.1M 2M 6mm      
+RPRO-260521-0654 Ca 1                     2                    71 Linh         Cao Thanh Ngọc   Máy tách tự động 3     Ortholite X-25 SEEDPEARL/12-0703TPX Flat Sheet 0.12D 20+/-4 Asker C 1.1M 2M 4mm                         
+RPRO-260526-0386 Ca 1                    33                   924 Linh         Trần Thanh Đại   Máy tách bán tự động 1 OrthoLite Ultra GREEN/16-5932TPX Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 5mm                           
+FPRO-260428-0019 Ca 1                    55                  2500 Linh         Hoàng Văn Tuấn   Máy tách cơ 2          OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 3mm                    
+FPRO-260506-0007 Ca 2                    19                   890 Linh         Phạm Hoàng Nam   Máy tách tự động 2     OrthoLite Impressions-Nike TAWNY PORT/19-1725TPX 0.15D 70-80 Asker F 1.1M 1.7M 3mm                      
+FPRO-260416-0041 Ca 1                    54                  1500 Linh         Hoàng Văn Tuấn   Máy tách cơ 3          OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 5mm        
+RPRO-260525-0370 Ca 2                     3                   120 Thảo         Nguyễn Xuân Tiến Máy tách tự động 2     OrthoLite X-25 BILLIARD/16-5427TPX Flat Sheet 0.12D 20+/-4 Asker C 1.1M 2M 3.5mm                        
+RPRO-260521-0652 Ca 2                     2                    70 Thảo         Nguyễn Xuân Tiến Máy tách tự động 2     OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 4mm                       
+RPRO-260526-0388 Ca 2                     1                    40 Thảo         Nguyễn Xuân Tiến Máy tách tự động 2     OrthoLite X-25 BILLIARD/16-5427TPX Flat Sheet 0.12D 20+/-4 Asker C 1.1M 2M 3.5mm                        
+FPRO-260310-0026 Ca 2                     9                   300 Thảo         Nguyễn Xuân Tiến Máy tách tự động 2     OrthoLite Eco LT-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.11D 25+/-4 Asker C 1.1M 2M 4mm                    
+FPRO-260526-0003 Ca 2                    26                   283 Thảo         Nguyễn Xuân Tiến Máy tách cơ 3          OrthoLite Regular GREY/17-1501TPX Flat Sheet 0.16D 51+/-4 Asker C 1.1M 1.7M 12mm                        
+RPRO-260522-0248 Ca 2                     4                   138 Thảo         Nguyễn Xuân Tiến Máy tách cơ 3          OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 3mm         
+FPRO-260416-0033 Ca 2                    90                  2416 Thảo         Nguyễn Xuân Tiến Máy tách cơ 3          OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 5mm        
+FPRO-260429-0059 Ca 2                    61                  2000 Thảo         Nguyễn Xuân Tiến Máy tách cơ 3          OrthoLite X-35-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid 0.145D 25+/-4 Asker C 1.1M 2M 4.2mm              
+RPRO-260515-0182 Ca 2                     1                     0 Thảo         Nguyễn Xuân Tiến Máy tách cơ 3          OrthoLite Impressions TAWNY PORT/19-1725TPX 0.15D 70-80 Asker F 1.1M 1.7M 10mm                          
+FPRO-260416-0024 Ca 2                    11                   115 Thảo         Nguyễn Hà Sang   Máy tách tự động 2     OrthoLite X-55-Hybrid FOSSIL/17-0909TPX Hybrid Flat Sheet 0.16D 25+/-4 Asker C 1.1M 1.7M 12mm           
+FPRO-260506-0012 Ca 2                     1                     0 Thảo         Nguyễn Xuân Tiến Máy tách cơ 3          OrthoLite Impressions TAWNY PORT/19-1725TPX 0.15D 70-80 Asker F 1.1M 1.7M 2mm                           
+RPRO-260529-0346 Ca 3                     1                    10 Tuấn Anh     Danh Tấn Đức     Máy tách bán tự động 1 OrthoLite X-40 TRUE BLUE/19-4057TPX Flat Sheet 0.16D 25+/-4 Asker C 1.1M 1.7M 7.5mm                     
+RPRO-260529-0341 Ca 3                     3                    30 Tuấn Anh     Danh Tấn Đức     Máy tách tự động 2     OrthoLite Regular NEUTRAL GRAY/17-4402TPX Flat Sheet 0.16D 51+/-4 Asker C 1.1M 1.7M 9.5mm               
+FPRO-260428-0013 Ca 3                     6                   210 Tuấn Anh     Nguyễn Hữu Diện  Máy tách cơ 3          OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 4mm                    
+RPRO-260529-0214 Ca 3                     9                   198 Tuấn Anh     Trần Thanh Đại   Máy tách tự động 2     OrthoLite X-25 BILLIARD/16-5427TPX Flat Sheet 0.12D 20+/-4 Asker C 1.1M 2M 6.2mm                        
+RPRO-260526-0383 Ca 3                     3                   140 Tuấn Anh     Trần Thanh Đại   Máy tách tự động 2     OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 2mm         
+RPRO-260525-0375 Ca 3                     1                    40 Tuấn Anh     Trần Thanh Đại   Máy tách tự động 2     OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 3.5mm      
+RPRO-260528-0711 Ca 3                    11                   440 Tuấn Anh     Nguyễn Văn Thủy  Máy tách tự động 2     OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 3.5mm      
+RPRO-260529-0225 Ca 3                     3                    62 Tuấn Anh     Nguyễn Văn Thủy  Máy tách tự động 2     OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 4.5mm      
+RPRO-260529-0229 Ca 3                     5                   184 Tuấn Anh     Nguyễn Văn Thủy  Máy tách tự động 2     OrthoLite Ultra-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 15+/-4 Asker C 1.1M 2M 3mm    
+FPRO-260429-0023 Ca 3                    29                   890 Tuấn Anh     Nguyễn Văn Thủy  Máy tách tự động 2     OrthoLite Regular-Nike AIR BLUE/16-4134TPX 0.11D 15+/-4 Asker C 1.1M 2M 4mm                             
+FPRO-260428-0015 Ca 3                    98                  3292 Tuấn Anh     Nguyễn Hữu Diện  Máy tách tự động 2     OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 4mm                    
+FPRO-260416-0015 Ca 3                    45                   530 Tuấn Anh     Trương Văn Đạt   Máy tách tự động 2     OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 12mm       
+FPRO-260416-0024 Ca 3                    43                   495 Tuấn Anh     Trần Thanh Đại   Máy tách tự động 2     OrthoLite X-55-Hybrid FOSSIL/17-0909TPX Hybrid Flat Sheet 0.16D 25+/-4 Asker C 1.1M 1.7M 12mm           
+
+
+
+
+firm_plan        shift actual_bun_poured manager_name operator_name     machine_id
+---------        ----- ----------------- ------------ -------------     ----------
+FPRO-260518-0003 Ca 1                 85 Linh         Nguyễn Văn Kha    Máy 3     
+FPRO-260416-0015 Ca 1                144 Linh         Phạm Tuấn Dũ      Máy 1     
+FPRO-260416-0008 Ca 1                 51 Linh         Phạm Tuấn Dũ      Máy 1     
+FPRO-260416-0041 Ca 1                  0 Linh         Phạm Tuấn Dũ      Máy 1     
+RPRO-260525-0375 Ca 1                 16 Linh         Phạm Tuấn Dũ      Máy 1     
+RPRO-260528-0711 Ca 1                  0 Linh         Phạm Tuấn Dũ      Máy 1     
+RPRO-260529-0225 Ca 1                  0 Linh         Phạm Tuấn Dũ      Máy 1     
+RPRO-260529-0230 Ca 1                  0 Linh         Phạm Tuấn Dũ      Máy 1     
+RPRO-260601-0849 Ca 1                  1 Linh         Phạm Tuấn Dũ      Máy 1     
+FPRO-260429-0043 Ca 3                 38 Tuấn Anh     Biện Công Phúc Vy Máy 2     
+FPRO-260429-0049 Ca 3                 22 Tuấn Anh     Biện Công Phúc Vy Máy 2     
+FPRO-260324-0011 Ca 3                 39 Tuấn Anh     Biện Công Phúc Vy Máy 2     
+FPRO-260521-0011 Ca 3                  8 Tuấn Anh     Lê Duy Khang      Máy 1     
+RPRO-260528-0647 Ca 3                 37 Tuấn Anh     Lê Duy Khang      Máy 1     
+RPRO-260528-0640 Ca 3                  6 Tuấn Anh     Lê Duy Khang      Máy 1     
+FPRO-260416-0018 Ca 3                 34 Tuấn Anh     Lê Duy Khang      Máy 1     
+
+
+

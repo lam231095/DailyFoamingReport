@@ -1,0 +1,23 @@
+﻿{
+    "id":  "39f872b7-b831-41bf-8625-ac11e956aa0f",
+    "firm_plan":  "RPRO-260601-0862",
+    "shift":  "Ca 2",
+    "actual_bun_poured":  6,
+    "lot_no":  null,
+    "recorder_id":  "8acc93be-cff0-4103-b76f-4de025e9bca1",
+    "created_at":  "2026-06-08T01:28:04.210893+00:00",
+    "machine_id":  "Máy 3",
+    "operator_name":  "Nguyễn Tuấn Kiệt",
+    "ng_bun_qty":  0,
+    "error_type":  "",
+    "cleaning_agent_kg":  0,
+    "waste_kg":  0,
+    "note":  null,
+    "report_date":  "2026-06-06",
+    "manager_name":  "Thảo",
+    "is_compensation":  false,
+    "storage_location":  null,
+    "storage_line":  null,
+    "color_tag":  null,
+    "storage_carts":  1
+}

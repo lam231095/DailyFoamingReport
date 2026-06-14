@@ -1,0 +1,933 @@
+﻿Total reports loaded: 379
+==========================================================================================
+TARGET PRODUCT: AIR BLUE/16-4134TPX
+==========================================================================================
+Date: 2026-05-16 | Shift: Ca 3 | Plan: FPRO-260504-0014
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 13 | Sheets Recv: 311
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 23.9
+  Calculated Thickness: 119.6 mm
+  NG Qty: 45 | Error Type: Bọt khí (35), Loang trắng (10) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 1 | Plan: FPRO-260504-0009
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 7 | Sheets Recv: 73
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 10.4
+  Calculated Thickness: 125.1 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-14 | Shift: Ca 1 | Plan: RPRO-260504-0931
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 6mm
+  Sheet Thick: 6 mm | Bun Target: 144 mm
+  Bun Sep: 4 | Sheets Recv: 75
+  Expected Sheets/Bun: 24 | Actual Sheets/Bun: 18.8
+  Calculated Thickness: 112.5 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-16 | Shift: Ca 1 | Plan: FPRO-260324-0022
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX 0.11D 25+/-4 Asker C 1.1M 2M 4.2mm
+  Sheet Thick: 4.2 mm | Bun Target: 144 mm
+  Bun Sep: 12 | Sheets Recv: 204
+  Expected Sheets/Bun: 34.3 | Actual Sheets/Bun: 17
+  Calculated Thickness: 71.4 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 1 | Plan: FPRO-260504-0010
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 5 | Sheets Recv: 167
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 33.4
+  Calculated Thickness: 133.6 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 2 | Plan: RPRO-260507-0662
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 8 | Sheets Recv: 217
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 27.1
+  Calculated Thickness: 122.1 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 2 | Plan: FPRO-260504-0014
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 2 | Sheets Recv: 44
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 22
+  Calculated Thickness: 110 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-05 | Shift: Ca 2 | Plan: FPRO-260324-0021
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX 0.11D 25+/-4 Asker C 1.1M 2M 4.2mm
+  Sheet Thick: 4 mm | Bun Target: 140 mm
+  Bun Sep: 76 | Sheets Recv: 2500
+  Expected Sheets/Bun: 35 | Actual Sheets/Bun: 32.9
+  Calculated Thickness: 131.6 mm
+  NG Qty: 140 | Error Type: Loang trắng (140) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-08 | Shift: Ca HC | Plan: FPRO-260324-0048
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX 0.11D 15+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 29 | Sheets Recv: 960
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 33.1
+  Calculated Thickness: 132.4 mm
+  NG Qty: 400 | Error Type: Lõm mặt (400) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-08 | Shift: Ca HC | Plan: FPRO-260324-0048
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX 0.11D 15+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 29 | Sheets Recv: 960
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 33.1
+  Calculated Thickness: 132.4 mm
+  NG Qty: 40 | Error Type: Bọt khí (40) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-11 | Shift: Ca 3 | Plan: RPRO-260429-0465
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 6mm
+  Sheet Thick: 6 mm | Bun Target: 144 mm
+  Bun Sep: 77 | Sheets Recv: 1732
+  Expected Sheets/Bun: 24 | Actual Sheets/Bun: 22.5
+  Calculated Thickness: 135 mm
+  NG Qty: 20 | Error Type: Nứt rách (20) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-12 | Shift: Ca 1 | Plan: RPRO-260429-0443
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 46
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 23
+  Calculated Thickness: 69 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 1 | Plan: RPRO-260512-0085
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 46
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 23
+  Calculated Thickness: 69 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 2 | Plan: RPRO-260512-0584
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 2 | Sheets Recv: 39
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 19.5
+  Calculated Thickness: 97.5 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-21 | Shift: Ca 1 | Plan: RPRO-260511-0340
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 11 | Sheets Recv: 121
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 11
+  Calculated Thickness: 132 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-21 | Shift: Ca 3 | Plan: RPRO-260514-0444
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 1 | Sheets Recv: 11
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 11
+  Calculated Thickness: 132 mm
+  NG Qty: 1 | Error Type: Lõm mặt (1) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-21 | Shift: Ca 3 | Plan: RPRO-260512-0096
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 12mm (02*SLT)
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 1 | Sheets Recv: 11
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 11
+  Calculated Thickness: 132 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-22 | Shift: Ca 3 | Plan: FPRO-260324-0018
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX 0.11D 25+/-4 Asker C 1.1M 2M 4.2mm
+  Sheet Thick: 4.2 mm | Bun Target: 144 mm
+  Bun Sep: 76 | Sheets Recv: 2412
+  Expected Sheets/Bun: 34.3 | Actual Sheets/Bun: 31.7
+  Calculated Thickness: 133.3 mm
+  NG Qty: 118 | Error Type: Loang đen (88), Lõm mặt (30) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 1 | Plan: RPRO-260508-0413
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 1.7M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 3 | Sheets Recv: 140
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 46.7
+  Calculated Thickness: 93.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 1 | Plan: RPRO-260507-0663
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 1.7M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 70
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 35
+  Calculated Thickness: 70 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 1 | Plan: RPRO-260512-0095
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 1.7M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 3 | Sheets Recv: 140
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 46.7
+  Calculated Thickness: 93.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 2 | Plan: FPRO-260429-0003
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX 0.11D 25+/-4 Asker C 1.1M 1.7M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 29 | Sheets Recv: 1900
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 65.5
+  Calculated Thickness: 131 mm
+  NG Qty: 100 | Error Type: Lỗi khác: Xốp góc (100) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-25 | Shift: Ca 2 | Plan: RPRO-260518-0786
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 46
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 23
+  Calculated Thickness: 69 mm
+  NG Qty: 2 | Error Type: Bọt khí (2) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-25 | Shift: Ca 2 | Plan: FPRO-260428-0001
+  Product: OrthoLite Regular-Nike AIR BLUE/16-4134TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 15 | Sheets Recv: 500
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 33.3
+  Calculated Thickness: 133.3 mm
+  NG Qty: 100 | Error Type: Lõm mặt (30), Nứt rách (70) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-25 | Shift: Ca 3 | Plan: FPRO-260130-0014
+  Product: OrthoLite Regular AIR BLUE/16-4134TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 2M 2.5mm
+  Sheet Thick: 2.5 mm | Bun Target: 145 mm
+  Bun Sep: 28 | Sheets Recv: 1255
+  Expected Sheets/Bun: 58 | Actual Sheets/Bun: 44.8
+  Calculated Thickness: 112.1 mm
+  NG Qty: 336 | Error Type: Bọt khí (112), Nứt rách (224) | Note: 
+------------------------------------------------------------------------------------------
+Total matches for AIR BLUE/16-4134TPX : 25
+
+==========================================================================================
+TARGET PRODUCT: SEEDPEARL/1
+==========================================================================================
+Date: 2026-05-16 | Shift: Ca 1 | Plan: FPRO-260504-0002
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 20mm
+  Sheet Thick: 20 mm | Bun Target: 144 mm
+  Bun Sep: 3 | Sheets Recv: 16
+  Expected Sheets/Bun: 7.2 | Actual Sheets/Bun: 5.3
+  Calculated Thickness: 106.7 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-16 | Shift: Ca HC | Plan: FPRO-260416-0009
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 15 | Sheets Recv: 1000
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 66.7
+  Calculated Thickness: 133.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 1 | Plan: RPRO-260506-0362
+  Product: OrthoLite X-40-Nike SEEDPEARL/12-0703TPX Flat Sheet 0.16D 35+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 6 | Sheets Recv: 155
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 25.8
+  Calculated Thickness: 116.2 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 1 | Plan: RPRO-260511-0344
+  Product: OrthoLite X-25-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.12D 20+/-4 Asker C 1.1M 2M 14mm
+  Sheet Thick: 14 mm | Bun Target: 140 mm
+  Bun Sep: 1 | Sheets Recv: 9
+  Expected Sheets/Bun: 10 | Actual Sheets/Bun: 9
+  Calculated Thickness: 126 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-15 | Shift: Ca 1 | Plan: RPRO-260428-1295
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 20mm
+  Sheet Thick: 20 mm | Bun Target: 144 mm
+  Bun Sep: 8 | Sheets Recv: 42
+  Expected Sheets/Bun: 7.2 | Actual Sheets/Bun: 5.2
+  Calculated Thickness: 105 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-15 | Shift: Ca 2 | Plan: RPRO-260505-0673
+  Product: OrthoLite IMPERIAL SEEDPEARL/12-0703TPX Flat Sheet 0.22D 25+/-4 Asker C 1.1M 1.47M 5mm
+  Sheet Thick: 10 mm | Bun Target: 145 mm
+  Bun Sep: 1 | Sheets Recv: 12
+  Expected Sheets/Bun: 14.5 | Actual Sheets/Bun: 12
+  Calculated Thickness: 120 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-15 | Shift: Ca 3 | Plan: FPRO-260318-0020
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 215 | Sheets Recv: 2370
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 11
+  Calculated Thickness: 132.3 mm
+  NG Qty: 70 | Error Type: Lõm mặt (50), Nứt rách (20) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-14 | Shift: Ca 1 | Plan: RPRO-260505-0682
+  Product: OrthoLite Eco LT-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 13mm
+  Sheet Thick: 13 mm | Bun Target: 143 mm
+  Bun Sep: 9 | Sheets Recv: 90
+  Expected Sheets/Bun: 11 | Actual Sheets/Bun: 10
+  Calculated Thickness: 130 mm
+  NG Qty: 9 | Error Type: Lõm mặt (9) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-14 | Shift: Ca 1 | Plan: FPRO-260416-0032
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 70 | Sheets Recv: 1015
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 14.5
+  Calculated Thickness: 72.5 mm
+  NG Qty: 19 | Error Type: Lõm mặt (19) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-15 | Shift: Ca 2 | Plan: RPRO-260504-0921
+  Product: OrthoLite IMPERIAL SEEDPEARL/12-0703TPX Flat Sheet 0.22D 25+/-4 Asker C 1.1M 1.47M 5mm
+  Sheet Thick: 10 mm | Bun Target: 145 mm
+  Bun Sep: 1 | Sheets Recv: 12
+  Expected Sheets/Bun: 14.5 | Actual Sheets/Bun: 12
+  Calculated Thickness: 120 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-15 | Shift: Ca 2 | Plan: RPRO-260428-1306
+  Product: OrthoLite X-35-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.145D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 31
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 15.5
+  Calculated Thickness: 69.8 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-16 | Shift: Ca 1 | Plan: FPRO-260401-0005
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 4 | Sheets Recv: 70
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 17.5
+  Calculated Thickness: 87.5 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-04-28 | Shift: Ca 3 | Plan: FPRO-260418-0003
+  Product: OrthoLite Eco LT-Hybrid-Converse SEEDPEARL/12-0703TPX Hybrid 0.11D 25+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 140 mm
+  Bun Sep: 72 | Sheets Recv: 1630
+  Expected Sheets/Bun: 28 | Actual Sheets/Bun: 22.6
+  Calculated Thickness: 113.2 mm
+  NG Qty: 370 | Error Type: Loang đen (370) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-05 | Shift: Ca HC | Plan: FPRO-260130-0024
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 140 mm
+  Bun Sep: 15 | Sheets Recv: 1000
+  Expected Sheets/Bun: 70 | Actual Sheets/Bun: 66.7
+  Calculated Thickness: 133.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-06 | Shift: Ca 2 | Plan: RPRO-260421-0638
+  Product: OrthoLite X-25-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.12D 20+/-4 Asker C 1.1M 2M 14mm
+  Sheet Thick: 14 mm | Bun Target: 140 mm
+  Bun Sep: 4 | Sheets Recv: 36
+  Expected Sheets/Bun: 10 | Actual Sheets/Bun: 9
+  Calculated Thickness: 126 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-06 | Shift: Ca 2 | Plan: FPRO-260324-0056
+  Product: OrthoLite Ultra-Nike SEEDPEARL/12-0703TPX 0.085D 5-10 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 9 | Sheets Recv: 300
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 33.3
+  Calculated Thickness: 133.3 mm
+  NG Qty: 24 | Error Type: Lõm mặt (24) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-06 | Shift: Ca 2 | Plan: FPRO-260211-0038
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 14 | Sheets Recv: 470
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 33.6
+  Calculated Thickness: 134.3 mm
+  NG Qty: 34 | Error Type: Lõm mặt (34) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-06 | Shift: Ca 2 | Plan: FPRO-260211-0038
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 14 | Sheets Recv: 470
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 33.6
+  Calculated Thickness: 134.3 mm
+  NG Qty: 34 | Error Type: Lõm mặt (34) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-06 | Shift: Ca 2 | Plan: FPRO-260418-0003
+  Product: OrthoLite Eco LT-Hybrid-Converse SEEDPEARL/12-0703TPX Hybrid 0.11D 25+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 144 mm
+  Bun Sep: 14 | Sheets Recv: 370
+  Expected Sheets/Bun: 28.8 | Actual Sheets/Bun: 26.4
+  Calculated Thickness: 132.1 mm
+  NG Qty: 36 | Error Type: Lõm mặt (36) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-07 | Shift: Ca HC | Plan: FPRO-260211-0041
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 431 | Sheets Recv: 1500
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 3.5
+  Calculated Thickness: 13.9 mm
+  NG Qty: 1 | Error Type: Lõm mặt (1) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-08 | Shift: Ca 1 | Plan: RPRO-260424-1179
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.095D 33+/-4 Asker C 1.1M 2M 5.2mm
+  Sheet Thick: 5.2 mm | Bun Target: 146 mm
+  Bun Sep: 6 | Sheets Recv: 156
+  Expected Sheets/Bun: 28.1 | Actual Sheets/Bun: 26
+  Calculated Thickness: 135.2 mm
+  NG Qty: 22 | Error Type: Cứng đáy (6), Lõm mặt (4), Lỗi khác (12) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-06 | Shift: Ca 3 | Plan: FPRO-260330-0020
+  Product: OrthoLite X-40-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.16D 25+/-4 Asker C 1.1M 2M 5.5mm
+  Sheet Thick: 5.4 mm | Bun Target: 143 mm
+  Bun Sep: 40 | Sheets Recv: 1000
+  Expected Sheets/Bun: 26.5 | Actual Sheets/Bun: 25
+  Calculated Thickness: 135 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-11 | Shift: Ca 3 | Plan: RPRO-260429-0451
+  Product: Ortholite X-25 SEEDPEARL/12-0703TPX Flat Sheet 0.12D 20+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 13 | Sheets Recv: 440
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 33.8
+  Calculated Thickness: 135.4 mm
+  NG Qty: 15 | Error Type: Lõm mặt (15) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-12 | Shift: Ca 1 | Plan: RPRO-260429-0462
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 10mm
+  Sheet Thick: 10 mm | Bun Target: 140 mm
+  Bun Sep: 18 | Sheets Recv: 234
+  Expected Sheets/Bun: 14 | Actual Sheets/Bun: 13
+  Calculated Thickness: 130 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-12 | Shift: Ca 1 | Plan: RPRO-260505-0678
+  Product: OrthoLite X-40-Nike SEEDPEARL/12-0703TPX Flat Sheet 0.16D 35+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 7 | Sheets Recv: 186
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 26.6
+  Calculated Thickness: 119.6 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-12 | Shift: Ca 3 | Plan: RPRO-260504-0918
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 9 | Sheets Recv: 600
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 66.7
+  Calculated Thickness: 133.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-12 | Shift: Ca 3 | Plan: FPRO-260410-0008
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 10 | Sheets Recv: 675
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 67.5
+  Calculated Thickness: 135 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-13 | Shift: Ca 1 | Plan: RPRO-260508-0411
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 70
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 35
+  Calculated Thickness: 70 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-13 | Shift: Ca 1 | Plan: RPRO-260506-0355
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 70
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 35
+  Calculated Thickness: 70 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-13 | Shift: Ca 1 | Plan: RPRO-260505-0682
+  Product: OrthoLite Eco LT-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 13mm
+  Sheet Thick: 13 mm | Bun Target: 143 mm
+  Bun Sep: 34 | Sheets Recv: 340
+  Expected Sheets/Bun: 11 | Actual Sheets/Bun: 10
+  Calculated Thickness: 130 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-13 | Shift: Ca 1 | Plan: RPRO-260504-0940
+  Product: OrthoLite Ultra-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 15+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 3 | Sheets Recv: 140
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 46.7
+  Calculated Thickness: 93.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-13 | Shift: Ca 1 | Plan: RPRO-260507-0667
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 31
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 15.5
+  Calculated Thickness: 69.8 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-13 | Shift: Ca 1 | Plan: FPRO-260504-0001
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 1 | Sheets Recv: 21
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 21
+  Calculated Thickness: 94.5 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-13 | Shift: Ca 1 | Plan: RPRO-260429-0467
+  Product: OrthoLite Ultra-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 15+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 4 | Sheets Recv: 138
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 34.5
+  Calculated Thickness: 103.5 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-13 | Shift: Ca 1 | Plan: RPRO-260504-0934
+  Product: OrthoLite Ultra-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 15+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 7 | Sheets Recv: 276
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 39.4
+  Calculated Thickness: 118.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 3 | Plan: RPRO-260507-0671
+  Product: OrthoLite X-25-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.12D 20+/-4 Asker C 1.1M 1.47M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 15 | Sheets Recv: 374
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 24.9
+  Calculated Thickness: 112.2 mm
+  NG Qty: 60 | Error Type: Bọt khí (15), Lỗi khác (45) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-19 | Shift: Ca 1 | Plan: FPRO-260416-0003
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 15 | Sheets Recv: 1000
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 66.7
+  Calculated Thickness: 133.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-19 | Shift: Ca 1 | Plan: FPRO-260410-0006
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 15 | Sheets Recv: 1000
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 66.7
+  Calculated Thickness: 133.3 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-19 | Shift: Ca 3 | Plan: RPRO-260508-0414
+  Product: OrthoLite X-35-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.145D 25+/-4 Asker C 1.1M 2M 5.5mm
+  Sheet Thick: 5.5 mm | Bun Target: 145 mm
+  Bun Sep: 4 | Sheets Recv: 96
+  Expected Sheets/Bun: 26.4 | Actual Sheets/Bun: 24
+  Calculated Thickness: 132 mm
+  NG Qty: 8 | Error Type: Lõm mặt (1), Cứng đáy (2), Lỗi khác (5) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-19 | Shift: Ca 3 | Plan: FPRO-260324-0004
+  Product: OrthoLite Ultra-Nike SEEDPEARL/12-0703TPX 0.085D 25+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 58 | Sheets Recv: 1816
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 31.3
+  Calculated Thickness: 125.2 mm
+  NG Qty: 272 | Error Type: Lõm mặt (30), Cứng đáy (242) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 1 | Plan: FPRO-260504-0008
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 2.5mm
+  Sheet Thick: 2.5 mm | Bun Target: 145 mm
+  Bun Sep: 1 | Sheets Recv: 9
+  Expected Sheets/Bun: 58 | Actual Sheets/Bun: 9
+  Calculated Thickness: 22.5 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 1 | Plan: RPRO-260512-0113
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 16mm
+  Sheet Thick: 16 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 16
+  Expected Sheets/Bun: 9 | Actual Sheets/Bun: 8
+  Calculated Thickness: 128 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 1 | Plan: RPRO-260505-0687
+  Product: OrthoLite Regular SEEDPEARL/12-0703TPX Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 7.5mm
+  Sheet Thick: 7.5 mm | Bun Target: 144 mm
+  Bun Sep: 3 | Sheets Recv: 36
+  Expected Sheets/Bun: 19.2 | Actual Sheets/Bun: 12
+  Calculated Thickness: 90 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 2 | Plan: RPRO-260507-0666
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.095D 33+/-4 Asker C 1.1M 2M 15.5mm
+  Sheet Thick: 15.5 mm | Bun Target: 144 mm
+  Bun Sep: 14 | Sheets Recv: 112
+  Expected Sheets/Bun: 9.3 | Actual Sheets/Bun: 8
+  Calculated Thickness: 124 mm
+  NG Qty: 14 | Error Type: Lõm mặt (14) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 2 | Plan: FPRO-260428-0016
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 53 | Sheets Recv: 2400
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 45.3
+  Calculated Thickness: 135.8 mm
+  NG Qty: 38 | Error Type: Lõm mặt (38) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 2 | Plan: FPRO-260505-0003
+  Product: OrthoLite X-60-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.19D 28+/-4 Asker C 1.1M 1.7M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 18 | Sheets Recv: 198
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 11
+  Calculated Thickness: 132 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 2 | Plan: RPRO-260421-0690
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.15D 45+/-4 Asker C 1.1M 1.7M 11mm
+  Sheet Thick: 11 mm | Bun Target: 143 mm
+  Bun Sep: 1 | Sheets Recv: 12
+  Expected Sheets/Bun: 13 | Actual Sheets/Bun: 12
+  Calculated Thickness: 132 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-21 | Shift: Ca 2 | Plan: RPRO-260512-0094
+  Product: OrthoLite Regular SEEDPEARL/12-0703TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 1.47M 15mm
+  Sheet Thick: 15 mm | Bun Target: 144 mm
+  Bun Sep: 1 | Sheets Recv: 0
+  Expected Sheets/Bun: 9.6 | Actual Sheets/Bun: 0
+  Calculated Thickness: 0 mm
+  NG Qty: 8 | Error Type: NG màu (8) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-21 | Shift: Ca 2 | Plan: RPRO-260511-0337
+  Product: OrthoLite Regular SEEDPEARL/12-0703TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 1.47M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 3 | Sheets Recv: 0
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 0
+  Calculated Thickness: 0 mm
+  NG Qty: 105 | Error Type: NG màu (105) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-21 | Shift: Ca 2 | Plan: RPRO-260515-0260
+  Product: OrthoLite X-40-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.16D 35+/-4 Asker C 1.1M 2M 12.5mm
+  Sheet Thick: 12.5 mm | Bun Target: 144 mm
+  Bun Sep: 1 | Sheets Recv: 10
+  Expected Sheets/Bun: 11.5 | Actual Sheets/Bun: 10
+  Calculated Thickness: 125 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-22 | Shift: Ca 1 | Plan: RPRO-260511-0350
+  Product: OrthoLite Ultra-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 15+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 90
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 45
+  Calculated Thickness: 135 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-22 | Shift: Ca 3 | Plan: RPRO-260511-0349
+  Product: OrthoLite Eco LT-Hybrid-Converse SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 4 | Sheets Recv: 104
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 26
+  Calculated Thickness: 130 mm
+  NG Qty: 12 | Error Type: Lõm mặt (8), Cứng đáy (4) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-22 | Shift: Ca 3 | Plan: RPRO-260512-0104
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 3 | Sheets Recv: 90
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 30
+  Calculated Thickness: 135 mm
+  NG Qty: 6 | Error Type: Lõm mặt (3), Cứng đáy (3) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-22 | Shift: Ca 3 | Plan: RPRO-260518-0821
+  Product: OrthoLite Ultra-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 2 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 70
+  Expected Sheets/Bun: 72 | Actual Sheets/Bun: 35
+  Calculated Thickness: 70 mm
+  NG Qty: 2 | Error Type: Cứng đáy (2) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 1 | Plan: RPRO-260513-0808
+  Product: OrthoLite X-35-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.145D 25+/-4 Asker C 1.1M 2M 5.2mm
+  Sheet Thick: 5.2 mm | Bun Target: 145 mm
+  Bun Sep: 3 | Sheets Recv: 78
+  Expected Sheets/Bun: 27.9 | Actual Sheets/Bun: 26
+  Calculated Thickness: 135.2 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 1 | Plan: RPRO-260420-0511
+  Product: OrthoLite X-35-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.145D 25+/-4 Asker C 1.1M 2M 5.2mm (SLT)
+  Sheet Thick: 5.2 mm | Bun Target: 145 mm
+  Bun Sep: 11 | Sheets Recv: 286
+  Expected Sheets/Bun: 27.9 | Actual Sheets/Bun: 26
+  Calculated Thickness: 135.2 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 1 | Plan: RPRO-260518-0798
+  Product: OrthoLite X-35-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.145D 25+/-4 Asker C 1.1M 2M 5.2mm
+  Sheet Thick: 5.2 mm | Bun Target: 145 mm
+  Bun Sep: 12 | Sheets Recv: 312
+  Expected Sheets/Bun: 27.9 | Actual Sheets/Bun: 26
+  Calculated Thickness: 135.2 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 2 | Plan: FPRO-260428-0017
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 153 | Sheets Recv: 5800
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 37.9
+  Calculated Thickness: 113.7 mm
+  NG Qty: 1200 | Error Type: Nứt rách (1200) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 2 | Plan: RPRO-260512-0094
+  Product: OrthoLite Regular SEEDPEARL/12-0703TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 1.47M 15mm
+  Sheet Thick: 15 mm | Bun Target: 144 mm
+  Bun Sep: 1 | Sheets Recv: 9
+  Expected Sheets/Bun: 9.6 | Actual Sheets/Bun: 9
+  Calculated Thickness: 135 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 2 | Plan: FPRO-260416-0017
+  Product: OrthoLite Regular-Hybrid SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.11D 25+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 34 | Sheets Recv: 380
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 11.2
+  Calculated Thickness: 134.1 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 3 | Plan: FPRO-260409-0006
+  Product: OrthoLite X-25 SEEDPEARL/12-0703TPX Flat Sheet 0.12D 20+/-4 Asker C 1.1M 2M 5.5mm
+  Sheet Thick: 5.5 mm | Bun Target: 145 mm
+  Bun Sep: 20 | Sheets Recv: 491
+  Expected Sheets/Bun: 26.4 | Actual Sheets/Bun: 24.6
+  Calculated Thickness: 135 mm
+  NG Qty: 29 | Error Type: Lõm mặt (13), Cứng đáy (16) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 3 | Plan: RPRO-260513-0804
+  Product: OrthoLite Ultra SEEDPEARL/12-0703TPX Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 6mm
+  Sheet Thick: 6 mm | Bun Target: 144 mm
+  Bun Sep: 21 | Sheets Recv: 460
+  Expected Sheets/Bun: 24 | Actual Sheets/Bun: 21.9
+  Calculated Thickness: 131.4 mm
+  NG Qty: 20 | Error Type: Bọt khí (20) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-23 | Shift: Ca 3 | Plan: FPRO-260428-0018
+  Product: OrthoLite Ultra-Hybrid SEEDPEARL/12-0703TPX Hybrid 0.085D 25+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 153 | Sheets Recv: 6770
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 44.2
+  Calculated Thickness: 132.7 mm
+  NG Qty: 220 | Error Type: Lõm mặt (70), Nứt rách (100), Cứng đáy (50) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-15 | Shift: Ca 3 | Plan: RPRO-260429-0442
+  Product: OrthoLite IMPERIAL SEEDPEARL/12-0703TPX Flat Sheet 0.22D 25+/-4 Asker C 1.1M 1.47M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 20 | Sheets Recv: 58
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 2.9
+  Calculated Thickness: 11.6 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-06 | Shift: Ca 3 | Plan: RPRO-260428-1302
+  Product: OrthoLite X-35-Hybrid-Nike SEEDPEARL/12-0703TPX Hybrid Flat Sheet 0.145D 25+/-4 Asker C 1.1M 2M 5.2mm
+  Sheet Thick: 5.1 mm | Bun Target: 141 mm
+  Bun Sep: 9 | Sheets Recv: 234
+  Expected Sheets/Bun: 27.6 | Actual Sheets/Bun: 26
+  Calculated Thickness: 132.6 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-19 | Shift: Ca 2 | Plan: RPRO-260511-0338
+  Product: OrthoLite Regular SEEDPEARL/12-0703TPX Flat Sheet 0.13D 35+/-4 Asker C 1.1M 1.47M 13mm
+  Sheet Thick: 13 mm | Bun Target: 143 mm
+  Bun Sep: 1 | Sheets Recv: 10
+  Expected Sheets/Bun: 11 | Actual Sheets/Bun: 10
+  Calculated Thickness: 130 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-25 | Shift: Ca 2 | Plan: FPRO-260324-0005
+  Product: OrthoLite Ultra-Nike SEEDPEARL/12-0703TPX 0.085D 25+/-4 Asker C 1.1M 2M 4mm
+  Sheet Thick: 4 mm | Bun Target: 144 mm
+  Bun Sep: 15 | Sheets Recv: 485
+  Expected Sheets/Bun: 36 | Actual Sheets/Bun: 32.3
+  Calculated Thickness: 129.3 mm
+  NG Qty: 70 | Error Type: Lõm mặt (25), Cứng đáy (30), Bọt khí (15) | Note: 
+------------------------------------------------------------------------------------------
+Total matches for SEEDPEARL/1 : 67
+
+==========================================================================================
+TARGET PRODUCT: YELLOW/13-0858TPX
+==========================================================================================
+Date: 2026-05-15 | Shift: Ca 2 | Plan: RPRO-260506-0366
+  Product: OrthoLite Ultra-Nike YELLOW/13-0858TPX Flat Sheet 0.085D 15+/-4 Asker C 1.1M 2M 2mm
+  Sheet Thick: 8 mm | Bun Target: 144 mm
+  Bun Sep: 4 | Sheets Recv: 53
+  Expected Sheets/Bun: 18 | Actual Sheets/Bun: 13.2
+  Calculated Thickness: 106 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 1 | Plan: RPRO-260504-0914
+  Product: OrthoLite Ultra YELLOW/13-0858TPX Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 19 | Sheets Recv: 828
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 43.6
+  Calculated Thickness: 130.7 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 3 | Plan: FPRO-260504-0007
+  Product: OrthoLite Ultra YELLOW/13-0858TPX Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 34 | Sheets Recv: 911
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 26.8
+  Calculated Thickness: 134 mm
+  NG Qty: 22 | Error Type: Cứng đáy (22) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-18 | Shift: Ca 3 | Plan: FPRO-260504-0007
+  Product: OrthoLite Ultra YELLOW/13-0858TPX Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 34 | Sheets Recv: 913
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 26.9
+  Calculated Thickness: 134.3 mm
+  NG Qty: 73 | Error Type: Lõm mặt (28), Cứng đáy (45) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-19 | Shift: Ca 2 | Plan: RPRO-260506-0356
+  Product: OrthoLite X-35-Nike YELLOW/13-0858TPX Flat Sheet 0.145D 25+/-4 Asker C 1.1M 2M 5.5mm
+  Sheet Thick: 5.5 mm | Bun Target: 145 mm
+  Bun Sep: 1 | Sheets Recv: 0
+  Expected Sheets/Bun: 26.4 | Actual Sheets/Bun: 0
+  Calculated Thickness: 0 mm
+  NG Qty: 25 | Error Type: Lỗi khác (25) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-20 | Shift: Ca 2 | Plan: FPRO-260406-0004
+  Product: OrthoLite KidsLite YELLOW/13-0858TPX Flat Sheet 0.065D 25+/-5 Asker C 1.1M 2M 3mm
+  Sheet Thick: 3 mm | Bun Target: 144 mm
+  Bun Sep: 4 | Sheets Recv: 180
+  Expected Sheets/Bun: 48 | Actual Sheets/Bun: 45
+  Calculated Thickness: 135 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-21 | Shift: Ca 2 | Plan: RPRO-260513-0784
+  Product: OrthoLite Ultra YELLOW/13-0858TPX Flat Sheet 0.085D 25+/-4 Asker C 1.1M 2M 5mm
+  Sheet Thick: 5 mm | Bun Target: 145 mm
+  Bun Sep: 11 | Sheets Recv: 284
+  Expected Sheets/Bun: 29 | Actual Sheets/Bun: 25.8
+  Calculated Thickness: 129.1 mm
+  NG Qty: 35 | Error Type: Lõm mặt (35) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-25 | Shift: Ca 2 | Plan: RPRO-260515-0267
+  Product: OrthoLite Ultra YELLOW/13-0858TPX Flat Sheet 0.085D 5-10 Asker C 1.1M 2M 2.5mm
+  Sheet Thick: 2.5 mm | Bun Target: 145 mm
+  Bun Sep: 4 | Sheets Recv: 168
+  Expected Sheets/Bun: 58 | Actual Sheets/Bun: 42
+  Calculated Thickness: 105 mm
+  NG Qty: 2 | Error Type: Bọt khí (2) | Note: 
+------------------------------------------------------------------------------------------
+Total matches for YELLOW/13-0858TPX : 8
+
+==========================================================================================
+TARGET PRODUCT: MINT GRE
+==========================================================================================
+Date: 2026-05-14 | Shift: Ca 3 | Plan: FPRO-260326-0005
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid 0.12D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 40 | Sheets Recv: 1196
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 29.9
+  Calculated Thickness: 134.6 mm
+  NG Qty: 84 | Error Type: Lõm mặt (10), Bọt khí (14), Cứng đáy (15), Nứt rách (45) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-15 | Shift: Ca 2 | Plan: FPRO-260507-0006
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid 0.12D 25+/-4 Asker C 1.1M 2M 6mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 24 | Sheets Recv: 228
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 9.5
+  Calculated Thickness: 114 mm
+  NG Qty: 15 | Error Type: Lõm mặt (15) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-16 | Shift: Ca 3 | Plan: FPRO-260330-0014
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid 0.12D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 81 | Sheets Recv: 2256
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 27.9
+  Calculated Thickness: 125.3 mm
+  NG Qty: 244 | Error Type: Cứng đáy (162), Lõm mặt (82) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-04-28 | Shift: Ca 1 | Plan: FPRO-260330-0017
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid 0.12D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.3 mm | Bun Target: 144 mm
+  Bun Sep: 81 | Sheets Recv: 2511
+  Expected Sheets/Bun: 33.5 | Actual Sheets/Bun: 31
+  Calculated Thickness: 133.3 mm
+  NG Qty: 0 | Error Type: bọt khí | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-07 | Shift: Ca HC | Plan: FPRO-260326-0007
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid 0.12D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 5 mm | Bun Target: 144 mm
+  Bun Sep: 9 | Sheets Recv: 230
+  Expected Sheets/Bun: 28.8 | Actual Sheets/Bun: 25.6
+  Calculated Thickness: 127.8 mm
+  NG Qty: 2 | Error Type: Cứng đáy (1), Lõm mặt (1) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-08 | Shift: Ca 2 | Plan: RPRO-260421-0636
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid Flat Sheet 0.12D 25+/-4 Asker C 1.1M 2M 11mm
+  Sheet Thick: 11 mm | Bun Target: 143 mm
+  Bun Sep: 3 | Sheets Recv: 36
+  Expected Sheets/Bun: 13 | Actual Sheets/Bun: 12
+  Calculated Thickness: 132 mm
+  NG Qty: 3 | Error Type: Bọt khí (3) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-08 | Shift: Ca 2 | Plan: FPRO-260401-0007
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid 0.12D 25+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 46 | Sheets Recv: 500
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 10.9
+  Calculated Thickness: 130.4 mm
+  NG Qty: 32 | Error Type: Xốp biên (32) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-21 | Shift: Ca 1 | Plan: RPRO-260508-0419
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid Flat Sheet 0.12D 25+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 153 | Sheets Recv: 1672
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 10.9
+  Calculated Thickness: 131.1 mm
+  NG Qty: 3 | Error Type: Lõm mặt (3) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-22 | Shift: Ca 2 | Plan: RPRO-260512-0109
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid Flat Sheet 0.12D 25+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 16 | Sheets Recv: 165
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 10.3
+  Calculated Thickness: 123.8 mm
+  NG Qty: 20 | Error Type: Lõm mặt (20) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-22 | Shift: Ca 2 | Plan: RPRO-260513-0810
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid Flat Sheet 0.12D 25+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 15 | Sheets Recv: 154
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 10.3
+  Calculated Thickness: 123.2 mm
+  NG Qty: 20 | Error Type: Lõm mặt (20) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-22 | Shift: Ca 2 | Plan: RPRO-260515-0263
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid Flat Sheet 0.12D 25+/-4 Asker C 1.1M 2M 12mm
+  Sheet Thick: 12 mm | Bun Target: 144 mm
+  Bun Sep: 2 | Sheets Recv: 11
+  Expected Sheets/Bun: 12 | Actual Sheets/Bun: 5.5
+  Calculated Thickness: 66 mm
+  NG Qty: 0 | Error Type:  | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-05 | Shift: Ca 3 | Plan: FPRO-260326-0002
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid 0.12D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.4 mm | Bun Target: 144 mm
+  Bun Sep: 81 | Sheets Recv: 2500
+  Expected Sheets/Bun: 32.7 | Actual Sheets/Bun: 30.9
+  Calculated Thickness: 135.8 mm
+  NG Qty: 7 | Error Type: Xốp biên (2), Cứng đáy (3), Lõm mặt (2) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-25 | Shift: Ca 2 | Plan: RPRO-260518-0855
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid 0.12D 25+/-4 Asker C 1.1M 2M 4.5mm
+  Sheet Thick: 4.5 mm | Bun Target: 144 mm
+  Bun Sep: 1 | Sheets Recv: 30
+  Expected Sheets/Bun: 32 | Actual Sheets/Bun: 30
+  Calculated Thickness: 135 mm
+  NG Qty: 2 | Error Type: Bọt khí (1), Cứng đáy (1) | Note: 
+------------------------------------------------------------------------------------------
+Date: 2026-05-25 | Shift: Ca 2 | Plan: RPRO-260518-0854
+  Product: OrthoLite HybridPlus-Recycled MINT GREEN/11-4805TPX Hybrid Flat Sheet 0.12D 25+/-4 Asker C 1.1M 2M 5.5mm
+  Sheet Thick: 5.5 mm | Bun Target: 145 mm
+  Bun Sep: 2 | Sheets Recv: 45
+  Expected Sheets/Bun: 26.4 | Actual Sheets/Bun: 22.5
+  Calculated Thickness: 123.8 mm
+  NG Qty: 7 | Error Type: Lõm mặt (2), Bọt khí (3), Cứng đáy (2) | Note: 
+------------------------------------------------------------------------------------------
+Total matches for MINT GRE : 14
+
