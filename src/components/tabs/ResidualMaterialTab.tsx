@@ -634,302 +634,403 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
         {activeTab === 'add' && (
           <motion.div
             key="add"
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="card p-5"
+            exit={{ opacity: 0, y: -15 }}
+            className="card p-6 md:p-8 bg-white/80 dark:bg-black/40 backdrop-blur-xl border border-[var(--border)] shadow-xl relative overflow-hidden"
           >
-            <h3 className="text-sm font-bold mb-4">Khai Báo Liệu Tồn Mới</h3>
-            <form onSubmit={handleAddMaterial} className="space-y-4">
+            {/* Background design elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-[var(--border)]/60">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-500 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/25 shrink-0">
+                <Plus size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-[var(--text-1)] tracking-tight">Khai Báo Liệu Tồn Mới</h3>
+                <p className="text-[11px] text-[var(--text-3)] font-medium">Nhập hoặc truy ngược đặc tính kỹ thuật để gộp vào báo cáo đổ</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddMaterial} className="space-y-6">
               
-              {/* Checkbox: don't know bun code */}
-              <div className="flex items-center gap-2 bg-brand-500/5 p-3 rounded-xl border border-brand-500/20">
-                <input
-                  type="checkbox"
-                  id="dontKnowBun"
-                  checked={dontKnowBunCode}
-                  onChange={(e) => {
-                    setDontKnowBunCode(e.target.checked)
-                    setStatus(null)
-                    // Reset selected fields on mode toggle
-                    setFormData(prev => ({
-                      ...prev,
-                      bun_code: '',
-                      material_name: '',
-                      color: '',
-                      density: '',
-                      hardness: '',
-                      powder: '',
-                      length: ''
-                    }))
-                    setSearchColor('')
-                    setSearchDensity('')
-                    setSearchHardness('')
-                    setSearchPowder('')
-                    setSearchLength('')
-                  }}
-                  className="rounded border-[var(--border)] text-brand-500 focus:ring-brand-500 h-4 w-4"
-                />
-                <label htmlFor="dontKnowBun" className="text-xs font-bold text-brand-500 cursor-pointer select-none">
-                  Tôi không biết / không nhớ mã Bun (Truy ngược theo đặc tính)
-                </label>
+              {/* Toggle Mode Option */}
+              <div 
+                onClick={() => {
+                  setDontKnowBunCode(!dontKnowBunCode)
+                  setStatus(null)
+                  setFormData(prev => ({
+                    ...prev,
+                    bun_code: '',
+                    material_name: '',
+                    color: '',
+                    density: '',
+                    hardness: '',
+                    powder: '',
+                    length: ''
+                  }))
+                  setSearchColor('')
+                  setSearchDensity('')
+                  setSearchHardness('')
+                  setSearchPowder('')
+                  setSearchLength('')
+                }}
+                className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-4 cursor-pointer group select-none ${
+                  dontKnowBunCode 
+                    ? 'bg-brand-500/5 border-brand-500/30 shadow-sm shadow-brand-500/5' 
+                    : 'bg-[var(--bg-input)] border-[var(--border)] hover:border-[var(--border)]/80'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                    dontKnowBunCode ? 'bg-brand-500 text-white shadow-md shadow-brand-500/20' : 'bg-gray-500/10 text-[var(--text-2)]'
+                  }`}>
+                    <Search size={16} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-[var(--text-1)] group-hover:text-brand-500 transition-colors">Tìm Mã Bun bằng đặc tính kỹ thuật</p>
+                    <p className="text-[10px] text-[var(--text-3)] font-medium mt-0.5">Sử dụng khi không biết hoặc không nhớ chính xác Mã Bun</p>
+                  </div>
+                </div>
+                <div className={`w-11 h-6 rounded-full p-0.5 transition-colors duration-300 ${dontKnowBunCode ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-700'}`}>
+                  <div className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${dontKnowBunCode ? 'translate-x-5' : 'translate-x-0'}`} />
+                </div>
               </div>
 
-              {/* Direct Bun Code Input Mode */}
-              {!dontKnowBunCode ? (
-                <div className="relative">
-                  <label className="label">Mã Bun (Bun Code)</label>
-                  <input
-                    required
-                    type="text"
-                    placeholder="Nhập hoặc chọn mã Bun (VD: BDB-000190)"
-                    value={formData.bun_code}
-                    onChange={e => handleBunCodeChange(e.target.value)}
-                    className="input font-mono uppercase font-bold"
-                  />
+              {/* 2-Column Responsive Form Layout */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                
+                {/* Column 1: Bun Code Selection & Specifications */}
+                <div className="space-y-5">
                   
-                  {/* Suggestion list */}
-                  {bunCodeSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 mt-1 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-xl z-20 overflow-hidden">
-                      {bunCodeSuggestions.map((spec, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => handleSelectSuggestion(spec)}
-                          className="w-full px-4 py-2.5 text-left text-xs hover:bg-brand-500/10 border-b border-[var(--border)] last:border-0 flex justify-between items-center transition-colors"
-                        >
-                          <span className="font-bold text-brand-500 font-mono">{spec.bun_code}</span>
-                          <span className="text-[var(--text-3)] font-medium truncate max-w-[70%]">{spec.material_name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Search Mode: Color, Density, Hardness, Powder, Length options to find Bun Code */
-                <div className="space-y-3 p-4 bg-[var(--bg-input)] rounded-xl border border-[var(--border)]">
-                  <h4 className="text-xs font-black text-[var(--text-2)] uppercase mb-2 flex items-center gap-1.5">
-                    <Search size={14} className="text-brand-500" /> Chọn đặc tính kỹ thuật
-                  </h4>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Màu sắc</label>
-                      <select
-                        value={searchColor}
-                        onChange={e => setSearchColor(e.target.value)}
-                        className="input text-xs"
-                      >
-                        <option value="">-- Tất cả --</option>
-                        {uniqueColors.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Density</label>
-                      <select
-                        value={searchDensity}
-                        onChange={e => setSearchDensity(e.target.value)}
-                        className="input text-xs"
-                      >
-                        <option value="">-- Tất cả --</option>
-                        {uniqueDensities.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Độ cứng</label>
-                      <select
-                        value={searchHardness}
-                        onChange={e => setSearchHardness(e.target.value)}
-                        className="input text-xs"
-                      >
-                        <option value="">-- Tất cả --</option>
-                        {uniqueHardness.map(h => <option key={h} value={h}>{h}</option>)}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Bột</label>
-                      <select
-                        value={searchPowder}
-                        onChange={e => setSearchPowder(e.target.value)}
-                        className="input text-xs"
-                      >
-                        <option value="">-- Tất cả --</option>
-                        {uniquePowders.map(p => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-[var(--text-3)] uppercase mb-1 block">Chiều dài</label>
-                    <select
-                      value={searchLength}
-                      onChange={e => setSearchLength(e.target.value)}
-                      className="input text-xs"
-                    >
-                      <option value="">-- Tất cả --</option>
-                      {uniqueLengths.map(l => <option key={l} value={l}>{l}</option>)}
-                    </select>
-                  </div>
-
-                  {/* Search Results Display */}
-                  <div className="pt-2 border-t border-[var(--border)]">
-                    {filteredSpecBuns.length === 0 ? (
-                      <p className="text-[10px] text-red-500 font-medium italic">
-                        Không tìm thấy mã Bun nào khớp với bộ đặc tính trên.
-                      </p>
-                    ) : filteredSpecBuns.length === 1 ? (
-                      <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/30 text-xs text-green-700">
-                        <p className="font-bold flex items-center gap-1">
-                          <CheckCircle2 size={14} /> Tự động phát hiện mã Bun duy nhất:
-                        </p>
-                        <p className="mt-1 font-mono font-black text-sm">{filteredSpecBuns[0].bun_code}</p>
-                        <p className="mt-0.5 text-[10px] leading-relaxed truncate">{filteredSpecBuns[0].material_name}</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-black text-amber-600 uppercase mb-1 block">
-                          Tìm thấy {filteredSpecBuns.length} mã Bun. Chọn mã phù hợp:
-                        </label>
-                        <select
+                  {/* Search / Direct Input mode wrapper */}
+                  {!dontKnowBunCode ? (
+                    <div className="relative">
+                      <label className="label text-[11px] font-black uppercase tracking-wider text-[var(--text-2)] flex items-center gap-1.5">
+                        <Package size={13} className="text-brand-500" /> Mã Bun (Bun Code)
+                      </label>
+                      <div className="relative mt-1.5">
+                        <input
                           required
+                          type="text"
+                          placeholder="Nhập hoặc chọn mã Bun (VD: BDB-000160)"
                           value={formData.bun_code}
-                          onChange={e => {
-                            const spec = filteredSpecBuns.find(x => x.bun_code === e.target.value)
-                            if (spec) handleSelectSuggestion(spec)
-                          }}
-                          className="input text-xs"
-                        >
-                          <option value="">-- Chọn mã Bun --</option>
-                          {filteredSpecBuns.map(b => (
-                            <option key={b.id} value={b.bun_code}>
-                              {b.bun_code} - {b.material_name}
-                            </option>
+                          onChange={e => handleBunCodeChange(e.target.value)}
+                          className="input font-mono uppercase font-bold pl-10 h-11 text-sm tracking-wide bg-[var(--bg-input)] border-[var(--border)] focus:border-brand-500"
+                        />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none">
+                          <Plus size={16} />
+                        </span>
+                      </div>
+                      
+                      {/* Suggestion list */}
+                      {bunCodeSuggestions.length > 0 && (
+                        <div className="absolute left-0 right-0 mt-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-xl shadow-xl z-20 overflow-hidden max-h-56 overflow-y-auto">
+                          {bunCodeSuggestions.map((spec, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => handleSelectSuggestion(spec)}
+                              className="w-full px-4 py-3 text-left text-xs hover:bg-brand-500/10 border-b border-[var(--border)]/60 last:border-0 flex justify-between items-center transition-colors"
+                            >
+                              <span className="font-bold text-brand-500 font-mono tracking-wide">{spec.bun_code}</span>
+                              <span className="text-[var(--text-3)] font-medium truncate max-w-[70%]">{spec.material_name}</span>
+                            </button>
                           ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Search Mode: Parameters fields to find Bun Code */
+                    <div className="space-y-4 p-4 bg-brand-500/5 rounded-2xl border border-brand-500/10">
+                      <h4 className="text-xs font-black text-brand-500 uppercase tracking-wider border-b border-brand-500/10 pb-2 flex items-center gap-1.5">
+                        <Filter size={14} /> Chọn đặc tính lọc mã Bun
+                      </h4>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-wider">Màu sắc</label>
+                          <select
+                            value={searchColor}
+                            onChange={e => setSearchColor(e.target.value)}
+                            className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                          >
+                            <option value="">-- Tất cả --</option>
+                            {uniqueColors.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-wider">Density</label>
+                          <select
+                            value={searchDensity}
+                            onChange={e => setSearchDensity(e.target.value)}
+                            className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                          >
+                            <option value="">-- Tất cả --</option>
+                            {uniqueDensities.map(d => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-wider">Độ cứng</label>
+                          <select
+                            value={searchHardness}
+                            onChange={e => setSearchHardness(e.target.value)}
+                            className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                          >
+                            <option value="">-- Tất cả --</option>
+                            {uniqueHardness.map(h => <option key={h} value={h}>{h}</option>)}
+                          </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-wider">Bột</label>
+                          <select
+                            value={searchPowder}
+                            onChange={e => setSearchPowder(e.target.value)}
+                            className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                          >
+                            <option value="">-- Tất cả --</option>
+                            {uniquePowders.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-[var(--text-3)] uppercase tracking-wider">Chiều dài</label>
+                        <select
+                          value={searchLength}
+                          onChange={e => setSearchLength(e.target.value)}
+                          className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                        >
+                          <option value="">-- Tất cả --</option>
+                          {uniqueLengths.map(l => <option key={l} value={l}>{l}</option>)}
                         </select>
                       </div>
-                    )}
+
+                      {/* Search Results Display */}
+                      <div className="pt-3 border-t border-brand-500/10">
+                        {filteredSpecBuns.length === 0 ? (
+                          <div className="p-3 bg-red-500/5 rounded-xl border border-red-500/10 text-[10px] text-red-500 font-medium italic flex items-center gap-1.5">
+                            <AlertCircle size={14} /> Không tìm thấy mã Bun khớp đặc tính.
+                          </div>
+                        ) : filteredSpecBuns.length === 1 ? (
+                          <div className="p-3 bg-green-500/10 rounded-xl border border-green-500/20 text-xs text-green-700">
+                            <p className="font-bold flex items-center gap-1">
+                              <CheckCircle2 size={14} /> Đã phát hiện mã Bun duy nhất:
+                            </p>
+                            <p className="mt-1 font-mono font-black text-sm tracking-wide">{filteredSpecBuns[0].bun_code}</p>
+                            <p className="mt-0.5 text-[10px] leading-relaxed truncate">{filteredSpecBuns[0].material_name}</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <label className="text-[10px] font-black text-amber-600 uppercase tracking-wider flex items-center gap-1">
+                              ⚠️ Tìm thấy {filteredSpecBuns.length} mã. Chọn mã phù hợp:
+                            </label>
+                            <select
+                              required
+                              value={formData.bun_code}
+                              onChange={e => {
+                                const spec = filteredSpecBuns.find(x => x.bun_code === e.target.value)
+                                if (spec) handleSelectSuggestion(spec)
+                              }}
+                              className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                            >
+                              <option value="">-- Chọn mã Bun --</option>
+                              {filteredSpecBuns.map(b => (
+                                <option key={b.id} value={b.bun_code}>
+                                  {b.bun_code} - {b.material_name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Material Name (auto-fill display) */}
+                  <div className="space-y-1.5">
+                    <label className="label text-[11px] font-black uppercase tracking-wider text-[var(--text-2)]">Tên vật liệu (Material Name)</label>
+                    <input
+                      type="text"
+                      placeholder="Tên vật liệu tự động điền"
+                      value={formData.material_name}
+                      onChange={e => setFormData({ ...formData, material_name: e.target.value })}
+                      className="input text-xs font-bold bg-[var(--bg-input)] border-[var(--border)]/70 h-10"
+                    />
                   </div>
+
+                  {/* Glassmorphic Specs Card */}
+                  <div className="bg-gradient-to-tr from-gray-500/5 to-gray-500/[0.02] dark:from-white/5 dark:to-white/[0.01] rounded-2xl p-4 border border-[var(--border)] shadow-sm space-y-3 relative overflow-hidden">
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--text-3)] border-b border-[var(--border)] pb-2 flex items-center justify-between">
+                      <span>Thuộc tính tự động</span>
+                      {formData.bun_code && <span className="text-brand-500 font-mono font-black">{formData.bun_code}</span>}
+                    </p>
+                    <div className="grid grid-cols-3 gap-2.5 text-[10px] font-bold">
+                      <div className="bg-gray-500/5 dark:bg-white/5 p-2 rounded-xl border border-gray-500/5">
+                        <span className="text-[9px] text-[var(--text-3)] font-medium block mb-0.5">Màu sắc</span>
+                        <span className="text-[var(--text-1)] truncate block">{formData.color || '—'}</span>
+                      </div>
+                      <div className="bg-gray-500/5 dark:bg-white/5 p-2 rounded-xl border border-gray-500/5">
+                        <span className="text-[9px] text-[var(--text-3)] font-medium block mb-0.5">Density</span>
+                        <span className="text-[var(--text-1)] truncate block">{formData.density || '—'}</span>
+                      </div>
+                      <div className="bg-gray-500/5 dark:bg-white/5 p-2 rounded-xl border border-gray-500/5">
+                        <span className="text-[9px] text-[var(--text-3)] font-medium block mb-0.5">Độ cứng</span>
+                        <span className="text-[var(--text-1)] truncate block">{formData.hardness || '—'}</span>
+                      </div>
+                      <div className="bg-gray-500/5 dark:bg-white/5 p-2 rounded-xl border border-gray-500/5">
+                        <span className="text-[9px] text-[var(--text-3)] font-medium block mb-0.5">Loại bột</span>
+                        <span className="text-[var(--text-1)] truncate block">{formData.powder || '—'}</span>
+                      </div>
+                      <div className="bg-gray-500/5 dark:bg-white/5 p-2 rounded-xl border border-gray-500/5">
+                        <span className="text-[9px] text-[var(--text-3)] font-medium block mb-0.5">Chiều dài</span>
+                        <span className="text-[var(--text-1)] truncate block">{formData.length || '—'}</span>
+                      </div>
+                      <div className="bg-brand-500/5 p-2 rounded-xl border border-brand-500/10">
+                        <span className="text-[9px] text-brand-500 font-medium block mb-0.5">Đơn vị</span>
+                        <span className="text-brand-500 font-black tracking-wide">BUN</span>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
-              )}
 
-              {/* Show MATERIAL NAME (Readonly suggestion display or editable fallback) */}
-              <div>
-                <label className="label">Tên vật liệu (Material Name)</label>
-                <input
-                  type="text"
-                  placeholder="Tên vật liệu tự động điền theo mã Bun hoặc nhập thủ công"
-                  value={formData.material_name}
-                  onChange={e => setFormData({ ...formData, material_name: e.target.value })}
-                  className="input text-xs font-semibold bg-[var(--bg-input)] border-[var(--border)]"
-                />
-              </div>
+                {/* Column 2: Actual Logging Quantities & Metadata */}
+                <div className="space-y-5 bg-gradient-to-br from-brand-500/[0.02] to-orange-500/[0.01] dark:from-white/[0.02] dark:to-transparent p-5 rounded-2xl border border-[var(--border)] shadow-sm">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--text-3)] border-b border-[var(--border)] pb-2 flex items-center gap-1.5">
+                    <Info size={14} className="text-brand-500" /> Thông tin khai báo thực tế
+                  </p>
 
-              {/* Grid for parameters filled automatically */}
-              <div className="grid grid-cols-3 gap-3 p-3 bg-[var(--bg-input)]/50 rounded-xl border border-[var(--border)] text-[10px] text-[var(--text-3)] font-medium">
-                <div>Màu: <strong className="text-[var(--text-1)] block truncate">{formData.color || '—'}</strong></div>
-                <div>Density: <strong className="text-[var(--text-1)] block truncate">{formData.density || '—'}</strong></div>
-                <div>Độ cứng: <strong className="text-[var(--text-1)] block truncate">{formData.hardness || '—'}</strong></div>
-                <div className="mt-2">Bột: <strong className="text-[var(--text-1)] block truncate">{formData.powder || '—'}</strong></div>
-                <div className="mt-2">Dài: <strong className="text-[var(--text-1)] block truncate">{formData.length || '—'}</strong></div>
-                <div className="mt-2">Đơn vị: <strong className="text-brand-500 block">BUN</strong></div>
-              </div>
+                  {/* Quantity Input */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="label text-[11px] font-black uppercase tracking-wider text-[var(--text-2)]">Số lượng (Số Bun)</label>
+                      <div className="relative">
+                        <input
+                          required
+                          type="number"
+                          step="0.01"
+                          placeholder="VD: 5.5, 12"
+                          value={formData.quantity}
+                          onChange={e => setFormData({ ...formData, quantity: e.target.value })}
+                          className="input font-bold pl-9 h-11 text-sm bg-[var(--bg-card)] border-[var(--border)] focus:border-brand-500"
+                        />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none">
+                          <Layers size={16} />
+                        </span>
+                      </div>
+                    </div>
 
-              {/* Quantity input */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Số lượng (Số Bun)</label>
-                  <input
-                    required
-                    type="number"
-                    step="0.01"
-                    placeholder="VD: 5.5, 12"
-                    value={formData.quantity}
-                    onChange={e => setFormData({ ...formData, quantity: e.target.value })}
-                    className="input"
-                  />
-                </div>
-                <div>
-                  <label className="label">Đơn vị khai báo</label>
-                  <input
-                    type="text"
-                    disabled
-                    value="Bun"
-                    className="input bg-[var(--bg-input)] border-[var(--border)] opacity-60 text-center font-bold text-brand-500"
-                  />
-                </div>
-              </div>
+                    <div className="space-y-1.5">
+                      <label className="label text-[11px] font-black uppercase tracking-wider text-[var(--text-2)]">Đơn vị khai báo</label>
+                      <input
+                        type="text"
+                        disabled
+                        value="Bun"
+                        className="input h-11 bg-[var(--bg-input)] border-[var(--border)]/70 opacity-80 text-center font-black text-brand-500"
+                      />
+                    </div>
+                  </div>
 
-              {/* Machine, Shift, Manager parameters */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="label">Máy làm việc</label>
-                  <select
-                    className="input text-xs"
-                    value={formData.machine_id}
-                    onChange={e => setFormData({ ...formData, machine_id: e.target.value })}
+                  {/* Machine, Shift, Manager */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="label text-[11px] font-black uppercase tracking-wider text-[var(--text-2)]">Máy làm việc</label>
+                      <select
+                        className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                        value={formData.machine_id}
+                        onChange={e => setFormData({ ...formData, machine_id: e.target.value })}
+                      >
+                        <option>Máy 1</option>
+                        <option>Máy 2</option>
+                        <option>Máy 3</option>
+                        <option>Máy đổ tay</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="label text-[11px] font-black uppercase tracking-wider text-[var(--text-2)]">Ca làm việc</label>
+                      <select
+                        className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                        value={formData.shift}
+                        onChange={e => setFormData({ ...formData, shift: e.target.value })}
+                      >
+                        <option>Ca 1</option>
+                        <option>Ca 2</option>
+                        <option>Ca 3</option>
+                        <option>Ca HC</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="label text-[11px] font-black uppercase tracking-wider text-[var(--text-2)]">Quản lý</label>
+                      <select
+                        className="input text-xs bg-[var(--bg-card)] border-[var(--border)]"
+                        value={formData.manager_name}
+                        onChange={e => setFormData({ ...formData, manager_name: e.target.value })}
+                      >
+                        <option>Linh</option>
+                        <option>Thảo</option>
+                        <option>Tuấn Anh</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Date Picker */}
+                  <div className="space-y-1.5">
+                    <label className="label text-[11px] font-black uppercase tracking-wider text-[var(--text-2)]">Ngày tồn dư</label>
+                    <div className="relative">
+                      <input
+                        type="date"
+                        value={formData.entry_date}
+                        onChange={e => setFormData({ ...formData, entry_date: e.target.value })}
+                        className="input h-11 bg-[var(--bg-card)] border-[var(--border)] focus:border-brand-500 font-semibold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Status alert */}
+                  {status && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className={`p-3.5 rounded-xl flex items-start gap-2.5 text-xs font-semibold leading-relaxed ${
+                        status.type === 'success' 
+                          ? 'bg-green-500/10 text-green-600 border border-green-500/20' 
+                          : 'bg-red-500/10 text-red-600 border border-red-500/20'
+                      }`}
+                    >
+                      {status.type === 'success' ? <CheckCircle2 size={16} className="shrink-0 mt-0.5" /> : <AlertCircle size={16} className="shrink-0 mt-0.5" />}
+                      <span>{status.msg}</span>
+                    </motion.div>
+                  )}
+
+                  {/* Submit Button */}
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="btn-primary w-full py-3 h-11 flex items-center justify-center gap-2 rounded-xl text-sm font-black shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all"
                   >
-                    <option>Máy 1</option>
-                    <option>Máy 2</option>
-                    <option>Máy 3</option>
-                    <option>Máy đổ tay</option>
-                  </select>
-                </div>
+                    {submitting ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        Đang ghi nhận...
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={18} />
+                        Lưu liệu tồn dư
+                      </>
+                    )}
+                  </button>
 
-                <div>
-                  <label className="label">Ca làm việc</label>
-                  <select
-                    className="input text-xs"
-                    value={formData.shift}
-                    onChange={e => setFormData({ ...formData, shift: e.target.value })}
-                  >
-                    <option>Ca 1</option>
-                    <option>Ca 2</option>
-                    <option>Ca 3</option>
-                    <option>Ca HC</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="label">Quản lý</label>
-                  <select
-                    className="input text-xs"
-                    value={formData.manager_name}
-                    onChange={e => setFormData({ ...formData, manager_name: e.target.value })}
-                  >
-                    <option>Linh</option>
-                    <option>Thảo</option>
-                    <option>Tuấn Anh</option>
-                  </select>
                 </div>
               </div>
-
-              <div>
-                <label className="label">Ngày tồn dư</label>
-                <input
-                  type="date"
-                  value={formData.entry_date}
-                  onChange={e => setFormData({ ...formData, entry_date: e.target.value })}
-                  className="input"
-                />
-              </div>
-
-              {status && (
-                <div className={`p-3 rounded-lg flex items-center gap-2 text-xs font-medium ${status.type === 'success' ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'}`}>
-                  {status.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                  {status.msg}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="btn-primary w-full py-3 flex items-center justify-center gap-2"
-              >
-                {submitting ? <Loader2 className="animate-spin" size={18} /> : <><Plus size={18} /> Lưu liệu tồn dư</>}
-              </button>
             </form>
           </motion.div>
         )}
