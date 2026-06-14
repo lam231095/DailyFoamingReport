@@ -358,7 +358,7 @@ function AddSeparateReportForm({ user, onSuccess }: { user: SessionUser; onSucce
         ng_qty: 0,
         ng_bun_qty: 0,
         error_type: null,
-        note: form.note.trim() || null,
+        note: form.note.trim() ? `[BỔ SUNG] ${form.note.trim()}` : '[BỔ SUNG]',
         is_compensation: false,
         bun_thickness_mm: 0,
         sheet_thickness_mm: 0,
@@ -858,6 +858,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
           production_plan (ten_san_pham, no_order)
         `)
         .eq('recorder_id', user.id)
+        .like('note', '[BỔ SUNG]%')
         .gte('report_date', startDate)
         .lte('report_date', endDate)
         .order('report_date', { ascending: false })
