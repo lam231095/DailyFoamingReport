@@ -110,17 +110,23 @@ try {
             continue
         }
 
+        # Clean and standardize casing / values
+        $botRaw = $ws.Cells.Item($r, $COL_BOT).Text.Trim().ToUpper()
+        if ($botRaw -eq "CSD") { $botRaw = "CSĐ" }
+        elseif ($botRaw -eq "CSD HB" -or $botRaw -eq "CSDHB") { $botRaw = "CSĐ HB" }
+        elseif ($botRaw -eq "NIKEHB") { $botRaw = "NIKE HB" }
+
         $rec = [ordered]@{
             ma_bun        = $ws.Cells.Item($r, $COL_MA_BUN).Text.Trim()
             bun_code      = $bunCode
             sheet_code    = $ws.Cells.Item($r, $COL_SHEET_CODE).Text.Trim()
             material_name = $ws.Cells.Item($r, $COL_MATERIAL_NAME).Text.Trim()
-            dong_hang     = $ws.Cells.Item($r, $COL_DONG_HANG).Text.Trim()
-            mau           = $ws.Cells.Item($r, $COL_MAU).Text.Trim()
-            density       = $ws.Cells.Item($r, $COL_DENSITY).Text.Trim()
-            do_cung       = $ws.Cells.Item($r, $COL_DO_CUNG).Text.Trim()
-            bot           = $ws.Cells.Item($r, $COL_BOT).Text.Trim()
-            chieu_dai     = $ws.Cells.Item($r, $COL_CHIEU_DAI).Text.Trim()
+            dong_hang     = $ws.Cells.Item($r, $COL_DONG_HANG).Text.Trim().ToUpper()
+            mau           = $ws.Cells.Item($r, $COL_MAU).Text.Trim().ToUpper()
+            density       = $ws.Cells.Item($r, $COL_DENSITY).Text.Trim().ToUpper()
+            do_cung       = $ws.Cells.Item($r, $COL_DO_CUNG).Text.Trim().ToUpper()
+            bot           = $botRaw
+            chieu_dai     = $ws.Cells.Item($r, $COL_CHIEU_DAI).Text.Trim().ToUpper()
             do_day        = $ws.Cells.Item($r, $COL_DO_DAY).Text.Trim()
             dong_sp       = $ws.Cells.Item($r, $COL_DONG_SP).Text.Trim()
             updated_at    = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
