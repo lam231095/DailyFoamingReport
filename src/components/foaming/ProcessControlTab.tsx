@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Loader2,
   CalendarDays,
+  Trash2,
 } from 'lucide-react'
 
 interface ProcessControlTabProps {
@@ -208,6 +209,24 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
       setMessage({ type: 'error', text: 'Lỗi khi xác nhận: ' + err.message })
     } finally {
       setConfirmingId(null)
+    }
+  }
+
+  const deleteReport = async (id: string) => {
+    if (!confirm('Bạn có chắc chắn muốn hủy (xóa) báo cáo này? Thao tác này sẽ xóa vĩnh viễn báo cáo và cập nhật lại tồn kho nếu có liên quan.')) return
+    try {
+      const [resPour, resMat] = await Promise.all([
+        supabase.from('foaming_pour_reports').delete().eq('id', id),
+        supabase.from('residual_materials').delete().eq('id', id)
+      ])
+
+      if (resPour.error) throw resPour.error
+      if (resMat.error) throw resMat.error
+
+      setMessage({ type: 'success', text: 'Đã hủy báo cáo thành công!' })
+      await fetchRecords()
+    } catch (err: any) {
+      setMessage({ type: 'error', text: 'Lỗi khi hủy báo cáo: ' + err.message })
     }
   }
 
@@ -458,12 +477,20 @@ export default function ProcessControlTab({ user }: ProcessControlTabProps) {
                   {/* Actions */}
                   <div className="flex flex-col gap-2 shrink-0">
                     {!isConfirmed && !isEditing && isAuthorized && (
-                      <button
-                        onClick={() => startEdit(record)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border border-[var(--border)] text-[var(--text-2)] hover:text-orange-600 hover:border-orange-300 transition-all bg-[var(--bg-card)]"
-                      >
-                        <Edit3 size={12} /> Chỉnh sửa
-                      </button>
+                      <>
+                        <button
+                          onClick={() => startEdit(record)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border border-[var(--border)] text-[var(--text-2)] hover:text-orange-600 hover:border-orange-300 transition-all bg-[var(--bg-card)] cursor-pointer"
+                        >
+                          <Edit3 size={12} /> Chỉnh sửa
+                        </button>
+                        <button
+                          onClick={() => deleteReport(record.id)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border border-red-200 text-red-600 hover:bg-red-500/5 hover:border-red-300 transition-all bg-[var(--bg-card)] cursor-pointer"
+                        >
+                          <Trash2 size={12} /> Hủy báo cáo
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => setExpandedId(isExpanded ? null : record.id)}
