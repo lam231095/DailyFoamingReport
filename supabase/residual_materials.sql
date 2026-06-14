@@ -1,5 +1,9 @@
+-- Drop old tables if they exist to apply new schema
+drop table if exists residual_material_usage cascade;
+drop table if exists residual_materials cascade;
+
 -- Create residual_materials table
-create table if not exists residual_materials (
+create table residual_materials (
   id                      uuid primary key default gen_random_uuid(),
   user_id                 uuid references users(id) on delete set null,
   bun_code                text not null,              -- Mã Bun (e.g. BDB-xxxxxx)
@@ -20,7 +24,7 @@ create table if not exists residual_materials (
 );
 
 -- Create residual_material_usage table
-create table if not exists residual_material_usage (
+create table residual_material_usage (
   id                      uuid primary key default gen_random_uuid(),
   material_id             uuid references residual_materials(id) on delete cascade,
   user_id                 uuid references users(id) on delete set null,
