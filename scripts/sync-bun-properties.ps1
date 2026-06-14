@@ -70,6 +70,20 @@ function Upload-Batch($batch) {
 
 # ---- MAIN ----
 
+# Step 1: Clear the existing table to prevent orphans/duplicates
+Write-Host "Clearing existing data in bun_properties table..." -ForegroundColor Yellow
+$clearHeaders = @{
+    "apikey"        = $SUPABASE_KEY
+    "Authorization" = "Bearer $SUPABASE_KEY"
+}
+try {
+    $deleteUrl = "$SUPABASE_URL/rest/v1/bun_properties?id=not.is.null"
+    Invoke-RestMethod -Uri $deleteUrl -Method Delete -Headers $clearHeaders -ErrorAction Stop | Out-Null
+    Write-Host "Table bun_properties cleared successfully." -ForegroundColor Green
+} catch {
+    Write-Host "  [WARNING] Could not clear table: $($_.Exception.Message)" -ForegroundColor Yellow
+}
+
 $xl = New-Object -ComObject Excel.Application
 $xl.Visible = $false
 $xl.DisplayAlerts = $false

@@ -11,30 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { SessionUser, ResidualMaterial, ResidualMaterialUsage } from '@/types'
 import { canDownloadReport } from '@/lib/permissions'
 
-const DEFAULT_COLORS = [
-  '(ROCKPORT)', '300C', 'AIR BLUE', 'AMAZON', 'BILLIARD', 'BLACK', 'BLUE ATOLL', 
-  'BROWN SUGAR', 'BURNT SIENNA', 'CASTLEROCK', 'COLORO', 'FAIRWAY', 'FOSSIL', 
-  'GLACIER GRAY', 'GREEN', 'GREY', 'LIME GREEN', 'MINT GREEN', 'NEUTRAL GRAY', 
-  'NINE IRON', 'RED', 'SEEDPEARL', 'TAWNY PORT', 'TRUE BLUE', 'YELLOW'
-]
 
-const DEFAULT_DENSITIES = [
-  '0.085D', '0.095D', '0.11D', '0.12D', '0.13D', '0.145D', '0.15D', '0.16D', 
-  '0.185D', '0.19D', '0.22D', '015D'
-]
-
-const DEFAULT_HARDNESS = [
-  '15C', '20C', '21C', '25', '25C', '28C', '33C', '35C', '45C', '5-10C', 
-  '51C', '70-80C', '72-78C', '78-90C', '78-90F'
-]
-
-const DEFAULT_POWDERS = [
-  'CSD', 'CSD HB', 'CSDHB', 'NIKE', 'NIKE HB'
-]
-
-const DEFAULT_LENGTHS = [
-  '1.47M', '1.70M', '1.7M', '2.00M', '2M'
-]
 
 const normalizeValue = (val: string | null | undefined): string => {
   if (!val) return ''
@@ -104,27 +81,27 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
   // Fetch unique properties from loaded bun specifications
   const uniqueColors = useMemo(() => {
     const vals = bunProperties.map(b => b.mau).filter(Boolean)
-    return Array.from(new Set([...vals, ...DEFAULT_COLORS])).sort()
+    return Array.from(new Set(vals)).sort()
   }, [bunProperties])
 
   const uniqueDensities = useMemo(() => {
     const vals = bunProperties.map(b => b.density).filter(Boolean)
-    return Array.from(new Set([...vals, ...DEFAULT_DENSITIES])).sort()
+    return Array.from(new Set(vals)).sort()
   }, [bunProperties])
 
   const uniqueHardness = useMemo(() => {
     const vals = bunProperties.map(b => b.do_cung).filter(Boolean)
-    return Array.from(new Set([...vals, ...DEFAULT_HARDNESS])).sort()
+    return Array.from(new Set(vals)).sort()
   }, [bunProperties])
 
   const uniquePowders = useMemo(() => {
     const vals = bunProperties.map(b => b.bot).filter(Boolean)
-    return Array.from(new Set([...vals, ...DEFAULT_POWDERS])).sort()
+    return Array.from(new Set(vals)).sort()
   }, [bunProperties])
 
   const uniqueLengths = useMemo(() => {
     const vals = bunProperties.map(b => b.chieu_dai).filter(Boolean)
-    return Array.from(new Set([...vals, ...DEFAULT_LENGTHS])).sort()
+    return Array.from(new Set(vals)).sort()
   }, [bunProperties])
 
   // Filter bun specifications based on selected details
