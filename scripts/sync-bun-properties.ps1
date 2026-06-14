@@ -59,6 +59,11 @@ function Upload-Batch($batch) {
         return $true
     } catch {
         Write-Host "  [ERROR] $($_.Exception.Message)" -ForegroundColor Red
+        if ($_.Exception.Response) {
+            $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+            $body = $reader.ReadToEnd()
+            Write-Host "  [DETAILS] Response Body: $body" -ForegroundColor DarkRed
+        }
         return $false
     }
 }
@@ -80,8 +85,8 @@ try {
     $rowCount = $ws.UsedRange.Rows.Count
     Write-Host "Found $($rowCount) rows in sheet '$($ws.Name)'" -ForegroundColor Green
 
-    $batch = New-Object System.Collections.Generic.List[PSObject]
-    $successCount = 0
+    # Use a hashtable to keep unique bun_codes (overwriting duplicates with latest row)
+    $uniqueBuns = [ordered]@{}
 
     for ($r = $DATA_START_ROW; $r -le $rowCount; $r++) {
         $bunCode = $ws.Cells.Item($r, $COL_BUN_CODE).Text.Trim()
@@ -107,9 +112,21 @@ try {
             updated_at    = (Get-Date -Format "yyyy-MM-ddTHH:mm:ssZ")
         }
 
-        $batch.Add($rec)
+        # Override or add to hashtable
+        $uniqueBuns[$bunCode] = $rec
+    }
 
-        # Upload in batches of 50
+    # Now upload the unique records in batches of 50
+    $uniqueList = @($uniqueBuns.Values)
+    $totalCount = $uniqueList.Count
+    Write-Host "Filtered to $totalCount unique bun codes out of $($rowCount - 1) rows." -ForegroundColor Green
+
+    $batch = New-Object System.Collections.Generic.List[PSObject]
+    $successCount = 0
+
+    for ($i = 0; $i -lt $totalCount; $i++) {
+        $batch.Add($uniqueList[$i])
+
         if ($batch.Count -ge 50) {
             Write-Host "Syncing batch of 50 records..." -ForegroundColor Yellow
             if (Upload-Batch $batch) {
@@ -127,7 +144,7 @@ try {
         }
     }
 
-    Write-Host "[SUCCESS] Sync completed. Successfully synced $successCount / $($rowCount - 1) records to Supabase." -ForegroundColor Green
+    Write-Host "[SUCCESS] Sync completed. Successfully synced $successCount / $totalCount unique records to Supabase." -ForegroundColor Green
 
     $wb.Close($false)
 } catch {
