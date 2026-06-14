@@ -36,6 +36,17 @@ const DEFAULT_LENGTHS = [
   '1.47M', '1.70M', '1.7M', '2.00M', '2M'
 ]
 
+const normalizeValue = (val: string | null | undefined): string => {
+  if (!val) return ''
+  return val
+    .toString()
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '')
+    .replace(/(\d+)\.0+M/g, '$1M')
+    .replace(/(\d+\.[1-9]+)0+M/g, '$1M')
+}
+
 interface ResidualMaterialTabProps {
   user: SessionUser
 }
@@ -120,11 +131,11 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
   const filteredSpecBuns = useMemo(() => {
     if (!dontKnowBunCode) return []
     return bunProperties.filter(b => {
-      return (!searchColor || b.mau === searchColor) &&
-             (!searchDensity || b.density === searchDensity) &&
-             (!searchHardness || b.do_cung === searchHardness) &&
-             (!searchPowder || b.bot === searchPowder) &&
-             (!searchLength || b.chieu_dai === searchLength)
+      return (!searchColor || normalizeValue(b.mau) === normalizeValue(searchColor)) &&
+             (!searchDensity || normalizeValue(b.density) === normalizeValue(searchDensity)) &&
+             (!searchHardness || normalizeValue(b.do_cung) === normalizeValue(searchHardness)) &&
+             (!searchPowder || normalizeValue(b.bot) === normalizeValue(searchPowder)) &&
+             (!searchLength || normalizeValue(b.chieu_dai) === normalizeValue(searchLength))
     })
   }, [dontKnowBunCode, bunProperties, searchColor, searchDensity, searchHardness, searchPowder, searchLength])
 
