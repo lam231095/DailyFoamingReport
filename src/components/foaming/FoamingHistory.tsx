@@ -289,9 +289,46 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       if (!payload.manager_name?.trim()) payload.manager_name = null
       if (!payload.operator_name?.trim()) payload.operator_name = null
 
+      // Filter payload to only send fields belonging to the current stage table's database schema
+      let cleanPayload: Record<string, any> = {}
+      if (activeStage === 'pour') {
+        const allowedKeys = [
+          'shift', 'machine_id', 'manager_name', 'operator_name', 
+          'actual_bun_poured', 'ng_bun_qty', 'error_type', 
+          'cleaning_agent_kg', 'waste_kg', 'note', 'is_compensation', 'report_date'
+        ]
+        allowedKeys.forEach(k => {
+          if (k in payload) cleanPayload[k] = payload[k]
+        })
+      } else if (activeStage === 'separate') {
+        const allowedKeys = [
+          'shift', 'machine_id', 'manager_name', 'operator_name',
+          'bun_thickness_mm', 'sheet_thickness_mm', 'actual_bun_separated',
+          'actual_sheet_received', 'ng_qty', 'ng_bun_qty', 'error_type',
+          'note', 'is_compensation', 'report_date'
+        ]
+        allowedKeys.forEach(k => {
+          if (k in payload) cleanPayload[k] = payload[k]
+        })
+      } else if (activeStage === 'warehouse') {
+        const allowedKeys = [
+          'qty_delivered_sheet', 'delivery_date', 'ng_bun_qty', 'error_type', 'report_date'
+        ]
+        allowedKeys.forEach(k => {
+          if (k in payload) cleanPayload[k] = payload[k]
+        })
+      } else if (activeStage === 'transfer') {
+        const allowedKeys = [
+          'shift', 'machine_id', 'report_date'
+        ]
+        allowedKeys.forEach(k => {
+          if (k in payload) cleanPayload[k] = payload[k]
+        })
+      }
+
       const { error } = await supabase
         .from(config.table)
-        .update(payload)
+        .update(cleanPayload)
         .eq('id', editingItem.id)
       if (error) throw error
 
@@ -1249,7 +1286,14 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Ngày báo cáo</label>
                   <input type="date" value={editForm.report_date || editForm.delivery_date || ''}
-                    onChange={e => setEditForm({ ...editForm, report_date: e.target.value, delivery_date: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value
+                      if (activeStage === 'warehouse') {
+                        setEditForm({ ...editForm, report_date: val, delivery_date: val })
+                      } else {
+                        setEditForm({ ...editForm, report_date: val })
+                      }
+                    }}
                     className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono" />
                 </div>
 
