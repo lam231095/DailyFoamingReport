@@ -70,12 +70,17 @@ Write-Host "  FOAMING PLAN → SUPABASE SYNC" -ForegroundColor Cyan
 Write-Host "  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-if (-not (Test-Path $EXCEL_FILE)) {
-    Write-Host "[ERROR] Không tìm thấy: $EXCEL_FILE" -ForegroundColor Red
-    exit 1
+# Sao chép file Excel thành bản tạm để tránh bị khóa (lock) bởi Excel của người dùng
+$TEMP_EXCEL_FILE = Join-Path $PROJECT_ROOT "Foaming Plan_temp.xlsx"
+try {
+    Copy-Item -Path $EXCEL_FILE -Destination $TEMP_EXCEL_FILE -Force -ErrorAction Stop
+    Write-Host "  -> Đã tạo bản sao tạm thời để đọc dữ liệu." -ForegroundColor Green
+} catch {
+    Write-Host "  -> [WARNING] Không thể tạo bản sao tạm thời, thử đọc trực tiếp: $($_.Exception.Message)" -ForegroundColor Yellow
+    $TEMP_EXCEL_FILE = $EXCEL_FILE
 }
 
-Write-Host "[1/3] Mở file: $EXCEL_FILE" -ForegroundColor Yellow
+Write-Host "[1/3] Mở file: $TEMP_EXCEL_FILE" -ForegroundColor Yellow
 
 $xl = New-Object -ComObject Excel.Application
 $xl.Visible       = $false
@@ -85,7 +90,7 @@ $xl.DisplayAlerts = $false
 $planMap = [System.Collections.Generic.Dictionary[string,object]]::new()
 
 try {
-    $wb         = $xl.Workbooks.Open($EXCEL_FILE, 0, $true)
+    $wb         = $xl.Workbooks.Open($TEMP_EXCEL_FILE, 0, $true)
     $sheetCount = $wb.Worksheets.Count
 
     Write-Host "[1/3] Tìm thấy $sheetCount sheet(s)" -ForegroundColor Green
@@ -150,8 +155,13 @@ try {
 
     $wb.Close($false)
 } finally {
-    $xl.Quit()
-    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($xl) | Out-Null
+    if ($xl) {
+        $xl.Quit()
+        [System.Runtime.Interopservices.Marshal]::ReleaseComObject($xl) | Out-Null
+    }
+    if ($TEMP_EXCEL_FILE -and $TEMP_EXCEL_FILE -ne $EXCEL_FILE -and (Test-Path $TEMP_EXCEL_FILE)) {
+        Remove-Item -Path $TEMP_EXCEL_FILE -Force -ErrorAction SilentlyContinue
+    }
     [GC]::Collect()
 }
 
