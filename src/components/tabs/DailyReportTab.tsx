@@ -450,7 +450,7 @@ function calcManagerPerf(
       } else if (manager === 'Thảo') {
         targetSeparate = 200
       } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 200
+        targetSeparate = 193
       }
     } else if (isExactJune12th2026) {
       if (manager === 'Linh') {
