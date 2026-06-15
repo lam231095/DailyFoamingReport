@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Search, Filter, Calendar, Clock, User, 
   ChevronDown, FileText, Download, Loader2,
-  AlertCircle, ArrowRight, RotateCcw, Pencil, Save, X
+  AlertCircle, ArrowRight, RotateCcw, Pencil, Save, X,
+  Hash
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser } from '@/types'
@@ -94,6 +95,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
     puCode: '',
     msnv: '',
     manager: 'Tất cả',
+    bunCode: '',
   })
   const [showFilters, setShowFilters] = useState(false)
 
@@ -142,6 +144,46 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         }
         if (filters.msnv.trim()) {
           query = query.ilike('users.msnv', `%${filters.msnv.trim()}%`)
+        }
+
+        // Lọc theo Firm Plan hoặc No Order cho Giao hàng Đổ - Tách
+        if (filters.firmPlan.trim()) {
+          const rawTerm = `%${filters.firmPlan.trim()}%`
+          const cleanTerm = `%${filters.firmPlan.replace(/\s+/g, '')}%`
+          const { data: matchedPlans } = await supabase
+            .from('production_plan')
+            .select('firm_plan')
+            .or(`firm_plan.ilike.${rawTerm},no_order.ilike.${rawTerm},firm_plan.ilike.${cleanTerm},no_order.ilike.${cleanTerm}`)
+          
+          const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
+          if (matchedFirmPlans.length > 0) {
+            const orConditions = matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`).join(',')
+            query = query.or(orConditions)
+          } else {
+            query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
+          }
+        }
+
+        // Lọc theo PU Code cho Giao hàng Đổ - Tách
+        if (filters.puCode.trim()) {
+          query = query.ilike('production_plan.pu_code', `%${filters.puCode.trim()}%`)
+        }
+
+        // Lọc theo Bun Code cho Giao hàng Đổ - Tách
+        if (filters.bunCode.trim()) {
+          const term = `%${filters.bunCode.trim()}%`
+          const { data: matchedPlans } = await supabase
+            .from('production_plan')
+            .select('firm_plan')
+            .ilike('bun_code', term)
+          
+          const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
+          if (matchedFirmPlans.length > 0) {
+            const orConditions = matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`).join(',')
+            query = query.or(orConditions)
+          } else {
+            query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
+          }
         }
 
         const { data: result, error: sbError } = await query.order('created_at', { ascending: false })
@@ -210,6 +252,36 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       // Lọc theo PU Code (Join Production Plan)
       if (filters.puCode.trim()) {
         query = query.ilike('production_plan.pu_code', `%${filters.puCode.trim()}%`)
+      }
+
+      // Lọc theo Bun Code
+      if (filters.bunCode.trim()) {
+        const term = `%${filters.bunCode.trim()}%`
+        const { data: matchedPlans } = await supabase
+          .from('production_plan')
+          .select('firm_plan')
+          .ilike('bun_code', term)
+        
+        const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
+        
+        if (activeStage === 'pour') {
+          if (matchedFirmPlans.length > 0) {
+            const orConditions = [
+              `bun_code.ilike.${term}`,
+              ...matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`)
+            ].join(',')
+            query = query.or(orConditions)
+          } else {
+            query = query.ilike('bun_code', term)
+          }
+        } else {
+          if (matchedFirmPlans.length > 0) {
+            const orConditions = matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`).join(',')
+            query = query.or(orConditions)
+          } else {
+            query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
+          }
+        }
       }
 
       // Lọc theo MSNV (Join Users)
@@ -667,7 +739,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 mt-4 border-t border-[var(--border)]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-4 mt-4 border-t border-[var(--border)]">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1">Loại PU Code</label>
                   <input 
@@ -675,6 +747,18 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     placeholder="VD: PVN-00..."
                     value={filters.puCode}
                     onChange={(e) => setFilters({...filters, puCode: e.target.value})}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-3)] uppercase ml-1 flex items-center gap-1">
+                    <Hash size={10} /> Mã Bun (Bun Code)
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="Nhập mã Bun..."
+                    value={filters.bunCode}
+                    onChange={(e) => setFilters({...filters, bunCode: e.target.value})}
                     className="w-full bg-[var(--bg-input)] border border-[var(--border)] rounded-lg px-3 py-2 text-xs text-[var(--text-1)] outline-none focus:border-brand-500"
                   />
                 </div>
