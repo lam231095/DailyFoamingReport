@@ -3586,61 +3586,65 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                           {/* Expanded list of orders */}
                           {isExpanded && (
                             <div className="mt-3 ml-7 bg-white/70 dark:bg-black/30 rounded-xl p-2.5 border border-indigo-200/30 space-y-2 text-[10px]">
-                              <p className="font-black text-indigo-800 dark:text-indigo-300 uppercase tracking-widest text-[8px] mb-1 border-b border-indigo-200 dark:border-indigo-800 pb-1 flex justify-between">
-                                <span>Chi tiết chẩn đoán từng đơn hàng</span>
-                                <span className="text-red-600 font-bold">Lưu ý: chỉ hiển thị đơn lệch &gt; 5 tấm</span>
-                              </p>
-                              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                                {(() => {
-                                  const filteredDetails = item.details.filter(d => d.deficit > 5);
-                                  if (filteredDetails.length === 0) {
-                                    return (
-                                      <div className="text-center py-4 text-gray-400 text-[9px]">
-                                        Không có đơn hàng nào bị lệch độ dày bun &gt; 5 tấm.
-                                      </div>
-                                    );
-                                  }
-                                  return filteredDetails.map((detail) => {
-                                    const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
-                                    return (
-                                      <div key={detail.id} className="p-2 rounded-lg bg-white/95 dark:bg-black/40 border border-indigo-100/50 flex flex-col gap-1 shadow-sm text-left">
-                                        <div className="flex items-center justify-between flex-wrap gap-1.5">
-                                          <span className="font-black text-gray-700 dark:text-gray-300 font-mono">{detail.report_date} · {detail.shift}</span>
-                                          <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600 dark:text-gray-300">{detail.firm_plan}</span></span>
-                                          {isQualityErr ? (
-                                            <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
-                                          ) : (
-                                            <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
-                                          )}
+                              {(() => {
+                                const threshold = item.totalBunSep <= 3 ? 1 : 5;
+                                const filteredDetails = item.details.filter(d => d.deficit > threshold);
+                                return (
+                                  <>
+                                    <p className="font-black text-indigo-800 dark:text-indigo-300 uppercase tracking-widest text-[8px] mb-1 border-b border-indigo-200 dark:border-indigo-800 pb-1 flex justify-between">
+                                      <span>Chi tiết chẩn đoán từng đơn hàng</span>
+                                      <span className="text-red-600 font-bold">Lưu ý: chỉ hiển thị đơn lệch &gt; {threshold} tấm</span>
+                                    </p>
+                                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                      {filteredDetails.length === 0 ? (
+                                        <div className="text-center py-4 text-gray-400 text-[9px]">
+                                          Không có đơn hàng nào bị lệch độ dày bun &gt; {threshold} tấm.
                                         </div>
+                                      ) : (
+                                        filteredDetails.map((detail) => {
+                                          const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
+                                          return (
+                                            <div key={detail.id} className="p-2 rounded-lg bg-white/95 dark:bg-black/40 border border-indigo-100/50 flex flex-col gap-1 shadow-sm text-left">
+                                              <div className="flex items-center justify-between flex-wrap gap-1.5">
+                                                <span className="font-black text-gray-700 dark:text-gray-300 font-mono">{detail.report_date} · {detail.shift}</span>
+                                                <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600 dark:text-gray-300">{detail.firm_plan}</span></span>
+                                                {isQualityErr ? (
+                                                  <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
+                                                ) : (
+                                                  <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
+                                                )}
+                                              </div>
 
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 dark:text-gray-400 py-1 my-0.5 border-t border-b border-dashed border-gray-100 dark:border-white/5">
-                                          <div>Tách: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.actual_bun_separated} bun</span></div>
-                                          <div>Nhận: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.actual_sheet_received} sheet</span></div>
-                                          <div>Chuẩn/tấm: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.sheet_thickness_mm}mm</span></div>
-                                          <div className="text-right text-red-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
-                                        </div>
+                                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 dark:text-gray-400 py-1 my-0.5 border-t border-b border-dashed border-gray-100 dark:border-white/5">
+                                                <div>Tách: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.actual_bun_separated} bun</span></div>
+                                                <div>Nhận: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.actual_sheet_received} sheet</span></div>
+                                                <div>Chuẩn/tấm: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.sheet_thickness_mm}mm</span></div>
+                                                <div className="text-right text-red-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
+                                              </div>
 
-                                        <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
-                                          <div className="flex-1 min-w-[200px]">
-                                            {isQualityErr ? (
-                                              <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
-                                                Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
-                                              </span>
-                                            ) : (
-                                              <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
-                                                Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
-                                              </span>
-                                            )}
-                                            {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
-                                          </div>
-                                          <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 dark:text-gray-300 font-black">{detail.operator_name || 'Không rõ'}</span></div>
-                                        </div>
-                                      </div>
-                                    );
-                                  });
-                                })()}
-                              </div>
+                                              <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
+                                                <div className="flex-1 min-w-[200px]">
+                                                  {isQualityErr ? (
+                                                    <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
+                                                      Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
+                                                    </span>
+                                                  ) : (
+                                                    <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
+                                                      Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
+                                                    </span>
+                                                  )}
+                                                  {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
+                                                </div>
+                                                <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 dark:text-gray-300 font-black">{detail.operator_name || 'Không rõ'}</span></div>
+                                              </div>
+                                            </div>
+                                          );
+                                        })
+                                      )}
+                                    </div>
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
