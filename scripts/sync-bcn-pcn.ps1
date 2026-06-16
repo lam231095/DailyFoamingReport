@@ -72,17 +72,34 @@ function Upload-Batch($batch) {
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
 $OutputEncoding = [System.Text.Encoding]::UTF8
-Write-Host "  BCN/PCN PLAN → SUPABASE SYNC" -ForegroundColor Cyan
+Write-Host "  BCN/PCN PLAN -> SUPABASE SYNC" -ForegroundColor Cyan
 Write-Host "  $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 
-# Sao chép file Excel thành bản tạm để tránh bị khóa (lock) bởi Excel của người dùng
+# ---- Query existing firm plans to skip ----
+Write-Host "[0/3] Querying existing plans to skip..." -ForegroundColor Yellow
+$headers = @{
+    "apikey"        = $SUPABASE_KEY
+    "Authorization" = "Bearer $SUPABASE_KEY"
+}
+$uri = "$SUPABASE_URL/rest/v1/production_plan?week_label=eq.China%20CN&select=firm_plan"
+$existingPlans = Invoke-RestMethod -Uri $uri -Method Get -Headers $headers
+Write-Host "  -> Found $($existingPlans.Count) existing plans in DB." -ForegroundColor Green
+
+$existingMap = @{}
+foreach ($p in $existingPlans) {
+    if ($p.firm_plan) {
+        $existingMap[$p.firm_plan] = $true
+    }
+}
+
+# Copy Excel file to temp to avoid locks
 $TEMP_EXCEL_FILE = Join-Path $PROJECT_ROOT "tiến độ BCN_temp.xlsx"
 try {
     Copy-Item -Path $EXCEL_FILE -Destination $TEMP_EXCEL_FILE -Force -ErrorAction Stop
-    Write-Host "  -> Đã tạo bản sao tạm thời để đọc dữ liệu." -ForegroundColor Green
+    Write-Host "  -> Created temporary copy of Excel file." -ForegroundColor Green
 } catch {
-    Write-Host "  -> [WARNING] Không thể tạo bản sao tạm thời, thử đọc trực tiếp: $($_.Exception.Message)" -ForegroundColor Yellow
+    Write-Host "  -> [WARNING] Cannot create temp file, reading directly: $($_.Exception.Message)" -ForegroundColor Yellow
     $TEMP_EXCEL_FILE = $EXCEL_FILE
 }
 
@@ -128,6 +145,9 @@ try {
 
         # Chỉ lấy mã FPRO hoặc RPRO
         if ($firmPlan -notmatch "^[FR]PRO-") { continue }
+
+        # Skip already pushed plans
+        if ($existingMap.ContainsKey($firmPlan)) { continue }
 
         $noOrder  = $ws.Cells.Item($r, $COL_NO_ORDER).Text.Trim()
         $bunCode  = $ws.Cells.Item($r, $COL_BUN_CODE).Text.Trim()
