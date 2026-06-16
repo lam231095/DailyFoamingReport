@@ -37,6 +37,26 @@ const MANAGER_COLORS: Record<string, string> = {
 }
 const safeId = (name: string) => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_')
 
+// ── Loại hàng tách: A = Thường, T = Test, M = Đổ tay, G = Hàng xấu, S = Hàng sửa ──────
+const BUN_TYPES = ['T', 'M', 'G', 'S'] as const   // chỉ 4 loại đặc biệt (bỏ A = thường)
+const BUN_TYPE_LABELS: Record<string, string> = {
+  'A': 'Hàng thường (A)',
+  'T': 'Test (T)',
+  'M': 'Đổ tay (M)',
+  'G': 'Hàng xấu (G)',
+  'S': 'Hàng sửa (S)',
+}
+const BUN_TYPE_COLORS: Record<string, string> = {
+  'A': '#10b981',   // xanh lá
+  'T': '#3b82f6',   // xanh dương
+  'M': '#f59e0b',   // vàng cam
+  'G': '#ef4444',   // đỏ
+  'S': '#a855f7',   // tím
+}
+const BUN_TYPE_EMOJIS: Record<string, string> = {
+  'T': '🧪', 'M': '🔨', 'G': '❌', 'S': '🔧'
+}
+
 interface DailyReportTabProps { user: SessionUser }
 
 type AggregatedDay = {
@@ -1583,6 +1603,123 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     return ['Tất cả', ...Array.from(set).sort()]
   }, [separateReports])
 
+  // ──────────────────────────────────────────────────────────────────────────
+  // Độ dày bun TB theo loại hàng (product_type_abbrev): T / M / G / S
+  // ──────────────────────────────────────────────────────────────────────────
+  const bunThicknessByBunType = useMemo(() => {
+    const typeMap = new Map<string, {
+      sheetThickSum: number; bunSep: number
+      targetSum: number; targetCount: number; orderCount: number
+      productLines: Set<string>
+    }>()
+
+    separateReports
+      .filter(r => {
+        if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
+        if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        if (productLineFilter !== 'Tất cả' && pl !== productLineFilter) return false
+        return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
+      })
+      .forEach(r => {
+        const tp = (r as any).product_type_abbrev || 'A'
+        const sheetThickSum = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        const bunSep = r.actual_bun_separated || 0
+        const target = (r as any).bun_thickness_mm || 0
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        if (!typeMap.has(tp)) typeMap.set(tp, { sheetThickSum: 0, bunSep: 0, targetSum: 0, targetCount: 0, orderCount: 0, productLines: new Set() })
+        const e = typeMap.get(tp)!
+        e.sheetThickSum += sheetThickSum
+        e.bunSep += bunSep
+        if (target > 0) { e.targetSum += target; e.targetCount++ }
+        e.orderCount++
+        if (pl && pl !== '---') e.productLines.add(pl)
+      })
+
+    return [...BUN_TYPES]
+      .filter(tp => typeMap.has(tp))
+      .map(tp => {
+        const v = typeMap.get(tp)!
+        return {
+          type: tp,
+          bunThickness: v.bunSep > 0 ? Math.round((v.sheetThickSum / v.bunSep) * 10) / 10 : 0,
+          targetThickness: v.targetCount > 0 ? Math.round((v.targetSum / v.targetCount) * 10) / 10 : 0,
+          orderCount: v.orderCount,
+          totalBunSep: v.bunSep,
+          totalSheetThickSum: v.sheetThickSum,
+          productLines: Array.from(v.productLines).slice(0, 8),
+        }
+      })
+      .filter(d => d.bunThickness > 0)
+  }, [separateReports, shiftFilter, managerFilter, productLineFilter])
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Nguyên nhân phế theo loại hàng (product_type_abbrev): T / M / G / S
+  // ──────────────────────────────────────────────────────────────────────────
+  const defectByBunType = useMemo(() => {
+    const typeMap = new Map<string, {
+      orderCount: number; totalBunSep: number
+      sheetThickSum: number; targetSum: number; targetCount: number
+      reasons: Record<string, number>; deficitTotal: number
+      productLines: Set<string>
+    }>()
+
+    separateReports
+      .filter(r => {
+        if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
+        if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        if (productLineFilter !== 'Tất cả' && pl !== productLineFilter) return false
+        return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
+      })
+      .forEach(r => {
+        const tp = (r as any).product_type_abbrev || 'A'
+        const bunSep = r.actual_bun_separated || 0
+        const target = (r as any).bun_thickness_mm || 0
+        const sheetThickSum = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        const expectedSheets = target && r.sheet_thickness_mm
+          ? Math.round((target / r.sheet_thickness_mm) * bunSep) : 0
+        const deficit = expectedSheets > 0 ? expectedSheets - (r.actual_sheet_received || 0) : 0
+        const ngQty = (r as any).ng_qty || 0
+        let reason = 'Bình thường'
+        if (deficit > 5) {
+          reason = ngQty > 0 && (ngQty >= 0.3 * deficit || ngQty > 5)
+            ? 'Lỗi chất lượng (NG)' : 'Lỗi nhập liệu'
+        }
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        if (!typeMap.has(tp)) typeMap.set(tp, {
+          orderCount: 0, totalBunSep: 0, sheetThickSum: 0,
+          targetSum: 0, targetCount: 0,
+          reasons: { 'Bình thường': 0, 'Lỗi chất lượng (NG)': 0, 'Lỗi nhập liệu': 0 },
+          deficitTotal: 0, productLines: new Set()
+        })
+        const e = typeMap.get(tp)!
+        e.orderCount++
+        e.totalBunSep += bunSep
+        e.sheetThickSum += sheetThickSum
+        if (target > 0) { e.targetSum += target; e.targetCount++ }
+        e.reasons[reason] = (e.reasons[reason] || 0) + 1
+        if (deficit > 0) e.deficitTotal += deficit
+        if (pl && pl !== '---') e.productLines.add(pl)
+      })
+
+    return [...BUN_TYPES]
+      .filter(tp => typeMap.has(tp))
+      .map(tp => {
+        const v = typeMap.get(tp)!
+        return {
+          type: tp,
+          orderCount: v.orderCount,
+          totalBunSep: v.totalBunSep,
+          bunThickness: v.totalBunSep > 0 ? Math.round((v.sheetThickSum / v.totalBunSep) * 10) / 10 : 0,
+          targetThickness: v.targetCount > 0 ? Math.round((v.targetSum / v.targetCount) * 10) / 10 : 0,
+          reasons: v.reasons,
+          deficitTotal: Math.round(v.deficitTotal),
+          productLines: Array.from(v.productLines).slice(0, 8),
+        }
+      })
+  }, [separateReports, shiftFilter, managerFilter, productLineFilter])
+
   return (
     <div className="pb-20">
       <div className="flex flex-col lg:flex-row gap-5 items-start">
@@ -2867,6 +3004,333 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════
+               SECTION: ĐỘ DÀY BUN TB THEO LOẠI HÀNG TÁCH (T / M / G / S)
+          ═══════════════════════════════════════════════════════════════ */}
+          {bunThicknessByBunType.length > 0 && (
+            <div className="card p-5 mt-6">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-500">
+                  <Layers size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-tight">
+                    Độ dày bun trung bình theo loại hàng (Tách)
+                  </h3>
+                  <p className="text-[10px] text-[var(--text-3)]">
+                    4 loại đặc biệt: Test (T) · Đổ tay (M) · Hàng xấu (G) · Hàng sửa (S)
+                    · Áp dụng filter hiện tại
+                  </p>
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mb-5">
+                {bunThicknessByBunType.map(item => (
+                  <div key={item.type} className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: BUN_TYPE_COLORS[item.type] }} />
+                    <span className="text-[10px] font-bold text-[var(--text-2)]">
+                      {BUN_TYPE_EMOJIS[item.type]} {BUN_TYPE_LABELS[item.type]}
+                    </span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-sm bg-amber-300/60 border border-amber-400" />
+                  <span className="text-[10px] font-bold text-amber-600">Chuẩn TB (ghost bar)</span>
+                </div>
+              </div>
+
+              {/* Horizontal bar chart */}
+              <div className="space-y-4">
+                {(() => {
+                  const maxVal = Math.max(
+                    ...bunThicknessByBunType.flatMap(d => [d.bunThickness, d.targetThickness]),
+                    1
+                  )
+                  return bunThicknessByBunType.map(item => {
+                    const color = BUN_TYPE_COLORS[item.type]
+                    const scale = maxVal * 1.15
+                    const actualPct = (item.bunThickness / scale) * 100
+                    const targetPct = item.targetThickness > 0 ? (item.targetThickness / scale) * 100 : 0
+                    const diff = item.targetThickness > 0 ? item.bunThickness - item.targetThickness : null
+                    const pct = diff !== null && item.targetThickness > 0
+                      ? (diff / item.targetThickness) * 100 : null
+                    const isOver = pct !== null && pct > 5
+                    const isUnder = pct !== null && pct < -5
+                    return (
+                      <div key={item.type}>
+                        {/* Row */}
+                        <div className="flex items-center gap-3">
+                          {/* Type label */}
+                          <div className="w-36 shrink-0">
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <span className="text-sm">{BUN_TYPE_EMOJIS[item.type]}</span>
+                              <span className="text-[11px] font-black" style={{ color }}>
+                                {BUN_TYPE_LABELS[item.type]}
+                              </span>
+                            </div>
+                            <div className="text-[9px] text-[var(--text-3)] text-right">{item.orderCount} đơn · {item.totalBunSep.toLocaleString()} bun</div>
+                          </div>
+                          {/* Track */}
+                          <div className="flex-1 relative h-8 bg-gray-100 dark:bg-white/5 rounded-xl overflow-visible">
+                            {/* Target ghost */}
+                            {targetPct > 0 && (
+                              <div
+                                className="absolute inset-y-1 left-0 rounded-lg bg-amber-300/35 border border-amber-400/40"
+                                style={{ width: `${targetPct}%` }}
+                              />
+                            )}
+                            {/* Actual bar */}
+                            <div
+                              className="absolute inset-y-1 left-0 rounded-lg flex items-center justify-end pr-2.5 transition-all duration-700"
+                              style={{ width: `${actualPct}%`, backgroundColor: color, opacity: 0.88 }}
+                            >
+                              {actualPct > 18 && (
+                                <span className="text-white text-[10px] font-black drop-shadow">
+                                  {item.bunThickness} mm
+                                </span>
+                              )}
+                            </div>
+                            {/* Value label outside if bar too short */}
+                            {actualPct <= 18 && (
+                              <span
+                                className="absolute inset-y-0 flex items-center text-[10px] font-black"
+                                style={{ left: `calc(${actualPct}% + 6px)`, color }}
+                              >
+                                {item.bunThickness} mm
+                              </span>
+                            )}
+                          </div>
+                          {/* Deviation */}
+                          <div className="w-28 shrink-0 text-right">
+                            {pct !== null ? (
+                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                isOver ? 'bg-red-100 text-red-700' :
+                                isUnder ? 'bg-amber-100 text-amber-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                                {diff! > 0 ? '+' : ''}{diff!.toFixed(1)} mm
+                                &nbsp;({pct.toFixed(1)}%)
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-[var(--text-3)]">Chưa có chuẩn</span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Product lines tag */}
+                        {item.productLines.length > 0 && (
+                          <div className="ml-[156px] mt-1 flex flex-wrap gap-1">
+                            {item.productLines.map(pl => (
+                              <span key={pl} className="text-[8px] px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-[var(--text-3)] font-medium">
+                                {pl}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+
+              {/* Summary table */}
+              <div className="mt-6 overflow-x-auto rounded-xl border border-[var(--border)]">
+                <table className="w-full text-[10px]">
+                  <thead>
+                    <tr className="bg-violet-500/5">
+                      <th className="p-2.5 text-left font-black uppercase text-violet-700">Loại hàng</th>
+                      <th className="p-2.5 text-center font-black uppercase text-violet-700">Số đơn</th>
+                      <th className="p-2.5 text-center font-black uppercase text-violet-700">Tổng bun tách</th>
+                      <th className="p-2.5 text-center font-black uppercase text-violet-700">Σ Dày sheet (mm)</th>
+                      <th className="p-2.5 text-center font-black uppercase text-violet-700">Chuẩn TB</th>
+                      <th className="p-2.5 text-center font-black uppercase text-violet-700">Thực tế TB</th>
+                      <th className="p-2.5 text-center font-black uppercase text-violet-700">Lệch</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    {bunThicknessByBunType.map(item => {
+                      const diff = item.targetThickness > 0 ? item.bunThickness - item.targetThickness : null
+                      const pct = diff !== null && item.targetThickness > 0
+                        ? (diff / item.targetThickness) * 100 : null
+                      const isOver = pct !== null && pct > 5
+                      const isUnder = pct !== null && pct < -5
+                      const color = BUN_TYPE_COLORS[item.type]
+                      return (
+                        <tr key={item.type} className="hover:bg-violet-500/5 transition-colors">
+                          <td className="p-2.5">
+                            <div className="flex items-center gap-2">
+                              <span className="text-base">{BUN_TYPE_EMOJIS[item.type]}</span>
+                              <div>
+                                <p className="font-black text-[11px]" style={{ color }}>{BUN_TYPE_LABELS[item.type]}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-2.5 text-center text-[var(--text-2)] font-bold">{item.orderCount}</td>
+                          <td className="p-2.5 text-center font-mono text-[var(--text-2)]">{item.totalBunSep.toLocaleString()}</td>
+                          <td className="p-2.5 text-center font-mono text-[var(--text-3)]">{item.totalSheetThickSum.toLocaleString()}</td>
+                          <td className="p-2.5 text-center font-mono text-[var(--text-3)]">
+                            {item.targetThickness > 0 ? `${item.targetThickness} mm` : '—'}
+                          </td>
+                          <td className="p-2.5 text-center font-mono font-black"
+                            style={{ color: isOver ? '#ef4444' : isUnder ? '#f59e0b' : color }}>
+                            {item.bunThickness} mm
+                          </td>
+                          <td className="p-2.5 text-center">
+                            {pct !== null ? (
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                isOver ? 'bg-red-100 text-red-600' :
+                                isUnder ? 'bg-amber-100 text-amber-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                                {diff! > 0 ? '+' : ''}{diff!.toFixed(1)} ({pct.toFixed(1)}%)
+                              </span>
+                            ) : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════
+               SECTION: NGUYÊN NHÂN PHẾ THEO LOẠI HÀNG TÁCH (T / M / G / S)
+          ═══════════════════════════════════════════════════════════════ */}
+          {defectByBunType.length > 0 && (
+            <div className="card p-5 mt-4">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
+                  <Activity size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-tight">
+                    Phân tích nguyên nhân phế theo loại hàng (Tách)
+                  </h3>
+                  <p className="text-[10px] text-[var(--text-3)]">
+                    Bình thường · Lỗi chất lượng NG · Nghi ngờ nhập liệu · Áp dụng filter hiện tại
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                {defectByBunType.map(item => {
+                  const color = BUN_TYPE_COLORS[item.type]
+                  const total = item.orderCount || 1
+                  const normalN = item.reasons['Bình thường'] || 0
+                  const ngN = item.reasons['Lỗi chất lượng (NG)'] || 0
+                  const inputN = item.reasons['Lỗi nhập liệu'] || 0
+                  const normalPct = Math.round((normalN / total) * 100)
+                  const ngPct = Math.round((ngN / total) * 100)
+                  const inputPct = Math.round((inputN / total) * 100)
+                  const diff = item.targetThickness > 0 ? item.bunThickness - item.targetThickness : null
+                  const pct = diff !== null && item.targetThickness > 0
+                    ? (diff / item.targetThickness) * 100 : null
+                  const isOver = pct !== null && pct > 5
+                  const isUnder = pct !== null && pct < -5
+                  return (
+                    <div key={item.type}
+                      className="rounded-2xl p-4 border-2 flex flex-col gap-3"
+                      style={{ borderColor: color + '40', background: color + '08' }}
+                    >
+                      {/* Card header */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-base shadow-sm"
+                            style={{ backgroundColor: color }}
+                          >
+                            {item.type}
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black" style={{ color }}>{BUN_TYPE_LABELS[item.type]}</p>
+                            <p className="text-[9px] text-[var(--text-3)]">
+                              {item.orderCount} đơn · {item.totalBunSep.toLocaleString()} bun
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[8px] text-[var(--text-3)] uppercase font-bold">TB dày</p>
+                          <p className="text-[15px] font-black"
+                            style={{ color: isOver ? '#ef4444' : isUnder ? '#f59e0b' : color }}
+                          >
+                            {item.bunThickness}<span className="text-[9px] font-normal"> mm</span>
+                          </p>
+                          {pct !== null && (
+                            <p className={`text-[9px] font-bold ${
+                              isOver ? 'text-red-600' : isUnder ? 'text-amber-600' : 'text-green-600'
+                            }`}>
+                              {diff! > 0 ? '+' : ''}{diff!.toFixed(1)} mm
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Reason bars */}
+                      <div className="space-y-2">
+                        {/* Bình thường */}
+                        <div>
+                          <div className="flex justify-between text-[9px] mb-0.5">
+                            <span className="font-bold text-green-700">✅ Bình thường</span>
+                            <span className="font-black text-green-700">{normalN} đơn ({normalPct}%)</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-black/5 overflow-hidden">
+                            <div className="h-full rounded-full bg-green-400 transition-all duration-700"
+                              style={{ width: `${normalPct}%` }} />
+                          </div>
+                        </div>
+                        {/* NG */}
+                        <div>
+                          <div className="flex justify-between text-[9px] mb-0.5">
+                            <span className="font-bold text-red-700">🔴 Lỗi chất lượng (NG)</span>
+                            <span className="font-black text-red-700">{ngN} đơn ({ngPct}%)</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-black/5 overflow-hidden">
+                            <div className="h-full rounded-full bg-red-400 transition-all duration-700"
+                              style={{ width: `${ngPct}%` }} />
+                          </div>
+                        </div>
+                        {/* Nhập liệu */}
+                        <div>
+                          <div className="flex justify-between text-[9px] mb-0.5">
+                            <span className="font-bold text-orange-700">⚠️ Nghi lỗi nhập liệu</span>
+                            <span className="font-black text-orange-700">{inputN} đơn ({inputPct}%)</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-black/5 overflow-hidden">
+                            <div className="h-full rounded-full bg-orange-400 transition-all duration-700"
+                              style={{ width: `${inputPct}%` }} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Deficit + product lines */}
+                      {item.deficitTotal > 0 && (
+                        <div className="pt-2 border-t border-dashed" style={{ borderColor: color + '30' }}>
+                          <p className="text-[9px] font-bold text-[var(--text-3)]">
+                            Tổng thiếu: <span className="text-red-600 font-black">-{item.deficitTotal} tấm</span>
+                          </p>
+                        </div>
+                      )}
+                      {item.productLines.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {item.productLines.map(pl => (
+                            <span key={pl}
+                              className="text-[8px] px-1.5 py-0.5 rounded-full bg-black/5 text-[var(--text-3)] font-medium">
+                              {pl}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
 
