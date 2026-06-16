@@ -1066,11 +1066,20 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   const [showFilters, setShowFilters] = useState(false)
   const [productLineFilter, setProductLineFilter] = useState<string>('Tất cả')
   const [expandedProductLines, setExpandedProductLines] = useState<Record<string, boolean>>({})
+  const [activeDetailBunType, setActiveDetailBunType] = useState<string>('T')
+  const [expandedBunTypeProductLines, setExpandedBunTypeProductLines] = useState<Record<string, boolean>>({})
 
   const toggleExpand = useCallback((pl: string) => {
     setExpandedProductLines(prev => ({
       ...prev,
       [pl]: !prev[pl]
+    }))
+  }, [])
+
+  const toggleExpandBunType = useCallback((plKey: string) => {
+    setExpandedBunTypeProductLines(prev => ({
+      ...prev,
+      [plKey]: !prev[plKey]
     }))
   }, [])
 
@@ -1662,6 +1671,32 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
       sheetThickSum: number; targetSum: number; targetCount: number
       reasons: Record<string, number>; deficitTotal: number
       productLines: Set<string>
+      productLineMap: Map<string, {
+        totalSheetThickSum: number
+        totalBunSep: number
+        targetSum: number
+        targetCount: number
+        orderCount: number
+        dates: Set<string>
+        firmPlans: string[]
+        details: Array<{
+          id: string
+          report_date: string
+          shift: string
+          firm_plan: string
+          actual_bun_separated: number
+          actual_sheet_received: number
+          sheet_thickness_mm: number
+          bun_thickness_mm: number
+          expected_sheets: number
+          deficit: number
+          ng_qty: number
+          error_type: string
+          note: string
+          operator_name: string
+          reason: string
+        }>
+      }>
     }>()
 
     separateReports
@@ -1686,12 +1721,13 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           reason = ngQty > 0 && (ngQty >= 0.3 * deficit || ngQty > 5)
             ? 'Lỗi chất lượng (NG)' : 'Lỗi nhập liệu'
         }
-        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham) || 'Không rõ'
         if (!typeMap.has(tp)) typeMap.set(tp, {
           orderCount: 0, totalBunSep: 0, sheetThickSum: 0,
           targetSum: 0, targetCount: 0,
           reasons: { 'Bình thường': 0, 'Lỗi chất lượng (NG)': 0, 'Lỗi nhập liệu': 0 },
-          deficitTotal: 0, productLines: new Set()
+          deficitTotal: 0, productLines: new Set(),
+          productLineMap: new Map()
         })
         const e = typeMap.get(tp)!
         e.orderCount++
@@ -1701,12 +1737,69 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
         e.reasons[reason] = (e.reasons[reason] || 0) + 1
         if (deficit > 0) e.deficitTotal += deficit
         if (pl && pl !== '---') e.productLines.add(pl)
+
+        // Gom chi tiết họ sản phẩm
+        if (!e.productLineMap.has(pl)) {
+          e.productLineMap.set(pl, {
+            totalSheetThickSum: 0,
+            totalBunSep: 0,
+            targetSum: 0,
+            targetCount: 0,
+            orderCount: 0,
+            dates: new Set(),
+            firmPlans: [],
+            details: []
+          })
+        }
+        const ple = e.productLineMap.get(pl)!
+        ple.totalSheetThickSum += sheetThickSum
+        ple.totalBunSep += bunSep
+        if (target > 0) { ple.targetSum += target; ple.targetCount++ }
+        ple.orderCount++
+        const reportDate = r.report_date
+          ? r.report_date.split('-').reverse().slice(0, 2).join('/')
+          : formatReportDate(r.created_at, r.shift).split('/').slice(0, 2).join('/')
+        ple.dates.add(reportDate)
+        if (r.firm_plan && !ple.firmPlans.includes(r.firm_plan)) ple.firmPlans.push(r.firm_plan)
+
+        ple.details.push({
+          id: r.id,
+          report_date: r.report_date ? r.report_date.split('-').reverse().slice(0, 2).join('/') : formatReportDate(r.created_at, r.shift).split('/').slice(0, 2).join('/'),
+          shift: r.shift || '',
+          firm_plan: r.firm_plan || '',
+          actual_bun_separated: bunSep,
+          actual_sheet_received: r.actual_sheet_received || 0,
+          sheet_thickness_mm: r.sheet_thickness_mm || 0,
+          bun_thickness_mm: target,
+          expected_sheets: expectedSheets,
+          deficit: deficit,
+          ng_qty: ngQty,
+          error_type: (r as any).error_type || '',
+          note: r.note || '',
+          operator_name: r.operator_name || '',
+          reason: reason
+        })
       })
 
     return [...BUN_TYPES]
       .filter(tp => typeMap.has(tp))
       .map(tp => {
         const v = typeMap.get(tp)!
+        
+        const productLinesDetail = Array.from(v.productLineMap.entries())
+          .map(([productLine, plv]) => ({
+            productLine,
+            bunThickness: plv.totalBunSep > 0 ? Math.round((plv.totalSheetThickSum / plv.totalBunSep) * 10) / 10 : 0,
+            targetThickness: plv.targetCount > 0 ? Math.round((plv.targetSum / plv.targetCount) * 10) / 10 : 0,
+            orderCount: plv.orderCount,
+            totalBunSep: plv.totalBunSep,
+            totalSheetThickSum: plv.totalSheetThickSum,
+            dateCount: plv.dates.size,
+            firmPlans: plv.firmPlans.slice(0, 5),
+            details: plv.details.sort((a, b) => b.deficit - a.deficit)
+          }))
+          .sort((a, b) => a.bunThickness - b.bunThickness) // Độ dày bun thấp nhất lên trước
+
         return {
           type: tp,
           orderCount: v.orderCount,
@@ -1716,6 +1809,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           reasons: v.reasons,
           deficitTotal: Math.round(v.deficitTotal),
           productLines: Array.from(v.productLines).slice(0, 8),
+          productLinesDetail
         }
       })
   }, [separateReports, shiftFilter, managerFilter, productLineFilter])
@@ -3331,6 +3425,230 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════
+               SECTION: CHI TIẾT ĐỘ DÀY & LỖI BUN THEO HỌ SẢN PHẨM (T / M / G / S)
+          ═══════════════════════════════════════════════════════════════ */}
+          {defectByBunType.length > 0 && (
+            <div className="card p-5 mt-4">
+              {/* Header */}
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                  <TrendingUp size={20} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-tight">
+                    Chi tiết độ dày & lỗi bun theo họ sản phẩm (Tách)
+                  </h3>
+                  <p className="text-[10px] text-[var(--text-3)]">
+                    Xem chẩn đoán chi tiết chênh lệch và lỗi của từng họ sản phẩm theo loại đặc biệt T / M / G / S
+                  </p>
+                </div>
+              </div>
+
+              {/* Tabs selector */}
+              <div className="flex flex-wrap gap-2 mb-5 border-b border-gray-100 dark:border-white/5 pb-3">
+                {BUN_TYPES.map(type => {
+                  const typeData = defectByBunType.find(d => d.type === type);
+                  if (!typeData) return null;
+                  const isActive = activeDetailBunType === type;
+                  const color = BUN_TYPE_COLORS[type];
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => setActiveDetailBunType(type)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-1.5 ${
+                        isActive
+                          ? 'text-white shadow-sm'
+                          : 'bg-gray-100 hover:bg-gray-200 dark:bg-white/5 dark:hover:bg-white/10 text-[var(--text-2)]'
+                      }`}
+                      style={isActive ? { backgroundColor: color } : {}}
+                      type="button"
+                    >
+                      <span>{BUN_TYPE_EMOJIS[type]}</span>
+                      <span>{BUN_TYPE_LABELS[type]}</span>
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded-full ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-white/10 text-gray-500'
+                      }`}>
+                        {typeData.productLinesDetail.length}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Details table or list */}
+              {(() => {
+                const activeData = defectByBunType.find(d => d.type === activeDetailBunType);
+                if (!activeData || activeData.productLinesDetail.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-400 text-xs">
+                      Không có dữ liệu chi tiết cho loại hàng này.
+                    </div>
+                  );
+                }
+
+                const maxBarVal = Math.max(
+                  160,
+                  ...activeData.productLinesDetail.map(d => d.bunThickness),
+                  ...activeData.productLinesDetail.map(d => d.targetThickness)
+                );
+
+                return (
+                  <div className="space-y-3">
+                    {activeData.productLinesDetail.map((item, idx) => {
+                      const plKey = `${activeDetailBunType}_${item.productLine}`;
+                      const isExpanded = !!expandedBunTypeProductLines[plKey];
+                      const targetVal = item.targetThickness || 136; // Ngưỡng mặc định 136 nếu không có chuẩn
+                      const pct = Math.min(100, (item.bunThickness / maxBarVal) * 100);
+                      const targetPct = item.targetThickness > 0 ? (item.targetThickness / maxBarVal) * 100 : 0;
+                      const diff = item.targetThickness > 0 ? item.bunThickness - item.targetThickness : null;
+                      const isUnder = item.bunThickness < targetVal;
+                      const gap = targetVal - item.bunThickness;
+                      
+                      const barColor = isUnder
+                        ? (gap >= 20 ? '#ef4444' : gap >= 10 ? '#f97316' : '#eab308')
+                        : '#10b981';
+                      
+                      const bgColor = isUnder
+                        ? (gap >= 20 ? 'bg-red-50/50' : gap >= 10 ? 'bg-orange-50/50' : 'bg-yellow-50/50')
+                        : 'bg-green-50/50';
+
+                      const badgeColor = isUnder
+                        ? (gap >= 20 ? 'bg-red-100 text-red-700' : gap >= 10 ? 'bg-orange-100 text-orange-700' : 'bg-yellow-100 text-yellow-700')
+                        : 'bg-green-100 text-green-700';
+
+                      return (
+                        <div key={item.productLine} className={`rounded-xl p-3 border border-gray-100 dark:border-white/5 ${bgColor}`}>
+                          {/* Row header */}
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span className="text-[10px] font-black text-gray-500 w-5 text-right shrink-0">#{idx + 1}</span>
+                            <span className="flex-1 text-xs font-black text-gray-800 dark:text-gray-100 truncate" title={item.productLine}>
+                              {item.productLine}
+                            </span>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${badgeColor}`}>
+                              {item.bunThickness} mm
+                            </span>
+                            {item.targetThickness > 0 && (
+                              <span className="text-[10px] font-bold text-gray-400 shrink-0">/ {item.targetThickness}mm (Chuẩn)</span>
+                            )}
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="flex items-center gap-2 relative">
+                            <span className="text-[10px] text-gray-500 w-5 shrink-0"></span>
+                            <div className="flex-1 h-3 rounded-full bg-gray-200/50 dark:bg-white/5 overflow-hidden relative">
+                              {/* Target Marker */}
+                              {targetPct > 0 && (
+                                <div
+                                  className="absolute top-0 bottom-0 border-l border-dashed border-gray-400 z-10"
+                                  style={{ left: `${targetPct}%` }}
+                                  title={`Chuẩn: ${item.targetThickness}mm`}
+                                />
+                              )}
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${pct}%`, backgroundColor: barColor }}
+                              />
+                            </div>
+                            <span className="text-[10px] font-black shrink-0" style={{ color: barColor }}>
+                              {diff !== null ? (
+                                diff > 0 ? `+${diff.toFixed(1)}mm` : `${diff.toFixed(1)}mm`
+                              ) : (
+                                '—'
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Footnotes and details button */}
+                          <div className="flex items-center gap-3 mt-1.5 ml-7 flex-wrap">
+                            <span className="text-[9px] text-gray-400">
+                              📦 {item.orderCount} đơn · {item.dateCount} ngày
+                            </span>
+                            <span className="text-[9px] text-gray-400">
+                              🔢 Tổng bun: {item.totalBunSep.toLocaleString()}
+                            </span>
+                            <button
+                              onClick={() => toggleExpandBunType(plKey)}
+                              className="ml-auto flex items-center gap-1 text-[9px] font-bold text-indigo-700 hover:text-indigo-950 dark:text-indigo-300 dark:hover:text-indigo-100 transition-colors bg-white/80 hover:bg-white dark:bg-white/5 dark:hover:bg-white/10 px-2 py-0.5 rounded-lg border border-indigo-200 dark:border-indigo-800 shadow-sm"
+                              type="button"
+                            >
+                              {isExpanded ? (
+                                <>Ẩn chi tiết <ChevronUp size={10} /></>
+                              ) : (
+                                <>Xem chi tiết lỗi <ChevronDown size={10} /></>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Expanded list of orders */}
+                          {isExpanded && (
+                            <div className="mt-3 ml-7 bg-white/70 dark:bg-black/30 rounded-xl p-2.5 border border-indigo-200/30 space-y-2 text-[10px]">
+                              <p className="font-black text-indigo-800 dark:text-indigo-300 uppercase tracking-widest text-[8px] mb-1 border-b border-indigo-200 dark:border-indigo-800 pb-1 flex justify-between">
+                                <span>Chi tiết chẩn đoán từng đơn hàng</span>
+                                <span className="text-red-600 font-bold">Lưu ý: chỉ hiển thị đơn lệch &gt; 5 tấm</span>
+                              </p>
+                              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                                {(() => {
+                                  const filteredDetails = item.details.filter(d => d.deficit > 5);
+                                  if (filteredDetails.length === 0) {
+                                    return (
+                                      <div className="text-center py-4 text-gray-400 text-[9px]">
+                                        Không có đơn hàng nào bị lệch độ dày bun &gt; 5 tấm.
+                                      </div>
+                                    );
+                                  }
+                                  return filteredDetails.map((detail) => {
+                                    const isQualityErr = detail.reason === 'Lỗi chất lượng (NG)';
+                                    return (
+                                      <div key={detail.id} className="p-2 rounded-lg bg-white/95 dark:bg-black/40 border border-indigo-100/50 flex flex-col gap-1 shadow-sm text-left">
+                                        <div className="flex items-center justify-between flex-wrap gap-1.5">
+                                          <span className="font-black text-gray-700 dark:text-gray-300 font-mono">{detail.report_date} · {detail.shift}</span>
+                                          <span className="text-gray-400 font-medium">Plan: <span className="font-mono font-bold text-gray-600 dark:text-gray-300">{detail.firm_plan}</span></span>
+                                          {isQualityErr ? (
+                                            <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-black text-[8px] uppercase">🔴 Lỗi chất lượng NG</span>
+                                          ) : (
+                                            <span className="px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 font-black text-[8px] uppercase">⚠️ Nghi ngờ lỗi nhập liệu</span>
+                                          )}
+                                        </div>
+
+                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 text-gray-600 dark:text-gray-400 py-1 my-0.5 border-t border-b border-dashed border-gray-100 dark:border-white/5">
+                                          <div>Tách: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.actual_bun_separated} bun</span></div>
+                                          <div>Nhận: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.actual_sheet_received} sheet</span></div>
+                                          <div>Chuẩn/tấm: <span className="font-bold text-gray-800 dark:text-gray-200 font-mono">{detail.sheet_thickness_mm}mm</span></div>
+                                          <div className="text-right text-red-500 font-bold">Thiếu: <span className="font-mono">-{Math.round(detail.deficit)} tấm</span></div>
+                                        </div>
+
+                                        <div className="flex justify-between items-center flex-wrap gap-1.5 text-[9px] mt-0.5">
+                                          <div className="flex-1 min-w-[200px]">
+                                            {isQualityErr ? (
+                                              <span className="text-red-700 font-black bg-red-50 dark:bg-red-950/20 px-1.5 py-0.5 rounded border border-red-200/50">
+                                                Lỗi NG: {detail.error_type} ({detail.ng_qty} tấm)
+                                              </span>
+                                            ) : (
+                                              <span className="text-orange-700 font-bold bg-orange-50 dark:bg-orange-950/20 px-1.5 py-0.5 rounded border border-orange-200/50">
+                                                Khai báo NG: {detail.ng_qty} tấm (Chưa báo cáo hoặc báo cáo thiếu tấm NG)
+                                              </span>
+                                            )}
+                                            {detail.note && <span className="text-gray-500 ml-1.5 italic font-medium">(Ghi chú: {detail.note})</span>}
+                                          </div>
+                                          <div className="text-gray-400 font-bold uppercase text-[8px] shrink-0">Operator: <span className="text-gray-700 dark:text-gray-300 font-black">{detail.operator_name || 'Không rõ'}</span></div>
+                                        </div>
+                                      </div>
+                                    );
+                                  });
+                                })()}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
