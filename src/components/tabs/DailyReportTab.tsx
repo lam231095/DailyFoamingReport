@@ -3368,17 +3368,6 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
                       {/* Reason bars */}
                       <div className="space-y-2">
-                        {/* Bình thường */}
-                        <div>
-                          <div className="flex justify-between text-[9px] mb-0.5">
-                            <span className="font-bold text-green-700">✅ Bình thường</span>
-                            <span className="font-black text-green-700">{normalN} đơn ({normalPct}%)</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-black/5 overflow-hidden">
-                            <div className="h-full rounded-full bg-green-400 transition-all duration-700"
-                              style={{ width: `${normalPct}%` }} />
-                          </div>
-                        </div>
                         {/* NG */}
                         <div>
                           <div className="flex justify-between text-[9px] mb-0.5">
@@ -3403,16 +3392,8 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                         </div>
                       </div>
 
-                      {/* Deficit + product lines */}
-                      {item.deficitTotal > 0 && (
-                        <div className="pt-2 border-t border-dashed" style={{ borderColor: color + '30' }}>
-                          <p className="text-[9px] font-bold text-[var(--text-3)]">
-                            Tổng thiếu: <span className="text-red-600 font-black">-{item.deficitTotal} tấm</span>
-                          </p>
-                        </div>
-                      )}
                       {item.productLines.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="pt-2 border-t border-dashed flex flex-wrap gap-1" style={{ borderColor: color + '30' }}>
                           {item.productLines.map(pl => (
                             <span key={pl}
                               className="text-[8px] px-1.5 py-0.5 rounded-full bg-black/5 text-[var(--text-3)] font-medium">
