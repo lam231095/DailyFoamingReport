@@ -59,7 +59,7 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
     unit: 'bun' as const,
     machine_id: 'Máy 1',
     shift: 'Ca 1',
-    manager_name: 'Linh',
+    manager_name: '',
     entry_date: new Date().toISOString().split('T')[0]
   })
 
@@ -310,7 +310,7 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
         unit: 'bun',
         machine_id: 'Máy 1',
         shift: 'Ca 1',
-        manager_name: 'Linh',
+        manager_name: '',
         entry_date: new Date().toISOString().split('T')[0]
       })
       setDontKnowBunCode(false)
@@ -951,6 +951,7 @@ export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) 
                         value={formData.manager_name}
                         onChange={e => setFormData({ ...formData, manager_name: e.target.value })}
                       >
+                        <option value="">-- Trống --</option>
                         <option>Linh</option>
                         <option>Thảo</option>
                         <option>Tuấn Anh</option>
