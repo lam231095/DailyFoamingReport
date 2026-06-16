@@ -37,6 +37,33 @@ const MANAGER_COLORS: Record<string, string> = {
 }
 const safeId = (name: string) => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_')
 
+// ── Phân loại loại hàng G/S/M/T theo tên sản phẩm ──────────────────────
+function getProductType(name: string | null | undefined): string {
+  if (!name) return 'Khác'
+  const n = name.toUpperCase()
+  if (n.includes('GLUED')) return 'G'
+  if (n.includes('FLAT SHEET')) return 'S'
+  if (n.includes('MOLDED')) return 'M'
+  if (n.includes('TAWNY') || n.includes('TOP COAT')) return 'T'
+  return 'Khác'
+}
+
+const PRODUCT_TYPES = ['G', 'S', 'M', 'T', 'Khác'] as const
+const PRODUCT_TYPE_COLORS: Record<string, string> = {
+  'G': '#3b82f6',
+  'S': '#8b5cf6',
+  'M': '#10b981',
+  'T': '#f59e0b',
+  'Khác': '#94a3b8'
+}
+const PRODUCT_TYPE_LABELS: Record<string, string> = {
+  'G': 'G — Glued',
+  'S': 'S — Flat Sheet',
+  'M': 'M — Molded',
+  'T': 'T — Tawny / Top Coat',
+  'Khác': 'Khác (Hybrid…)'
+}
+
 interface DailyReportTabProps { user: SessionUser }
 
 type AggregatedDay = {
@@ -1583,6 +1610,99 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
     return ['Tất cả', ...Array.from(set).sort()]
   }, [separateReports])
 
+  // ── Độ dày bun TB theo loại hàng G/S/M/T ────────────────────────────
+  const bunThicknessByProductType = useMemo(() => {
+    const typeMap = new Map<string, { sheetThickSum: number; bunSep: number; targetSum: number; targetCount: number; orderCount: number }>()
+    separateReports
+      .filter(r => {
+        if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
+        if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        if (productLineFilter !== 'Tất cả' && pl !== productLineFilter) return false
+        return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
+      })
+      .forEach(r => {
+        const type = getProductType((r as any).production_plan?.ten_san_pham)
+        const sheetThickSum = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        const bunSep = r.actual_bun_separated || 0
+        const target = r.bun_thickness_mm || 0
+        if (!typeMap.has(type)) typeMap.set(type, { sheetThickSum: 0, bunSep: 0, targetSum: 0, targetCount: 0, orderCount: 0 })
+        const e = typeMap.get(type)!
+        e.sheetThickSum += sheetThickSum
+        e.bunSep += bunSep
+        if (target > 0) { e.targetSum += target; e.targetCount++ }
+        e.orderCount++
+      })
+    return PRODUCT_TYPES
+      .map(type => ({
+        type,
+        bunThickness: typeMap.has(type) && typeMap.get(type)!.bunSep > 0
+          ? Math.round((typeMap.get(type)!.sheetThickSum / typeMap.get(type)!.bunSep) * 10) / 10
+          : 0,
+        targetThickness: typeMap.has(type) && typeMap.get(type)!.targetCount > 0
+          ? Math.round((typeMap.get(type)!.targetSum / typeMap.get(type)!.targetCount) * 10) / 10
+          : 0,
+        orderCount: typeMap.get(type)?.orderCount || 0
+      }))
+      .filter(d => d.bunThickness > 0)
+  }, [separateReports, shiftFilter, managerFilter, productLineFilter])
+
+  // ── Nguyên nhân phế theo loại hàng G/S/M/T ─────────────────────────
+  const defectByProductType = useMemo(() => {
+    const typeMap = new Map<string, {
+      orderCount: number
+      totalBunSep: number
+      sheetThickSum: number
+      targetSum: number
+      targetCount: number
+      reasons: Record<string, number>
+      deficitTotal: number
+    }>()
+    separateReports
+      .filter(r => {
+        if (shiftFilter !== 'Tất cả' && r.shift !== shiftFilter) return false
+        if (managerFilter !== 'Tất cả' && (r.manager_name || 'Khác') !== managerFilter) return false
+        const pl = cleanProductName((r as any).production_plan?.ten_san_pham)
+        if (productLineFilter !== 'Tất cả' && pl !== productLineFilter) return false
+        return (r.actual_bun_separated || 0) > 0 && (r.sheet_thickness_mm || 0) > 0
+      })
+      .forEach(r => {
+        const type = getProductType((r as any).production_plan?.ten_san_pham)
+        const bunSep = r.actual_bun_separated || 0
+        const target = r.bun_thickness_mm || 0
+        const sheetThickSum = (r.actual_sheet_received || 0) * (r.sheet_thickness_mm || 0)
+        const expectedSheets = target && r.sheet_thickness_mm ? Math.round((target / r.sheet_thickness_mm) * bunSep) : 0
+        const deficit = expectedSheets > 0 ? expectedSheets - (r.actual_sheet_received || 0) : 0
+        const ngQty = r.ng_qty || 0
+        let reason = 'Bình thường'
+        if (deficit > 5) {
+          reason = ngQty > 0 && (ngQty >= 0.3 * deficit || ngQty > 5) ? 'Lỗi chất lượng (NG)' : 'Lỗi nhập liệu'
+        }
+        if (!typeMap.has(type)) typeMap.set(type, { orderCount: 0, totalBunSep: 0, sheetThickSum: 0, targetSum: 0, targetCount: 0, reasons: { 'Bình thường': 0, 'Lỗi chất lượng (NG)': 0, 'Lỗi nhập liệu': 0 }, deficitTotal: 0 })
+        const e = typeMap.get(type)!
+        e.orderCount++
+        e.totalBunSep += bunSep
+        e.sheetThickSum += sheetThickSum
+        if (target > 0) { e.targetSum += target; e.targetCount++ }
+        e.reasons[reason] = (e.reasons[reason] || 0) + 1
+        if (deficit > 0) e.deficitTotal += deficit
+      })
+    return PRODUCT_TYPES
+      .filter(type => typeMap.has(type))
+      .map(type => {
+        const v = typeMap.get(type)!
+        return {
+          type,
+          orderCount: v.orderCount,
+          totalBunSep: v.totalBunSep,
+          bunThickness: v.totalBunSep > 0 ? Math.round((v.sheetThickSum / v.totalBunSep) * 10) / 10 : 0,
+          targetThickness: v.targetCount > 0 ? Math.round((v.targetSum / v.targetCount) * 10) / 10 : 0,
+          reasons: v.reasons,
+          deficitTotal: Math.round(v.deficitTotal)
+        }
+      })
+  }, [separateReports, shiftFilter, managerFilter, productLineFilter])
+
   return (
     <div className="pb-20">
       <div className="flex flex-col lg:flex-row gap-5 items-start">
@@ -2332,6 +2452,246 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
               </div>
             )}
           </div>
+
+          {/* ── Biểu đồ độ dày bun TB theo loại hàng G/S/M/T ── */}
+          {bunThicknessByProductType.length > 0 && (
+            <div className="card p-5 mt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+                  <Layers size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-tight">Độ dày bun TB theo loại hàng (G / S / M / T)</h3>
+                  <p className="text-[10px] text-[var(--text-3)]">Σ Tổng độ dày sheet ÷ Σ SL Tách · Áp dụng filter hiện tại</p>
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                {PRODUCT_TYPES.filter(t => bunThicknessByProductType.some(d => d.type === t)).map(type => (
+                  <div key={type} className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: PRODUCT_TYPE_COLORS[type] }} />
+                    <span className="text-[10px] font-bold text-[var(--text-2)]">{PRODUCT_TYPE_LABELS[type]}</span>
+                  </div>
+                ))}
+                <div className="flex items-center gap-1.5 ml-2">
+                  <div className="w-3 h-3 rounded-sm bg-amber-300/60 border border-amber-400" />
+                  <span className="text-[10px] font-bold text-amber-600">Chuẩn TB (mm)</span>
+                </div>
+              </div>
+
+              {/* Horizontal bar chart */}
+              <div className="space-y-3">
+                {(() => {
+                  const maxVal = Math.max(...bunThicknessByProductType.map(d => Math.max(d.bunThickness, d.targetThickness)), 1)
+                  return bunThicknessByProductType.map(item => {
+                    const color = PRODUCT_TYPE_COLORS[item.type]
+                    const actualPct = (item.bunThickness / (maxVal * 1.15)) * 100
+                    const targetPct = item.targetThickness > 0 ? (item.targetThickness / (maxVal * 1.15)) * 100 : 0
+                    const diff = item.targetThickness > 0 ? item.bunThickness - item.targetThickness : null
+                    const pct = diff !== null && item.targetThickness > 0 ? (diff / item.targetThickness) * 100 : null
+                    const isOver = pct !== null && pct > 5
+                    const isUnder = pct !== null && pct < -5
+                    return (
+                      <div key={item.type} className="flex items-center gap-3">
+                        {/* Label */}
+                        <div className="w-32 shrink-0 text-right">
+                          <span className="text-xs font-black" style={{ color }}>{item.type}</span>
+                          <span className="text-[9px] text-[var(--text-3)] ml-1 hidden sm:inline">
+                            {item.orderCount} đơn
+                          </span>
+                        </div>
+                        {/* Bar track */}
+                        <div className="flex-1 relative h-7 bg-gray-100 dark:bg-white/5 rounded-lg overflow-visible">
+                          {/* Target ghost bar */}
+                          {targetPct > 0 && (
+                            <div className="absolute top-0.5 left-0 h-6 rounded-md bg-amber-300/40 border border-amber-400/50 z-0"
+                              style={{ width: `${targetPct}%` }} />
+                          )}
+                          {/* Actual bar */}
+                          <div className="absolute top-0.5 left-0 h-6 rounded-md z-10 flex items-center justify-end pr-2 transition-all duration-700"
+                            style={{ width: `${actualPct}%`, backgroundColor: color, opacity: 0.85 }}>
+                            <span className="text-white text-[10px] font-black drop-shadow">{item.bunThickness}mm</span>
+                          </div>
+                        </div>
+                        {/* Deviation badge */}
+                        <div className="w-24 shrink-0 text-right">
+                          {pct !== null ? (
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                              isOver ? 'bg-red-100 text-red-700' :
+                              isUnder ? 'bg-amber-100 text-amber-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {diff! > 0 ? '+' : ''}{diff!.toFixed(1)}mm ({pct.toFixed(1)}%)
+                            </span>
+                          ) : (
+                            <span className="text-[9px] text-[var(--text-3)]">—</span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+
+              {/* Summary table */}
+              <div className="mt-5 overflow-x-auto">
+                <table className="w-full text-[10px]">
+                  <thead>
+                    <tr className="bg-indigo-500/5 text-indigo-700">
+                      <th className="p-2 text-left font-black uppercase">Loại hàng</th>
+                      <th className="p-2 text-center font-black uppercase">Số đơn</th>
+                      <th className="p-2 text-center font-black uppercase">Tổng SL Tách (Bun)</th>
+                      <th className="p-2 text-center font-black uppercase">Chuẩn TB (mm)</th>
+                      <th className="p-2 text-center font-black uppercase">Thực tế TB (mm)</th>
+                      <th className="p-2 text-center font-black uppercase">Lệch</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--border)]">
+                    {bunThicknessByProductType.map(item => {
+                      const diff = item.targetThickness > 0 ? item.bunThickness - item.targetThickness : null
+                      const pct = diff !== null && item.targetThickness > 0 ? (diff / item.targetThickness) * 100 : null
+                      const isOver = pct !== null && pct > 5
+                      const isUnder = pct !== null && pct < -5
+                      return (
+                        <tr key={item.type} className="hover:bg-indigo-500/5 transition-colors">
+                          <td className="p-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PRODUCT_TYPE_COLORS[item.type] }} />
+                              <span className="font-black" style={{ color: PRODUCT_TYPE_COLORS[item.type] }}>{item.type}</span>
+                              <span className="text-[var(--text-3)] hidden sm:inline">{PRODUCT_TYPE_LABELS[item.type]}</span>
+                            </div>
+                          </td>
+                          <td className="p-2 text-center text-[var(--text-3)]">{item.orderCount}</td>
+                          <td className="p-2 text-center font-mono text-[var(--text-2)]">{(separateReports.filter(r => getProductType((r as any).production_plan?.ten_san_pham) === item.type && (r.actual_bun_separated || 0) > 0).reduce((s, r) => s + (r.actual_bun_separated || 0), 0)).toLocaleString()}</td>
+                          <td className="p-2 text-center font-mono text-[var(--text-3)]">{item.targetThickness > 0 ? item.targetThickness : '—'}</td>
+                          <td className="p-2 text-center font-mono font-black" style={{ color: isOver ? '#ef4444' : isUnder ? '#f59e0b' : '#6366f1' }}>
+                            {item.bunThickness}
+                          </td>
+                          <td className="p-2 text-center">
+                            {pct !== null ? (
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                isOver ? 'bg-red-100 text-red-600' :
+                                isUnder ? 'bg-amber-100 text-amber-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                                {diff! > 0 ? '+' : ''}{diff!.toFixed(1)} ({pct.toFixed(1)}%)
+                              </span>
+                            ) : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── Nguyên nhân phế theo loại hàng G/S/M/T ── */}
+          {defectByProductType.length > 0 && (
+            <div className="card p-5 mt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+                  <Activity size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-tight">Phân tích nguyên nhân phế theo loại hàng (G / S / M / T)</h3>
+                  <p className="text-[10px] text-[var(--text-3)]">Phân loại đơn: Bình thường · Lỗi NG · Nghi ngờ nhập liệu · Áp dụng filter hiện tại</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {defectByProductType.map(item => {
+                  const color = PRODUCT_TYPE_COLORS[item.type]
+                  const total = item.orderCount || 1
+                  const normalPct = Math.round((item.reasons['Bình thường'] / total) * 100)
+                  const ngPct = Math.round((item.reasons['Lỗi chất lượng (NG)'] / total) * 100)
+                  const inputPct = Math.round((item.reasons['Lỗi nhập liệu'] / total) * 100)
+                  const diff = item.targetThickness > 0 ? item.bunThickness - item.targetThickness : null
+                  const pct = diff !== null && item.targetThickness > 0 ? (diff / item.targetThickness) * 100 : null
+                  const isOver = pct !== null && pct > 5
+                  const isUnder = pct !== null && pct < -5
+                  return (
+                    <div key={item.type} className="rounded-2xl p-4 border-2 transition-all"
+                      style={{ borderColor: color + '40', background: color + '08' }}>
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-black text-sm"
+                            style={{ backgroundColor: color }}>
+                            {item.type}
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black" style={{ color }}>{PRODUCT_TYPE_LABELS[item.type]}</p>
+                            <p className="text-[9px] text-[var(--text-3)]">{item.orderCount} đơn · {item.totalBunSep.toLocaleString()} bun</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[8px] text-[var(--text-3)] uppercase font-bold">TB dày</p>
+                          <p className="text-base font-black" style={{ color: isOver ? '#ef4444' : isUnder ? '#f59e0b' : color }}>
+                            {item.bunThickness}<span className="text-[10px] font-normal">mm</span>
+                          </p>
+                          {pct !== null && (
+                            <p className={`text-[9px] font-bold ${ isOver ? 'text-red-600' : isUnder ? 'text-amber-600' : 'text-green-600'}`}>
+                              {diff! > 0 ? '+' : ''}{diff!.toFixed(1)}mm
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Reason breakdown bars */}
+                      <div className="space-y-1.5">
+                        {/* Bình thường */}
+                        <div>
+                          <div className="flex justify-between text-[9px] mb-0.5">
+                            <span className="font-bold text-green-700">✅ Bình thường</span>
+                            <span className="font-black text-green-700">{item.reasons['Bình thường']} đơn ({normalPct}%)</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                            <div className="h-full rounded-full bg-green-400 transition-all duration-700" style={{ width: `${normalPct}%` }} />
+                          </div>
+                        </div>
+                        {/* Lỗi NG */}
+                        {item.reasons['Lỗi chất lượng (NG)'] > 0 && (
+                          <div>
+                            <div className="flex justify-between text-[9px] mb-0.5">
+                              <span className="font-bold text-red-700">🔴 Lỗi chất lượng (NG)</span>
+                              <span className="font-black text-red-700">{item.reasons['Lỗi chất lượng (NG)']} đơn ({ngPct}%)</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                              <div className="h-full rounded-full bg-red-400 transition-all duration-700" style={{ width: `${ngPct}%` }} />
+                            </div>
+                          </div>
+                        )}
+                        {/* Lỗi nhập liệu */}
+                        {item.reasons['Lỗi nhập liệu'] > 0 && (
+                          <div>
+                            <div className="flex justify-between text-[9px] mb-0.5">
+                              <span className="font-bold text-orange-700">⚠️ Nghi lỗi nhập liệu</span>
+                              <span className="font-black text-orange-700">{item.reasons['Lỗi nhập liệu']} đơn ({inputPct}%)</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                              <div className="h-full rounded-full bg-orange-400 transition-all duration-700" style={{ width: `${inputPct}%` }} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Deficit info */}
+                      {item.deficitTotal > 0 && (
+                        <div className="mt-3 pt-2 border-t border-dashed" style={{ borderColor: color + '30' }}>
+                          <p className="text-[9px] text-[var(--text-3)] font-bold">
+                            Tổng thiếu hụt: <span className="font-black text-red-600">-{item.deficitTotal} tấm</span>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* ── Phân tích độ dày Bun (Thấp < 136mm & Cao > 140mm) ── */}
           {(lowBunByProductLine.length > 0 || highBunByProductLine.length > 0) && (
