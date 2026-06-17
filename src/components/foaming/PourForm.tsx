@@ -124,7 +124,6 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
       const currentInputBuns = Number(formData.actual_bun_poured)
       const totalInputBuns = previousMainBuns + currentInputBuns
 
-      let targetBuns = 0
       let plansData: any[] = []
 
       if (plansList.length > 1) {
@@ -134,19 +133,9 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           .in('firm_plan', plansList)
         if (fetchErr) throw fetchErr
         plansData = data || []
-        plansList.forEach(fp => {
-          const p = plansData.find(x => x.firm_plan === fp)
-          targetBuns += p ? (p.sl_bun_can_do || p.sl_bun_can_tach || 0) : 0
-        })
-      } else {
-        targetBuns = plan.sl_bun_can_do || plan.sl_bun_can_tach || 0
       }
 
-      if (targetBuns > 0 && !formData.is_compensation && totalInputBuns > targetBuns) {
-        throw new Error(
-          `Số lượng bun đổ vượt quá giới hạn của đơn hàng này. (Lũy kế đơn chính đã nhập trước đó: ${previousMainBuns} bun, Nhập lần này: ${currentInputBuns} bun, Số lượng tối đa cho phép: ${targetBuns} bun). Vui lòng điều chỉnh lại hoặc chọn "Đơn bù" nếu đây là lượt chạy bù hàng NG.`
-        )
-      }
+      // Cho phép vượt số lượng và thêm ghi chú chạy dư tồn, không báo lỗi nữa
 
       if (plansList.length > 1) {
         const targets = plansList.map(fp => {
@@ -186,9 +175,20 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           const carts = Math.ceil(act / 6)
           const cleaning = distributeFloat(Number(formData.cleaning_agent_kg), idx)
           const waste = distributeFloat(Number(formData.waste_kg), idx)
+
+          const target = targets[idx] || 0
+          const poured = alreadyPouredMap.get(fp) || 0
+          const remainingTarget = Math.max(0, target - poured)
+          const isExcess = !formData.is_compensation && target > 0 && act > remainingTarget
+
+          let baseNote = formData.note.trim()
+          if (isExcess) {
+            baseNote = baseNote ? `${baseNote} [Chạy dư tồn]` : '[Chạy dư tồn]'
+          }
+
           const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`
-          const finalNote = formData.note.trim() 
-            ? `${formData.note.trim()} ${groupNote}`
+          const finalNote = baseNote 
+            ? `${baseNote} ${groupNote}`
             : groupNote
 
           return {
@@ -227,6 +227,13 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         const { error: insertErr } = await supabase.from('foaming_pour_reports').insert(filteredRecords)
         if (insertErr) throw insertErr
       } else {
+        const target = plan.sl_bun_can_do || plan.sl_bun_can_tach || 0
+        const isExcess = !formData.is_compensation && target > 0 && totalInputBuns > target
+        let finalNote = formData.note.trim()
+        if (isExcess) {
+          finalNote = finalNote ? `${finalNote} [Chạy dư tồn]` : '[Chạy dư tồn]'
+        }
+
         const { error } = await supabase.from('foaming_pour_reports').insert({
           firm_plan: plan.firm_plan,
           shift: formData.shift,
@@ -244,7 +251,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
           cleaning_agent_kg: Number(formData.cleaning_agent_kg),
           waste_kg: Number(formData.waste_kg),
           manager_name: formData.manager_name,
-          note: formData.note.trim() || null,
+          note: finalNote || null,
           is_compensation: formData.is_compensation,
           recorder_id: user.id,
           downtime_reason: hasDowntime && downtimeReason.trim() ? downtimeReason.trim() : null,
