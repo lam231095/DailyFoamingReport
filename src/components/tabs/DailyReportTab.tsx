@@ -389,11 +389,11 @@ function calcManagerPerf(
     totalActual += day.pouredByManager[manager].actual
     let targetPour = TARGET_POUR
     if (isExactJune18th2026) {
-      if (manager === 'Linh') targetPour = 214
+      if (manager === 'Linh') targetPour = 237
       else if (manager === 'Thảo') targetPour = 321
       else if (manager === 'Tuấn Anh') targetPour = 214
     } else if (isExactJune17th2026) {
-      if (manager === 'Linh') targetPour = 187.25
+      if (manager === 'Linh') targetPour = 320
       else if (manager === 'Thảo') targetPour = 321
       else if (manager === 'Tuấn Anh') targetPour = 214
     } else if (isExactMay25th2026) {
@@ -486,11 +486,11 @@ function calcManagerPerf(
 
     if (isExactJune18th2026) {
       if (manager === 'Linh') {
-        targetSeparate = 181.25
+        targetSeparate = 250
       } else if (manager === 'Thảo') {
         targetSeparate = 200
       } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 218.75
+        targetSeparate = 250
       }
     } else if (isExactJune17th2026) {
       if (manager === 'Linh') {
