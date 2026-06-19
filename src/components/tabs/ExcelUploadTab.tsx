@@ -8,7 +8,7 @@ import {
   ArrowRight, Eye, Trash2
 } from 'lucide-react'
 import { SessionUser } from '@/types'
-import { canDownloadReport } from '@/lib/permissions'
+
 
 interface ExcelUploadTabProps {
   user: SessionUser
@@ -140,7 +140,8 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
   const fileRef = useRef<File | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const isAuthorized = canDownloadReport(user) || user.msnv === '04127'
+  const isAuthorized = user.msnv === '04127'
+
 
   // Effective week label: auto-fill for Sample/BCN, manual for production
   const effectiveWeekLabel = fileType === 'production' ? weekLabel : (FILE_TYPE_OPTIONS.find(o => o.value === fileType)?.weekLabel ?? '')
