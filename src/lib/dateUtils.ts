@@ -15,9 +15,9 @@ export function formatReportDate(dateInput: string | Date, shift?: string): stri
   const minutes = date.getMinutes();
   const totalMinutes = hours * 60 + minutes;
 
-  // Ngày làm việc được tính từ 6h30 sáng hôm nay tới 6h30 sáng ngày hôm sau.
-  // Do đó, nếu giờ nộp báo cáo < 6h30 sáng (tức là < 390 phút), ta lùi lại 1 ngày.
-  const subtract = totalMinutes < 390;
+  // Ngày làm việc được tính từ 11:00 sáng hôm nay tới 11:00 sáng ngày hôm sau.
+  // Do đó, nếu giờ nộp báo cáo < 11:00 sáng (tức là < 660 phút), ta lùi lại 1 ngày.
+  const subtract = totalMinutes < 660;
 
   if (subtract) {
     date.setDate(date.getDate() - 1);
@@ -45,9 +45,9 @@ export function getReportDateISO(dateInput: string | Date, shift?: string): stri
   const minutes = date.getMinutes();
   const totalMinutes = hours * 60 + minutes;
 
-  // Ngày làm việc được tính từ 6h30 sáng hôm nay tới 6h30 sáng ngày hôm sau.
-  // Do đó, nếu giờ nộp báo cáo < 6h30 sáng (tức là < 390 phút), ta lùi lại 1 ngày.
-  const subtract = totalMinutes < 390;
+  // Ngày làm việc được tính từ 11:00 sáng hôm nay tới 11:00 sáng ngày hôm sau.
+  // Do đó, nếu giờ nộp báo cáo < 11:00 sáng (tức là < 660 phút), ta lùi lại 1 ngày.
+  const subtract = totalMinutes < 660;
 
   if (subtract) {
     date.setDate(date.getDate() - 1);
@@ -62,15 +62,15 @@ export function getReportDateISO(dateInput: string | Date, shift?: string): stri
 
 /**
  * Tính toán khoảng thời gian UTC cho một khoảng ngày báo cáo (ICT).
- * Ngày báo cáo D (ICT) bắt đầu từ (D) 06:30:00 ICT và kết thúc lúc (D+1) 06:29:59 ICT.
- * Tương đương với (D) 06:30:00+07:00.
+ * Ngày báo cáo D (ICT) bắt đầu từ (D) 11:00:00 ICT và kết thúc lúc (D+1) 10:59:59 ICT.
+ * Tương đương với (D) 11:00:00+07:00.
  */
 export function getReportTimeRange(startDate: string, endDate: string) {
   // startDate, endDate: YYYY-MM-DD
-  const start = new Date(`${startDate}T06:30:00+07:00`).toISOString();
+  const start = new Date(`${startDate}T11:00:00+07:00`).toISOString();
 
-  // Kết thúc là 6h30 sáng ngày tiếp theo của endDate
-  const nextDayOfEnd = new Date(new Date(`${endDate}T06:30:00+07:00`).getTime() + 24 * 60 * 60 * 1000);
+  // Kết thúc là 11h00 sáng ngày tiếp theo của endDate
+  const nextDayOfEnd = new Date(new Date(`${endDate}T11:00:00+07:00`).getTime() + 24 * 60 * 60 * 1000);
   const end = nextDayOfEnd.toISOString();
 
   return { start, end };
