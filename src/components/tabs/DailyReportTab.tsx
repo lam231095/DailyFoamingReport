@@ -376,6 +376,7 @@ function calcManagerPerf(
   const isExactJune13th2026 = d === 13 && m === 6 && y === 2026
   const isExactJune15th2026 = d === 15 && m === 6 && y === 2026
   const isExactJune16th2026 = d === 16 && m === 6 && y === 2026
+  const isExactJune18th2026 = d === 18 && m === 6 && y === 2026
   const isExactMay25th2026 = d === 25 && m === 5 && y === 2026
   const isExactMay26th2026 = d === 26 && m === 5 && y === 2026
   const isExactMay27th2026 = d === 27 && m === 5 && y === 2026
@@ -386,7 +387,11 @@ function calcManagerPerf(
   if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
     totalActual += day.pouredByManager[manager].actual
     let targetPour = TARGET_POUR
-    if (isExactMay25th2026) {
+    if (isExactJune18th2026) {
+      if (manager === 'Linh') targetPour = 214
+      else if (manager === 'Thảo') targetPour = 321
+      else if (manager === 'Tuấn Anh') targetPour = 214
+    } else if (isExactMay25th2026) {
       if (manager === 'Linh') targetPour = 220
       else if (manager === 'Thảo') targetPour = 320
     } else if (isExactMay26th2026) {
@@ -474,7 +479,15 @@ function calcManagerPerf(
 
     let targetSeparate = TARGET_SEPARATE
 
-    if (isExactJune16th2026) {
+    if (isExactJune18th2026) {
+      if (manager === 'Linh') {
+        targetSeparate = 181.25
+      } else if (manager === 'Thảo') {
+        targetSeparate = 200
+      } else if (manager === 'Tuấn Anh') {
+        targetSeparate = 218.75
+      }
+    } else if (isExactJune16th2026) {
       if (manager === 'Linh') {
         targetSeparate = 225
       } else if (manager === 'Thảo') {
