@@ -292,8 +292,14 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
       const resp = await fetch('/api/upload-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ records: parsedRows }),
+        body: JSON.stringify({
+          records: parsedRows.map(row => ({
+            ...row,
+            week_label: effectiveWeekLabel.trim()
+          }))
+        }),
       })
+
 
       const data = await resp.json()
 
@@ -510,17 +516,16 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
 
               {/* Drop area */}
               <div
-                onDragOver={e => { e.preventDefault(); if (fileType !== 'production' || weekLabel.trim()) setIsDragging(true) }}
+                onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
                 onDragLeave={() => setIsDragging(false)}
-                onDrop={e => { if (fileType !== 'production' || weekLabel.trim()) onDrop(e) }}
-                onClick={() => { if (fileType !== 'production' || weekLabel.trim()) inputRef.current?.click() }}
+                onDrop={e => { onDrop(e) }}
+                onClick={() => { inputRef.current?.click() }}
                 style={{
-                  opacity: fileType === 'production' && !weekLabel.trim() ? 0.5 : 1,
-                  cursor: fileType === 'production' && !weekLabel.trim() ? 'not-allowed' : 'pointer',
                   border: `2px dashed ${isDragging ? '#10b981' : 'var(--border)'}`,
                   background: isDragging
                     ? 'rgba(16,185,129,0.05)'
                     : 'var(--bg-page)',
+                  cursor: 'pointer',
                 }}
               >
                 <motion.div
@@ -677,9 +682,16 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
             {/* Action buttons */}
             <div className="px-5 py-4 border-t flex items-center justify-between gap-3"
               style={{ borderColor: 'var(--border)', background: 'var(--bg-page)' }}>
-              <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-3)' }}>
-                <Database size={13} style={{ color: '#10b981' }} />
-                UPSERT lên Supabase · Week: <strong style={{ color: '#10b981' }}>{effectiveWeekLabel || '(chưa nhập)'}</strong>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs" style={{ color: 'var(--text-3)' }}>
+                <div className="flex items-center gap-2">
+                  <Database size={13} style={{ color: '#10b981' }} />
+                  <span>UPSERT lên Supabase · Week: <strong style={{ color: '#10b981' }}>{effectiveWeekLabel || '(chưa nhập)'}</strong></span>
+                </div>
+                {!effectiveWeekLabel.trim() && (
+                  <span className="text-amber-500 font-semibold flex items-center gap-1">
+                    ⚠️ Vui lòng nhập Week Label ở Bước 1
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
