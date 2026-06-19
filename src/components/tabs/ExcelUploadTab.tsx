@@ -155,7 +155,10 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
 
     try {
       // Dynamically import xlsx to keep bundle size small
-      const XLSX = (await import('xlsx')).default
+      const xlsxModule = (await import('xlsx')) as any
+      const XLSX = xlsxModule.read ? xlsxModule : xlsxModule.default
+
+
 
       const buffer = await file.arrayBuffer()
       const workbook = XLSX.read(buffer, { type: 'array', cellText: true, cellDates: false })
