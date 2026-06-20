@@ -529,7 +529,17 @@ function calcManagerPerf(
       const targetSeparateSemi = Math.max(0, (decl.separate_semi_auto_qty * shiftCount - semiDowntimeHours / 8) * 100)
       const targetSeparateMech = Math.max(0, (decl.separate_mechanical_qty * shiftCount - mechDowntimeHours / 8) * 50)
 
-      targetSeparate = targetSeparateAuto + targetSeparateSemi + targetSeparateMech
+      let targetSeparateBase = targetSeparateAuto + targetSeparateSemi + targetSeparateMech
+      
+      // Trừ 50 bun cho mỗi ca có tách hàng tawny port
+      let tawnyDeduction = 0
+      day.separatedByManager[manager].shifts.forEach(s => {
+        if (tawnyShifts.has(`${day.date}_${s}`)) {
+          tawnyDeduction += 50
+        }
+      })
+      
+      targetSeparate = Math.max(0, targetSeparateBase - tawnyDeduction)
       hasSepDecl = true
     }
 
