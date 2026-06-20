@@ -354,7 +354,8 @@ function calcManagerPerf(
   day: AggregatedDay,
   manager: string,
   areaFilter: AreaFilter,
-  tawnyShifts: Set<string>
+  tawnyShifts: Set<string>,
+  declarations: any[]
 ): number | null {
   let totalActual = 0, compositeTarget = 0
 
@@ -362,6 +363,8 @@ function calcManagerPerf(
   const d = parseInt(parts[0], 10)
   const m = parseInt(parts[1], 10)
   const y = parseInt(parts[2], 10)
+  const isoDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+
   const isExactJune1st2026 = d === 1 && m === 6 && y === 2026
   const isExactJune2nd2026 = d === 2 && m === 6 && y === 2026
   const isExactJune3rd2026 = d === 3 && m === 6 && y === 2026
@@ -387,216 +390,264 @@ function calcManagerPerf(
 
   if (areaFilter !== 'separate' && day.pouredByManager[manager]) {
     totalActual += day.pouredByManager[manager].actual
-    let targetPour = TARGET_POUR
-    if (isExactJune18th2026) {
-      if (manager === 'Linh') targetPour = 237
-      else if (manager === 'Thảo') targetPour = 321
-      else if (manager === 'Tuấn Anh') targetPour = 214
-    } else if (isExactJune17th2026) {
-      if (manager === 'Linh') targetPour = 320
-      else if (manager === 'Thảo') targetPour = 321
-      else if (manager === 'Tuấn Anh') targetPour = 214
-    } else if (isExactMay25th2026) {
-      if (manager === 'Linh') targetPour = 220
-      else if (manager === 'Thảo') targetPour = 320
-    } else if (isExactMay26th2026) {
-      if (manager === 'Tuấn Anh') targetPour = 210
-      else if (manager === 'Linh') targetPour = 320
-      else if (manager === 'Thảo') targetPour = 320
-    } else if (isExactMay27th2026) {
-      if (manager === 'Tuấn Anh') targetPour = 126
-      else if (manager === 'Linh') targetPour = 256
-      else if (manager === 'Thảo') targetPour = 210
-    } else if (isExactMay28th2026) {
-      if (manager === 'Tuấn Anh') targetPour = 195.3
-      else if (manager === 'Linh') targetPour = 210
-      else if (manager === 'Thảo') targetPour = 210
-    } else if (isExactMay29th2026) {
-      if (manager === 'Tuấn Anh') targetPour = 210
-      else if (manager === 'Linh') targetPour = 320
-      else if (manager === 'Thảo') targetPour = 210
-    } else if (isExactMay30th2026) {
-      if (manager === 'Tuấn Anh') targetPour = 210
-      else if (manager === 'Linh') targetPour = 320
-      else if (manager === 'Thảo') targetPour = 210
-    } else if (isExactJune16th2026) {
-      if (manager === 'Linh') targetPour = 267.5
-      else if (manager === 'Thảo') targetPour = 240.75
-      else if (manager === 'Tuấn Anh') targetPour = 200.625
-    } else if (isExactJune15th2026) {
-      if (manager === 'Linh') targetPour = 0
-      else if (manager === 'Thảo') targetPour = 321
-      else if (manager === 'Tuấn Anh') targetPour = 173.875
-    } else if (isExactJune13th2026) {
-      if (manager === 'Linh') targetPour = 173.875
-      else if (manager === 'Thảo') targetPour = 214
-      else if (manager === 'Tuấn Anh') targetPour = 205.03875
-    } else if (isExactJune12th2026) {
-      if (manager === 'Linh') targetPour = 267.5
-      else if (manager === 'Thảo') targetPour = 267.5
-      else if (manager === 'Tuấn Anh') targetPour = 267.5
-    } else if (isExactJune11th2026) {
-      if (manager === 'Linh') targetPour = 214
-      else if (manager === 'Thảo') targetPour = 254.125
-      else if (manager === 'Tuấn Anh') targetPour = 214
-    } else if (isExactJune10th2026) {
-      if (manager === 'Linh') targetPour = 321
-      else if (manager === 'Thảo') targetPour = 304.28125
-      else if (manager === 'Tuấn Anh') targetPour = 276.4166667
-    } else if (isExactJune9th2026) {
-      if (manager === 'Linh') targetPour = 292.03875
-      else if (manager === 'Thảo') targetPour = 127.0625
-      else if (manager === 'Tuấn Anh') targetPour = 294.3125
-    } else if (isExactJune8th2026) {
-      if (manager === 'Linh') targetPour = 107
-      else if (manager === 'Thảo') targetPour = 100
-      else if (manager === 'Tuấn Anh') targetPour = 160.5
-    } else if (isExactJune6th2026) {
-      if (manager === 'Linh') targetPour = 214
-      else if (manager === 'Thảo') targetPour = 120
-      else if (manager === 'Tuấn Anh') targetPour = 214
-    } else if (isExactJune1st2026) {
-      if (manager === 'Linh') targetPour = 71
-      else if (manager === 'Thảo') targetPour = 285.5
-      else if (manager === 'Tuấn Anh') targetPour = 196.2
-    } else if (isExactJune2nd2026) {
-      if (manager === 'Linh') targetPour = 320
-      else if (manager === 'Thảo') targetPour = 320
-      else if (manager === 'Tuấn Anh') targetPour = 168.7
-    } else if (isExactJune3rd2026) {
-      if (manager === 'Linh') targetPour = 267.5
-      else if (manager === 'Thảo') targetPour = 321.2
-      else if (manager === 'Tuấn Anh') targetPour = 214
-    } else if (isExactJune4th2026) {
-      if (manager === 'Linh') targetPour = 220
-      else if (manager === 'Thảo') targetPour = 287.4
-      else if (manager === 'Tuấn Anh') targetPour = 214
-    } else if (isExactJune5th2026 && (manager === 'Linh' || manager === 'Thảo' || manager === 'Tuấn Anh')) {
-      targetPour = 214
+    
+    // Check if we have dynamic machine declarations for this date, manager
+    const dayDeclsPour = declarations.filter(dec => dec.declaration_date === isoDate && dec.manager_name === manager)
+    let targetPour = 0
+    let hasPourDecl = false
+
+    if (dayDeclsPour.length > 0) {
+      day.pouredByManager[manager].shifts.forEach(s => {
+        const decl = dayDeclsPour.find(dec => dec.shift === s)
+        if (decl) {
+          targetPour += (decl.pour_active_qty ?? 0) * 107
+          hasPourDecl = true
+        }
+      })
+    }
+
+    if (!hasPourDecl) {
+      targetPour = TARGET_POUR
+      if (isExactJune18th2026) {
+        if (manager === 'Linh') targetPour = 237
+        else if (manager === 'Thảo') targetPour = 321
+        else if (manager === 'Tuấn Anh') targetPour = 214
+      } else if (isExactJune17th2026) {
+        if (manager === 'Linh') targetPour = 320
+        else if (manager === 'Thảo') targetPour = 321
+        else if (manager === 'Tuấn Anh') targetPour = 214
+      } else if (isExactMay25th2026) {
+        if (manager === 'Linh') targetPour = 220
+        else if (manager === 'Thảo') targetPour = 320
+      } else if (isExactMay26th2026) {
+        if (manager === 'Tuấn Anh') targetPour = 210
+        else if (manager === 'Linh') targetPour = 320
+        else if (manager === 'Thảo') targetPour = 320
+      } else if (isExactMay27th2026) {
+        if (manager === 'Tuấn Anh') targetPour = 126
+        else if (manager === 'Linh') targetPour = 256
+        else if (manager === 'Thảo') targetPour = 210
+      } else if (isExactMay28th2026) {
+        if (manager === 'Tuấn Anh') targetPour = 195.3
+        else if (manager === 'Linh') targetPour = 210
+        else if (manager === 'Thảo') targetPour = 210
+      } else if (isExactMay29th2026) {
+        if (manager === 'Tuấn Anh') targetPour = 210
+        else if (manager === 'Linh') targetPour = 320
+        else if (manager === 'Thảo') targetPour = 210
+      } else if (isExactMay30th2026) {
+        if (manager === 'Tuấn Anh') targetPour = 210
+        else if (manager === 'Linh') targetPour = 320
+        else if (manager === 'Thảo') targetPour = 210
+      } else if (isExactJune16th2026) {
+        if (manager === 'Linh') targetPour = 267.5
+        else if (manager === 'Thảo') targetPour = 240.75
+        else if (manager === 'Tuấn Anh') targetPour = 200.625
+      } else if (isExactJune15th2026) {
+        if (manager === 'Linh') targetPour = 0
+        else if (manager === 'Thảo') targetPour = 321
+        else if (manager === 'Tuấn Anh') targetPour = 173.875
+      } else if (isExactJune13th2026) {
+        if (manager === 'Linh') targetPour = 173.875
+        else if (manager === 'Thảo') targetPour = 214
+        else if (manager === 'Tuấn Anh') targetPour = 205.03875
+      } else if (isExactJune12th2026) {
+        if (manager === 'Linh') targetPour = 267.5
+        else if (manager === 'Thảo') targetPour = 267.5
+        else if (manager === 'Tuấn Anh') targetPour = 267.5
+      } else if (isExactJune11th2026) {
+        if (manager === 'Linh') targetPour = 214
+        else if (manager === 'Thảo') targetPour = 254.125
+        else if (manager === 'Tuấn Anh') targetPour = 214
+      } else if (isExactJune10th2026) {
+        if (manager === 'Linh') targetPour = 321
+        else if (manager === 'Thảo') targetPour = 304.28125
+        else if (manager === 'Tuấn Anh') targetPour = 276.4166667
+      } else if (isExactJune9th2026) {
+        if (manager === 'Linh') targetPour = 292.03875
+        else if (manager === 'Thảo') targetPour = 127.0625
+        else if (manager === 'Tuấn Anh') targetPour = 294.3125
+      } else if (isExactJune8th2026) {
+        if (manager === 'Linh') targetPour = 107
+        else if (manager === 'Thảo') targetPour = 100
+        else if (manager === 'Tuấn Anh') targetPour = 160.5
+      } else if (isExactJune6th2026) {
+        if (manager === 'Linh') targetPour = 214
+        else if (manager === 'Thảo') targetPour = 120
+        else if (manager === 'Tuấn Anh') targetPour = 214
+      } else if (isExactJune1st2026) {
+        if (manager === 'Linh') targetPour = 71
+        else if (manager === 'Thảo') targetPour = 285.5
+        else if (manager === 'Tuấn Anh') targetPour = 196.2
+      } else if (isExactJune2nd2026) {
+        if (manager === 'Linh') targetPour = 320
+        else if (manager === 'Thảo') targetPour = 320
+        else if (manager === 'Tuấn Anh') targetPour = 168.7
+      } else if (isExactJune3rd2026) {
+        if (manager === 'Linh') targetPour = 267.5
+        else if (manager === 'Thảo') targetPour = 321.2
+        else if (manager === 'Tuấn Anh') targetPour = 214
+      } else if (isExactJune4th2026) {
+        if (manager === 'Linh') targetPour = 220
+        else if (manager === 'Thảo') targetPour = 287.4
+        else if (manager === 'Tuấn Anh') targetPour = 214
+      } else if (isExactJune5th2026 && (manager === 'Linh' || manager === 'Thảo' || manager === 'Tuấn Anh')) {
+        targetPour = 214
+      }
     }
     compositeTarget += targetPour
   }
   if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
     totalActual += day.separatedByManager[manager].actual
     
-    // Check if the date is on or after 1/6/2025
-    const isAfterJune2025 = y > 2025 || (y === 2025 && (m > 6 || (m === 6 && d >= 1)))
+    // Check if we have dynamic machine declarations for this date, manager
+    const dayDeclsSep = declarations.filter(dec => dec.declaration_date === isoDate && dec.manager_name === manager)
+    let targetSeparate = 0
+    let hasSepDecl = false
 
-    let targetSeparate = TARGET_SEPARATE
+    if (dayDeclsSep.length > 0) {
+      day.separatedByManager[manager].shifts.forEach(s => {
+        const decl = dayDeclsSep.find(dec => dec.shift === s)
+        if (decl) {
+          targetSeparate += (decl.separate_auto_qty ?? 0) * 50 +
+                            (decl.separate_semi_auto_qty ?? 0) * 100 +
+                            (decl.separate_mechanical_qty ?? 0) * 50
+          hasSepDecl = true
+        }
+      })
+    }
 
-    if (isExactJune18th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 250
-      } else if (manager === 'Thảo') {
-        targetSeparate = 200
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 250
-      }
-    } else if (isExactJune17th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 131.25
-      } else if (manager === 'Thảo') {
-        targetSeparate = 250
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 250
-      }
-    } else if (isExactJune16th2026) {
-      if (manager === 'Linh') {
+    if (!hasSepDecl) {
+      // Check if the date is on or after 1/6/2025
+      const isAfterJune2025 = y > 2025 || (y === 2025 && (m > 6 || (m === 6 && d >= 1)))
+
+      targetSeparate = TARGET_SEPARATE
+
+      if (isExactJune18th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 250
+        } else if (manager === 'Thảo') {
+          targetSeparate = 200
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 250
+        }
+      } else if (isExactJune17th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 131.25
+        } else if (manager === 'Thảo') {
+          targetSeparate = 250
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 250
+        }
+      } else if (isExactJune16th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 225
+        } else if (manager === 'Thảo') {
+          targetSeparate = 250
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 250
+        }
+      } else if (isExactJune15th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 0
+        } else if (manager === 'Thảo') {
+          targetSeparate = 250
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 250
+        }
+      } else if (isExactJune13th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 250
+        } else if (manager === 'Thảo') {
+          targetSeparate = 200
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 193
+        }
+      } else if (isExactJune12th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 200
+        } else if (manager === 'Thảo') {
+          targetSeparate = 225
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 200
+        }
+      } else if (isExactJune11th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 100
+        } else if (manager === 'Thảo') {
+          targetSeparate = 225
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 225
+        }
+      } else if (isExactJune10th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 171.14583
+        } else if (manager === 'Thảo') {
+          targetSeparate = 225
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 150
+        }
+      } else if (isExactJune9th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 150
+        } else if (manager === 'Thảo') {
+          targetSeparate = 200
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 50
+        }
+      } else if (isExactJune8th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 150
+        } else if (manager === 'Thảo') {
+          targetSeparate = 0
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 100
+        }
+      } else if (isExactJune6th2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 150
+        } else if (manager === 'Thảo') {
+          targetSeparate = 250
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 278
+        }
+      } else if (isExactJune5th2026) {
+        if (manager === 'Linh' || manager === 'Thảo') {
+          targetSeparate = 300
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 250
+        }
+      } else if (isExactJune3rd2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 175
+        } else if (manager === 'Thảo') {
+          targetSeparate = 287.5
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 300
+        }
+      } else if (isExactJune2nd2026 && manager === 'Linh') {
         targetSeparate = 225
-      } else if (manager === 'Thảo') {
-        targetSeparate = 250
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 250
-      }
-    } else if (isExactJune15th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 0
-      } else if (manager === 'Thảo') {
-        targetSeparate = 250
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 250
-      }
-    } else if (isExactJune13th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 250
-      } else if (manager === 'Thảo') {
-        targetSeparate = 200
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 193
-      }
-    } else if (isExactJune12th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 200
-      } else if (manager === 'Thảo') {
-        targetSeparate = 225
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 200
-      }
-    } else if (isExactJune11th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 100
-      } else if (manager === 'Thảo') {
-        targetSeparate = 225
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 225
-      }
-    } else if (isExactJune10th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 171.14583
-      } else if (manager === 'Thảo') {
-        targetSeparate = 225
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 150
-      }
-    } else if (isExactJune9th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 150
-      } else if (manager === 'Thảo') {
-        targetSeparate = 200
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 50
-      }
-    } else if (isExactJune8th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 150
-      } else if (manager === 'Thảo') {
-        targetSeparate = 0
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 100
-      }
-    } else if (isExactJune6th2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 150
-      } else if (manager === 'Thảo') {
-        targetSeparate = 250
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 278
-      }
-    } else if (isExactJune5th2026) {
-      if (manager === 'Linh' || manager === 'Thảo') {
-        targetSeparate = 300
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 250
-      }
-    } else if (isExactJune3rd2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 175
-      } else if (manager === 'Thảo') {
-        targetSeparate = 287.5
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 300
-      }
-    } else if (isExactJune2nd2026 && manager === 'Linh') {
-      targetSeparate = 225
-    } else if (isExactJune1st2026) {
-      if (manager === 'Linh') {
-        targetSeparate = 89
-      } else if (manager === 'Thảo') {
-        targetSeparate = 250
-      } else if (manager === 'Tuấn Anh') {
-        targetSeparate = 250
-      } else {
-        // Fallback or other managers: apply standard 1/6/2025 rule
+      } else if (isExactJune1st2026) {
+        if (manager === 'Linh') {
+          targetSeparate = 89
+        } else if (manager === 'Thảo') {
+          targetSeparate = 250
+        } else if (manager === 'Tuấn Anh') {
+          targetSeparate = 250
+        } else {
+          day.separatedByManager[manager].shifts.forEach(s => {
+            let shiftTarget = 300
+            if (tawnyShifts.has(`${day.date}_${s}`)) {
+              if (s === 'Ca 1') shiftTarget = 225
+              else if (s === 'Ca 2') shiftTarget = 250
+              else shiftTarget = 300
+            }
+            if (shiftTarget < targetSeparate) {
+              targetSeparate = shiftTarget
+            }
+          })
+        }
+      } else if (isAfterJune2025) {
         day.separatedByManager[manager].shifts.forEach(s => {
           let shiftTarget = 300
           if (tawnyShifts.has(`${day.date}_${s}`)) {
@@ -608,25 +659,13 @@ function calcManagerPerf(
             targetSeparate = shiftTarget
           }
         })
+      } else {
+        day.separatedByManager[manager].shifts.forEach(s => {
+          if (tawnyShifts.has(`${day.date}_${s}`)) {
+            targetSeparate = 250
+          }
+        })
       }
-    } else if (isAfterJune2025) {
-      day.separatedByManager[manager].shifts.forEach(s => {
-        let shiftTarget = 300
-        if (tawnyShifts.has(`${day.date}_${s}`)) {
-          if (s === 'Ca 1') shiftTarget = 225
-          else if (s === 'Ca 2') shiftTarget = 250
-          else shiftTarget = 300
-        }
-        if (shiftTarget < targetSeparate) {
-          targetSeparate = shiftTarget
-        }
-      })
-    } else {
-      day.separatedByManager[manager].shifts.forEach(s => {
-        if (tawnyShifts.has(`${day.date}_${s}`)) {
-          targetSeparate = 250
-        }
-      })
     }
     compositeTarget += targetSeparate
   }
@@ -635,7 +674,7 @@ function calcManagerPerf(
 }
 
 function SvgPerformanceChart({
-  data, dateList, managers, managerFilter, areaFilter, startDate, endDate, shiftFilter, tawnyShifts
+  data, dateList, managers, managerFilter, areaFilter, startDate, endDate, shiftFilter, tawnyShifts, machineDeclarations
 }: {
   data: AggregatedDay[]
   dateList: string[]
@@ -646,6 +685,7 @@ function SvgPerformanceChart({
   endDate: string
   shiftFilter: string
   tawnyShifts: Set<string>
+  machineDeclarations: any[]
 }) {
   const activeManagers = managers.filter(m => managerFilter === 'Tất cả' || m === managerFilter)
 
@@ -661,7 +701,7 @@ function SvgPerformanceChart({
   const datesWithData = [...dateList].reverse().filter(date => {
     const day = data.find(d => d.date === date)
     if (!day) return false
-    return activeManagers.some(m => calcManagerPerf(day, m, areaFilter, tawnyShifts) !== null)
+    return activeManagers.some(m => calcManagerPerf(day, m, areaFilter, tawnyShifts, machineDeclarations) !== null)
   }).slice(0, limit).reverse()
 
   const n = datesWithData.length
@@ -793,7 +833,7 @@ function SvgPerformanceChart({
 
                 {/* Bars per manager */}
                 {day && activeManagers.map((manager, mi) => {
-                  const perf = calcManagerPerf(day, manager, areaFilter, tawnyShifts)
+                  const perf = calcManagerPerf(day, manager, areaFilter, tawnyShifts, machineDeclarations)
                   if (perf === null) return null
                   const bx = startX + mi * (barW + barGap)
                   const by = perfY(perf)
@@ -846,7 +886,7 @@ function SvgPerformanceChart({
           datesWithData.forEach(date => {
             const day = data.find(d => d.date === date)
             if (!day) return
-            const p = calcManagerPerf(day, manager, areaFilter, tawnyShifts)
+            const p = calcManagerPerf(day, manager, areaFilter, tawnyShifts, machineDeclarations)
             if (p !== null) { tp += p; cnt++ }
           })
           const avg = cnt > 0 ? Math.round(tp / cnt) : 0
@@ -1095,6 +1135,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
   const [loading, setLoading] = useState(true)
   const [pourReports, setPourReports] = useState<FoamingPourReport[]>([])
   const [separateReports, setSeparateReports] = useState<FoamingSeparateReport[]>([])
+  const [machineDeclarations, setMachineDeclarations] = useState<any[]>([])
 
   // Filters
   const [startDate, setStartDate] = useState(last7DaysStr())
@@ -1124,16 +1165,19 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const [pourRes, sepRes] = await Promise.all([
+    const [pourRes, sepRes, declRes] = await Promise.all([
       supabase.from('foaming_pour_reports').select('*')
         .gte('report_date', startDate).lte('report_date', endDate)
         .or('is_pc_confirmed.eq.true,report_date.lt.2026-06-10'),
       supabase.from('foaming_separate_reports')
         .select('*, production_plan(ten_san_pham)')
         .gte('report_date', startDate).lte('report_date', endDate),
+      supabase.from('foaming_machine_declarations').select('*')
+        .gte('declaration_date', startDate).lte('declaration_date', endDate)
     ])
     setPourReports((pourRes.data as any) || [])
     setSeparateReports((sepRes.data as any) || [])
+    setMachineDeclarations((declRes.data as any) || [])
     setLoading(false)
   }, [startDate, endDate])
 
@@ -2060,7 +2104,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
                   
                   const managerData = aggregatedData.map(d => {
-                    const perf = calcManagerPerf(d, manager, 'pour', tawnyShifts)
+                    const perf = calcManagerPerf(d, manager, 'pour', tawnyShifts, machineDeclarations)
                     return { date: d.date, perf: perf || 0 }
                   }).filter(d => d.perf > 0)
 
@@ -2120,6 +2164,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   endDate={endDate}
                   shiftFilter={shiftFilter}
                   tawnyShifts={tawnyShifts}
+                  machineDeclarations={machineDeclarations}
                 />
               </div>
             </div>
@@ -2140,7 +2185,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   if (managerFilter !== 'Tất cả' && manager !== managerFilter) return null
                   
                   const managerData = aggregatedData.map(d => {
-                    const perf = calcManagerPerf(d, manager, 'separate', tawnyShifts)
+                    const perf = calcManagerPerf(d, manager, 'separate', tawnyShifts, machineDeclarations)
                     return { date: d.date, perf: perf || 0 }
                   }).filter(d => d.perf > 0)
 
@@ -2200,6 +2245,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
                   endDate={endDate}
                   shiftFilter={shiftFilter}
                   tawnyShifts={tawnyShifts}
+                  machineDeclarations={machineDeclarations}
                 />
               </div>
 

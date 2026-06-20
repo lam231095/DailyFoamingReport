@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BarChart3, Package, Factory, TrendingUp, ClipboardList, FileText, Lock, UploadCloud } from 'lucide-react'
+import { BarChart3, Package, Factory, TrendingUp, ClipboardList, FileText, Lock, UploadCloud, Sliders } from 'lucide-react'
 import { getSession } from '@/lib/session'
 import { SessionUser } from '@/types'
 import Header from '@/components/layout/Header'
@@ -15,6 +15,7 @@ import FoamingProcessTab from '@/components/tabs/FoamingProcessTab'
 import ProductionProgressTab from '@/components/tabs/ProductionProgressTab'
 import SupplementaryReportTab from '@/components/tabs/SupplementaryReportTab'
 import ExcelUploadTab from '@/components/tabs/ExcelUploadTab'
+import MachineInputTab from '@/components/tabs/MachineInputTab'
 
 const TABS = [
   {
@@ -73,6 +74,14 @@ const TABS = [
     color: '#059669',
     adminOnly: true,
   },
+  {
+    id: 'machine-input',
+    label: 'Khai báo Máy',
+    shortLabel: 'Khai báo Máy',
+    icon: Sliders,
+    color: '#ec4899',
+    adminOnly: false,
+  },
 ]
 
 export default function DashboardPage() {
@@ -110,7 +119,7 @@ export default function DashboardPage() {
   const isAdmin = user?.msnv === ADMIN_MSNV
   const visibleTabs = TABS.filter(t => !t.adminOnly || isAdmin)
 
-  const isWide = activeTab === 'production-progress' || activeTab === 'daily-report' || activeTab === 'supplementary-report' || activeTab === 'excel-upload'
+  const isWide = activeTab === 'production-progress' || activeTab === 'daily-report' || activeTab === 'supplementary-report' || activeTab === 'excel-upload' || activeTab === 'machine-input'
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)]">
@@ -198,6 +207,7 @@ export default function DashboardPage() {
               {tab.id === 'residual'                 && <ResidualMaterialTab user={user} />}
               {tab.id === 'foaming'                  && <FoamingProcessTab user={user} />}
               {tab.id === 'excel-upload'             && <ExcelUploadTab user={user} />}
+              {tab.id === 'machine-input'            && <MachineInputTab user={user} />}
             </div>
           ))}
         </div>
