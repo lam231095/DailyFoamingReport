@@ -1379,7 +1379,7 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
             day.pouredByShift[item.shift] = (day.pouredByShift[item.shift] || 0) + item.actual
             
             if (!day.pouredByManager[item.manager]) {
-              day.pouredByManager[item.manager] = { actual: 0, shifts: new Set() }
+              day.pouredByManager[item.manager] = { actual: 0, shifts: new Set(), downtime: 0 }
             }
             day.pouredByManager[item.manager].actual += item.actual
             day.pouredByManager[item.manager].shifts.add(item.shift)
