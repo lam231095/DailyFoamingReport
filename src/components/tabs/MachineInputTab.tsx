@@ -44,7 +44,6 @@ const SHIFTS = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca HC']
 
 export default function MachineInputTab({ user }: MachineInputTabProps) {
   const [selectedDate, setSelectedDate] = useState('')
-  const [selectedShift, setSelectedShift] = useState('Ca 1')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -57,20 +56,14 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
     'Tuấn Anh': { ...DEFAULT_DECLARATION },
   })
 
-  // Auto-detect initial date and shift on mount
+  // Auto-detect initial date on mount
   useEffect(() => {
     const todayISO = getReportDateISO(new Date())
     setSelectedDate(todayISO)
-
-    const hour = new Date().getHours()
-    let currentShift = 'Ca 3'
-    if (hour >= 6 && hour < 14) currentShift = 'Ca 1'
-    else if (hour >= 14 && hour < 22) currentShift = 'Ca 2'
-    setSelectedShift(currentShift)
   }, [])
 
-  // Fetch machine configurations for the selected date and shift
-  const fetchDeclarations = useCallback(async (date: string, shift: string) => {
+  // Fetch machine configurations for the selected date
+  const fetchDeclarations = useCallback(async (date: string) => {
     if (!date) return
     setLoading(true)
     setMessage(null)
@@ -79,7 +72,6 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
         .from('foaming_machine_declarations')
         .select('*')
         .eq('declaration_date', date)
-        .eq('shift', shift)
 
       const newManagerData = {
         Linh: { ...DEFAULT_DECLARATION },
@@ -112,12 +104,12 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
     }
   }, [])
 
-  // Trigger fetch when date or shift changes
+  // Trigger fetch when date changes
   useEffect(() => {
-    if (selectedDate && selectedShift) {
-      fetchDeclarations(selectedDate, selectedShift)
+    if (selectedDate) {
+      fetchDeclarations(selectedDate)
     }
-  }, [selectedDate, selectedShift, fetchDeclarations])
+  }, [selectedDate, fetchDeclarations])
 
   // Handle single input changes
   const handleInputChange = (
@@ -148,7 +140,7 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
   // Handle saving configurations to Supabase
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedDate || !selectedShift) return
+    if (!selectedDate) return
     setSaving(true)
     setMessage(null)
 
@@ -157,7 +149,6 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
         const data = managerData[manager]
         return {
           declaration_date: selectedDate,
-          shift: selectedShift,
           manager_name: manager,
           pour_active_qty: data.pourActiveQty,
           separate_auto_qty: data.separateAutoQty,
@@ -169,7 +160,7 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
 
       const { error } = await supabase
         .from('foaming_machine_declarations')
-        .upsert(payload, { onConflict: 'declaration_date,shift,manager_name' })
+        .upsert(payload, { onConflict: 'declaration_date,manager_name' })
 
       if (error) throw error
 
@@ -216,21 +207,6 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
                   className="bg-[var(--bg-input)] border border-[var(--border)] rounded-xl pl-9 pr-4 py-2.5 
                     text-xs font-bold text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono"
                 />
-              </div>
-
-              {/* Shift Dropdown */}
-              <div className="relative">
-                <select
-                  value={selectedShift}
-                  onChange={(e) => setSelectedShift(e.target.value)}
-                  className="bg-[var(--bg-input)] border border-[var(--border)] rounded-xl pl-4 pr-10 py-2.5 
-                    text-xs font-bold text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all appearance-none cursor-pointer"
-                >
-                  {SHIFTS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] pointer-events-none" size={14} />
               </div>
             </div>
           </div>
@@ -394,7 +370,7 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
                 <div className="flex items-start gap-2.5 max-w-md sm:max-w-xl text-[var(--text-2)]">
                   <Info size={14} className="text-indigo-500 shrink-0 mt-0.5" />
                   <p className="text-[11px] leading-relaxed">
-                    Sau khi lưu khai báo này, các biểu đồ và báo cáo hiệu suất (Daily Report) của <strong>Ca {selectedShift}</strong> ngày <strong>{selectedDate.split('-').reverse().join('/')}</strong> sẽ tự động cập nhật mục tiêu (Target) tương ứng.
+                    Sau khi lưu khai báo này, các biểu đồ và báo cáo hiệu suất (Daily Report) của ngày <strong>{selectedDate.split('-').reverse().join('/')}</strong> sẽ tự động cập nhật mục tiêu (Target) tương ứng.
                   </p>
                 </div>
 

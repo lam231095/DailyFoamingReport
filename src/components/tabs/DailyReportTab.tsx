@@ -392,18 +392,14 @@ function calcManagerPerf(
     totalActual += day.pouredByManager[manager].actual
     
     // Check if we have dynamic machine declarations for this date, manager
-    const dayDeclsPour = declarations.filter(dec => dec.declaration_date === isoDate && dec.manager_name === manager)
+    const decl = declarations.find(dec => dec.declaration_date === isoDate && dec.manager_name === manager)
     let targetPour = 0
     let hasPourDecl = false
 
-    if (dayDeclsPour.length > 0) {
-      day.pouredByManager[manager].shifts.forEach(s => {
-        const decl = dayDeclsPour.find(dec => dec.shift === s)
-        if (decl) {
-          targetPour += (decl.pour_active_qty ?? 0) * 107
-          hasPourDecl = true
-        }
-      })
+    if (decl) {
+      const shiftCount = day.pouredByManager[manager].shifts.size
+      targetPour = (decl.pour_active_qty ?? 0) * 107 * shiftCount
+      hasPourDecl = true
     }
 
     if (!hasPourDecl) {
@@ -501,20 +497,17 @@ function calcManagerPerf(
     totalActual += day.separatedByManager[manager].actual
     
     // Check if we have dynamic machine declarations for this date, manager
-    const dayDeclsSep = declarations.filter(dec => dec.declaration_date === isoDate && dec.manager_name === manager)
+    const decl = declarations.find(dec => dec.declaration_date === isoDate && dec.manager_name === manager)
     let targetSeparate = 0
     let hasSepDecl = false
 
-    if (dayDeclsSep.length > 0) {
-      day.separatedByManager[manager].shifts.forEach(s => {
-        const decl = dayDeclsSep.find(dec => dec.shift === s)
-        if (decl) {
-          targetSeparate += (decl.separate_auto_qty ?? 0) * 50 +
-                            (decl.separate_semi_auto_qty ?? 0) * 100 +
-                            (decl.separate_mechanical_qty ?? 0) * 50
-          hasSepDecl = true
-        }
-      })
+    if (decl) {
+      const shiftCount = day.separatedByManager[manager].shifts.size
+      const shiftTarget = (decl.separate_auto_qty ?? 0) * 50 +
+                          (decl.separate_semi_auto_qty ?? 0) * 100 +
+                          (decl.separate_mechanical_qty ?? 0) * 50
+      targetSeparate = shiftTarget * shiftCount
+      hasSepDecl = true
     }
 
     if (!hasSepDecl) {

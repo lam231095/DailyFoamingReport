@@ -1,12 +1,11 @@
 -- =============================================
--- Hệ thống khai báo máy móc đổ và tách
+-- Hệ thống khai báo máy móc đổ và tách (Theo ngày)
 -- Chạy script này trong Supabase SQL Editor
 -- =============================================
 
 CREATE TABLE IF NOT EXISTS foaming_machine_declarations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   declaration_date DATE NOT NULL DEFAULT CURRENT_DATE,
-  shift TEXT NOT NULL, -- 'Ca 1', 'Ca 2', 'Ca 3', 'Ca HC'
   manager_name TEXT NOT NULL, -- 'Linh', 'Thảo', 'Tuấn Anh'
   pour_active_qty INTEGER DEFAULT 0 CHECK (pour_active_qty >= 0),
   separate_auto_qty INTEGER DEFAULT 0 CHECK (separate_auto_qty >= 0),
@@ -14,7 +13,7 @@ CREATE TABLE IF NOT EXISTS foaming_machine_declarations (
   separate_mechanical_qty INTEGER DEFAULT 0 CHECK (separate_mechanical_qty >= 0),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE (declaration_date, shift, manager_name)
+  UNIQUE (declaration_date, manager_name)
 );
 
 -- Bật RLS
