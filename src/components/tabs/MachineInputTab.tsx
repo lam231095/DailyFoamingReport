@@ -137,15 +137,30 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
     return { pourTarget, separateTarget }
   }
 
+  // Check permission for a manager
+  const hasPermissionForManager = useCallback((manager: ManagerName): boolean => {
+    if (user.msnv === '04127') return true
+    if (manager === 'Linh' && user.msnv === '02075') return true
+    if (manager === 'Thảo' && user.msnv === '02603') return true
+    if (manager === 'Tuấn Anh' && user.msnv === '04820') return true
+    return false
+  }, [user.msnv])
+
+  const hasAnyPermission = MANAGERS.some(hasPermissionForManager)
+
   // Handle saving configurations to Supabase
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!selectedDate) return
+    if (!selectedDate || !hasAnyPermission) return
     setSaving(true)
     setMessage(null)
 
     try {
-      const payload = MANAGERS.map((manager) => {
+      // Only upsert data for managers that the current user has permission to edit
+      const permittedManagers = MANAGERS.filter(hasPermissionForManager)
+      if (permittedManagers.length === 0) throw new Error('Không có quyền lưu.')
+
+      const payload = permittedManagers.map((manager) => {
         const data = managerData[manager]
         return {
           declaration_date: selectedDate,
@@ -247,19 +262,29 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
                     manager === 'Thảo' ? { text: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/15', fill: '#a855f7' } :
                     { text: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/15', fill: '#10b981' }
 
+                  const hasPerm = hasPermissionForManager(manager)
+
                   return (
                     <div
                       key={manager}
-                      className="card overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+                      className={`card overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col justify-between ${
+                        !hasPerm ? 'opacity-85' : ''
+                      }`}
                       style={{ borderTop: `4px solid ${colorTheme.fill}` }}
                     >
                       <div className="p-5 space-y-6">
                         {/* Manager Header */}
                         <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
                           <span className="text-sm font-black uppercase text-[var(--text-1)]">Quản lý {manager}</span>
-                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${colorTheme.bg} ${colorTheme.text}`}>
-                            Active config
-                          </span>
+                          {hasPerm ? (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
+                              Có quyền nhập
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500">
+                              Chỉ xem
+                            </span>
+                          )}
                         </div>
 
                         {/* Pouring Area (Đổ) */}
@@ -276,9 +301,11 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
                               min="0"
                               value={data.pourActiveQty || ''}
                               placeholder="0"
+                              disabled={!hasPerm}
                               onChange={(e) => handleInputChange(manager, 'pourActiveQty', e.target.value)}
                               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2
-                                text-sm text-[var(--text-1)] font-bold focus:border-indigo-500 outline-none transition-all font-mono"
+                                text-sm text-[var(--text-1)] font-bold focus:border-indigo-500 outline-none transition-all font-mono
+                                disabled:opacity-60 disabled:bg-[var(--bg-input)] disabled:cursor-not-allowed"
                             />
                           </div>
 
@@ -306,9 +333,11 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
                               min="0"
                               value={data.separateAutoQty || ''}
                               placeholder="0"
+                              disabled={!hasPerm}
                               onChange={(e) => handleInputChange(manager, 'separateAutoQty', e.target.value)}
                               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2
-                                text-sm text-[var(--text-1)] font-bold focus:border-indigo-500 outline-none transition-all font-mono"
+                                text-sm text-[var(--text-1)] font-bold focus:border-indigo-500 outline-none transition-all font-mono
+                                disabled:opacity-60 disabled:bg-[var(--bg-input)] disabled:cursor-not-allowed"
                             />
                           </div>
 
@@ -323,9 +352,11 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
                               min="0"
                               value={data.separateSemiAutoQty || ''}
                               placeholder="0"
+                              disabled={!hasPerm}
                               onChange={(e) => handleInputChange(manager, 'separateSemiAutoQty', e.target.value)}
                               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2
-                                text-sm text-[var(--text-1)] font-bold focus:border-indigo-500 outline-none transition-all font-mono"
+                                text-sm text-[var(--text-1)] font-bold focus:border-indigo-500 outline-none transition-all font-mono
+                                disabled:opacity-60 disabled:bg-[var(--bg-input)] disabled:cursor-not-allowed"
                             />
                           </div>
 
@@ -340,9 +371,11 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
                               min="0"
                               value={data.separateMechanicalQty || ''}
                               placeholder="0"
+                              disabled={!hasPerm}
                               onChange={(e) => handleInputChange(manager, 'separateMechanicalQty', e.target.value)}
                               className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2
-                                text-sm text-[var(--text-1)] font-bold focus:border-indigo-500 outline-none transition-all font-mono"
+                                text-sm text-[var(--text-1)] font-bold focus:border-indigo-500 outline-none transition-all font-mono
+                                disabled:opacity-60 disabled:bg-[var(--bg-input)] disabled:cursor-not-allowed"
                             />
                           </div>
 
@@ -376,9 +409,9 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
 
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || !hasAnyPermission}
                   className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold uppercase tracking-wider
-                    px-6 py-3.5 rounded-xl shadow-md transition-all duration-200 shrink-0 disabled:opacity-50"
+                    px-6 py-3.5 rounded-xl shadow-md transition-all duration-200 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? (
                     <>

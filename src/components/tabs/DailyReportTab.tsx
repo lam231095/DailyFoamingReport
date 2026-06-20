@@ -37,6 +37,15 @@ const MANAGER_COLORS: Record<string, string> = {
 }
 const safeId = (name: string) => name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]/g, '_')
 
+const getMachineType = (machineId: string | null | undefined): 'auto' | 'semi' | 'mech' | null => {
+  if (!machineId) return null
+  const lower = machineId.toLowerCase()
+  if (lower.includes('bán tự động')) return 'semi'
+  if (lower.includes('tự động')) return 'auto'
+  if (lower.includes('cơ')) return 'mech'
+  return null
+}
+
 // ── Loại hàng tách: A = Thường, T = Test, M = Đổ tay, G = Hàng xấu, S = Hàng sửa ──────
 const BUN_TYPES = ['T', 'M', 'G', 'S'] as const   // chỉ 4 loại đặc biệt (bỏ A = thường)
 const BUN_TYPE_LABELS: Record<string, string> = {
@@ -67,8 +76,15 @@ type AggregatedDay = {
   pouredByShift: Record<string, number>
   separatedByShift: Record<string, number>
   separatedByShiftSheets: Record<string, number>
-  pouredByManager: Record<string, { actual: number; shifts: Set<string> }>
-  separatedByManager: Record<string, { actual: number; shifts: Set<string>; actualSheets: number }>
+  pouredByManager: Record<string, { actual: number; shifts: Set<string>; downtime: number }>
+  separatedByManager: Record<string, { 
+    actual: number; 
+    shifts: Set<string>; 
+    actualSheets: number;
+    autoDowntime: number;
+    semiDowntime: number;
+    mechDowntime: number;
+  }>
 }
 
 type AreaFilter = 'all' | 'pour' | 'separate'
@@ -398,7 +414,9 @@ function calcManagerPerf(
 
     if (decl) {
       const shiftCount = day.pouredByManager[manager].shifts.size
-      targetPour = (decl.pour_active_qty ?? 0) * 107 * shiftCount
+      const downtimeMinutes = day.pouredByManager[manager].downtime || 0
+      const downtimeHours = downtimeMinutes / 60
+      targetPour = Math.max(0, (decl.pour_active_qty * shiftCount - downtimeHours / 8) * 107)
       hasPourDecl = true
     }
 
@@ -503,10 +521,15 @@ function calcManagerPerf(
 
     if (decl) {
       const shiftCount = day.separatedByManager[manager].shifts.size
-      const shiftTarget = (decl.separate_auto_qty ?? 0) * 50 +
-                          (decl.separate_semi_auto_qty ?? 0) * 100 +
-                          (decl.separate_mechanical_qty ?? 0) * 50
-      targetSeparate = shiftTarget * shiftCount
+      const autoDowntimeHours = (day.separatedByManager[manager].autoDowntime || 0) / 60
+      const semiDowntimeHours = (day.separatedByManager[manager].semiDowntime || 0) / 60
+      const mechDowntimeHours = (day.separatedByManager[manager].mechDowntime || 0) / 60
+
+      const targetSeparateAuto = Math.max(0, (decl.separate_auto_qty * shiftCount - autoDowntimeHours / 8) * 50)
+      const targetSeparateSemi = Math.max(0, (decl.separate_semi_auto_qty * shiftCount - semiDowntimeHours / 8) * 100)
+      const targetSeparateMech = Math.max(0, (decl.separate_mechanical_qty * shiftCount - mechDowntimeHours / 8) * 50)
+
+      targetSeparate = targetSeparateAuto + targetSeparateSemi + targetSeparateMech
       hasSepDecl = true
     }
 
@@ -1238,9 +1261,12 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           const s = r.shift || 'Ca 1'
           day.pouredByShift[s] = (day.pouredByShift[s] || 0) + (r.actual_bun_poured || 0)
           
-          if (!day.pouredByManager[m]) day.pouredByManager[m] = { actual: 0, shifts: new Set() }
+          if (!day.pouredByManager[m]) {
+            day.pouredByManager[m] = { actual: 0, shifts: new Set(), downtime: 0 }
+          }
           day.pouredByManager[m].actual += (r.actual_bun_poured || 0)
           day.pouredByManager[m].shifts.add(s)
+          day.pouredByManager[m].downtime += (r.downtime_duration || 0)
         }
       })
     }
@@ -1261,10 +1287,25 @@ export default function DailyReportTab({ user }: DailyReportTabProps) {
           day.separatedByShift[s] = (day.separatedByShift[s] || 0) + (r.actual_bun_separated || 0)
           day.separatedByShiftSheets[s] = (day.separatedByShiftSheets[s] || 0) + (r.actual_sheet_received || 0)
           
-          if (!day.separatedByManager[m]) day.separatedByManager[m] = { actual: 0, actualSheets: 0, shifts: new Set() }
+          if (!day.separatedByManager[m]) {
+            day.separatedByManager[m] = { 
+              actual: 0, 
+              actualSheets: 0, 
+              shifts: new Set(),
+              autoDowntime: 0,
+              semiDowntime: 0,
+              mechDowntime: 0
+            }
+          }
           day.separatedByManager[m].actual += (r.actual_bun_separated || 0)
           day.separatedByManager[m].actualSheets += (r.actual_sheet_received || 0)
           day.separatedByManager[m].shifts.add(s)
+          
+          const mType = getMachineType(r.machine_id)
+          const dt = r.downtime_duration || 0
+          if (mType === 'auto') day.separatedByManager[m].autoDowntime += dt
+          else if (mType === 'semi') day.separatedByManager[m].semiDowntime += dt
+          else if (mType === 'mech') day.separatedByManager[m].mechDowntime += dt
         }
       })
     }
