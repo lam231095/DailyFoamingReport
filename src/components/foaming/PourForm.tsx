@@ -129,6 +129,24 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         finalNote = finalNote ? `${finalNote} [Chạy dư tồn]` : '[Chạy dư tồn]'
       }
 
+      // Upsert the production plan (especially combined ones) first to satisfy DB foreign key constraint
+      const { error: upsertErr } = await supabase.from('production_plan').upsert({
+        firm_plan: plan.firm_plan,
+        no_order: plan.no_order,
+        bun_code: plan.bun_code,
+        pu_code: plan.pu_code,
+        ten_san_pham: plan.ten_san_pham,
+        sl_sheet: plan.sl_sheet,
+        sl_bun_can_do: plan.sl_bun_can_do,
+        sl_bun_can_tach: plan.sl_bun_can_tach,
+        completion_date: plan.completion_date || null,
+        delivery_date: plan.delivery_date || null,
+        week_label: plan.week_label,
+        synced_at: new Date().toISOString()
+      }, { onConflict: 'firm_plan' })
+
+      if (upsertErr) throw upsertErr
+
       const { error } = await supabase.from('foaming_pour_reports').insert({
         firm_plan: plan.firm_plan,
         shift: formData.shift,
