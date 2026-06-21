@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase'
 import { ProductionPlan, SessionUser, User } from '@/types'
 import { Plus, Trash2, Info, Truck } from 'lucide-react'
 import { getReportDateISO } from '@/lib/dateUtils'
-import { distributeInteger, distributeSequential } from '@/lib/calculations'
 
 const ERROR_TYPES = [
   'Bọt khí', 'Loang trắng', 'Loang đen', 'Lõm mặt',
@@ -108,13 +107,11 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
         .map(x => x.type === 'Lỗi khác' && x.note ? `${x.type}: ${x.note.trim()} (${x.qty})` : `${x.type} (${x.qty})`)
         .join(', ')
 
-      const plansList = plan.firm_plan.split('|').map(x => x.trim()).filter(Boolean)
-
       // Query previous pour reports to check cumulative poured buns
       const { data: prevPourReports, error: prevPourErr } = await supabase
         .from('foaming_pour_reports')
         .select('actual_bun_poured, is_compensation, firm_plan')
-        .in('firm_plan', plansList)
+        .eq('firm_plan', plan.firm_plan)
 
       if (prevPourErr) throw prevPourErr
 
@@ -124,143 +121,40 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
       const currentInputBuns = Number(formData.actual_bun_poured)
       const totalInputBuns = previousMainBuns + currentInputBuns
 
-      let plansData: any[] = []
-
-      if (plansList.length > 1) {
-        const { data, error: fetchErr } = await supabase
-          .from('production_plan')
-          .select('firm_plan, sl_bun_can_do, sl_bun_can_tach')
-          .in('firm_plan', plansList)
-        if (fetchErr) throw fetchErr
-        plansData = data || []
-      }
-
       // Cho phép vượt số lượng và thêm ghi chú chạy dư tồn, không báo lỗi nữa
-
-      if (plansList.length > 1) {
-        const targets = plansList.map(fp => {
-          const p = plansData.find(x => x.firm_plan === fp)
-          return p ? (p.sl_bun_can_do || p.sl_bun_can_tach || 0) : 0
-        })
-
-        // Tính lượng đã đổ trước đó cho mỗi đơn trong nhóm gộp (chỉ tính đơn chính, không tính đơn bù)
-        const alreadyPouredMap = new Map<string, number>()
-        prevPourReports?.filter(r => !r.is_compensation).forEach(r => {
-          alreadyPouredMap.set(r.firm_plan, (alreadyPouredMap.get(r.firm_plan) || 0) + (r.actual_bun_poured || 0))
-        })
-
-        // Tính lượng còn lại cần đổ cho từng đơn
-        const remainingTargets = plansList.map((fp, idx) => {
-          const target = targets[idx] || 0
-          const poured = alreadyPouredMap.get(fp) || 0
-          return Math.max(0, target - poured)
-        })
-
-        // Phân bổ số lượng bun thực tế lũy tiến (FIFO)
-        const distributedActual = distributeSequential(Number(formData.actual_bun_poured), remainingTargets)
-        // Phân bổ NG theo tỷ lệ số lượng thực tế đã phân bổ
-        const distributedNG = distributeInteger(totalNG, distributedActual)
-
-        // Phân bổ các số thực (cleaning, waste)
-        const totalTarget = targets.reduce((a, b) => a + b, 0)
-        const distributeFloat = (val: number, idx: number) => {
-          if (totalTarget === 0) return val / plansList.length
-          return (targets[idx] / totalTarget) * val
-        }
-
-        // Tạo danh sách các bản ghi để chèn
-        const recordsToInsert = plansList.map((fp, idx) => {
-          const act = distributedActual[idx]
-          const ng = distributedNG[idx]
-          const carts = Math.ceil(act / 6)
-          const cleaning = distributeFloat(Number(formData.cleaning_agent_kg), idx)
-          const waste = distributeFloat(Number(formData.waste_kg), idx)
-
-          const target = targets[idx] || 0
-          const poured = alreadyPouredMap.get(fp) || 0
-          const remainingTarget = Math.max(0, target - poured)
-          const isExcess = !formData.is_compensation && target > 0 && act > remainingTarget
-
-          let baseNote = formData.note.trim()
-          if (isExcess) {
-            baseNote = baseNote ? `${baseNote} [Chạy dư tồn]` : '[Chạy dư tồn]'
-          }
-
-          const groupNote = `[Báo cáo gộp nhóm: ${plan.firm_plan}]`
-          const finalNote = baseNote 
-            ? `${baseNote} ${groupNote}`
-            : groupNote
-
-          return {
-            firm_plan: fp,
-            shift: formData.shift,
-            machine_id: formData.machine_id,
-            operator_name: formData.operator_name,
-            actual_bun_poured: act,
-            lot_no: null,
-            report_date: getReportDateISO(new Date(), formData.shift),
-            ng_bun_qty: ng,
-            error_type: combinedError || '',
-            storage_location: null,
-            storage_line: null,
-            color_tag: null,
-            storage_carts: carts,
-            cleaning_agent_kg: parseFloat(cleaning.toFixed(2)),
-            waste_kg: parseFloat(waste.toFixed(2)),
-            manager_name: formData.manager_name,
-            note: finalNote,
-            is_compensation: formData.is_compensation,
-            recorder_id: user.id,
-            downtime_reason: hasDowntime && downtimeReason.trim() ? downtimeReason.trim() : null,
-            downtime_start: hasDowntime && downtimeReason.trim() ? `${downtimeStartHour}:${downtimeStartMinute}` : null,
-            downtime_end: hasDowntime && downtimeReason.trim() ? `${downtimeEndHour}:${downtimeEndMinute}` : null,
-            downtime_duration: hasDowntime && downtimeReason.trim() ? getDowntimeDuration() : null,
-          }
-        })
-
-        const filteredRecords = recordsToInsert.filter(r => r.actual_bun_poured > 0 || r.ng_bun_qty > 0)
-
-        if (filteredRecords.length === 0) {
-          throw new Error('Không có đơn hàng nào được phân bổ số lượng. Vui lòng nhập số lượng lớn hơn 0.')
-        }
-
-        const { error: insertErr } = await supabase.from('foaming_pour_reports').insert(filteredRecords)
-        if (insertErr) throw insertErr
-      } else {
-        const target = plan.sl_bun_can_do || plan.sl_bun_can_tach || 0
-        const isExcess = !formData.is_compensation && target > 0 && totalInputBuns > target
-        let finalNote = formData.note.trim()
-        if (isExcess) {
-          finalNote = finalNote ? `${finalNote} [Chạy dư tồn]` : '[Chạy dư tồn]'
-        }
-
-        const { error } = await supabase.from('foaming_pour_reports').insert({
-          firm_plan: plan.firm_plan,
-          shift: formData.shift,
-          machine_id: formData.machine_id,
-          operator_name: formData.operator_name,
-          actual_bun_poured: Number(formData.actual_bun_poured),
-          lot_no: null,
-          report_date: getReportDateISO(new Date(), formData.shift),
-          ng_bun_qty: totalNG,
-          error_type: combinedError || '',
-          storage_location: null,
-          storage_line: null,
-          color_tag: null,
-          storage_carts: storageCarts,
-          cleaning_agent_kg: Number(formData.cleaning_agent_kg),
-          waste_kg: Number(formData.waste_kg),
-          manager_name: formData.manager_name,
-          note: finalNote || null,
-          is_compensation: formData.is_compensation,
-          recorder_id: user.id,
-          downtime_reason: hasDowntime && downtimeReason.trim() ? downtimeReason.trim() : null,
-          downtime_start: hasDowntime && downtimeReason.trim() ? `${downtimeStartHour}:${downtimeStartMinute}` : null,
-          downtime_end: hasDowntime && downtimeReason.trim() ? `${downtimeEndHour}:${downtimeEndMinute}` : null,
-          downtime_duration: hasDowntime && downtimeReason.trim() ? getDowntimeDuration() : null,
-        })
-        if (error) throw error
+      const target = plan.sl_bun_can_do || plan.sl_bun_can_tach || 0
+      const isExcess = !formData.is_compensation && target > 0 && totalInputBuns > target
+      let finalNote = formData.note.trim()
+      if (isExcess) {
+        finalNote = finalNote ? `${finalNote} [Chạy dư tồn]` : '[Chạy dư tồn]'
       }
+
+      const { error } = await supabase.from('foaming_pour_reports').insert({
+        firm_plan: plan.firm_plan,
+        shift: formData.shift,
+        machine_id: formData.machine_id,
+        operator_name: formData.operator_name,
+        actual_bun_poured: Number(formData.actual_bun_poured),
+        lot_no: null,
+        report_date: getReportDateISO(new Date(), formData.shift),
+        ng_bun_qty: totalNG,
+        error_type: combinedError || '',
+        storage_location: null,
+        storage_line: null,
+        color_tag: null,
+        storage_carts: storageCarts,
+        cleaning_agent_kg: Number(formData.cleaning_agent_kg),
+        waste_kg: Number(formData.waste_kg),
+        manager_name: formData.manager_name,
+        note: finalNote || null,
+        is_compensation: formData.is_compensation,
+        recorder_id: user.id,
+        downtime_reason: hasDowntime && downtimeReason.trim() ? downtimeReason.trim() : null,
+        downtime_start: hasDowntime && downtimeReason.trim() ? `${downtimeStartHour}:${downtimeStartMinute}` : null,
+        downtime_end: hasDowntime && downtimeReason.trim() ? `${downtimeEndHour}:${downtimeEndMinute}` : null,
+        downtime_duration: hasDowntime && downtimeReason.trim() ? getDowntimeDuration() : null,
+      })
+      if (error) throw error
 
       setMessage({ type: 'success', text: 'Đã lưu báo cáo công đoạn Đổ thành công!' })
       setTimeout(() => {
