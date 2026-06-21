@@ -140,7 +140,7 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
   const fileRef = useRef<File | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const isAuthorized = user.msnv === '04127'
+  const isAuthorized = user.msnv === '04127' || user.msnv === '02075'
 
 
   // Effective week label: auto-fill for Sample/BCN, manual for production
