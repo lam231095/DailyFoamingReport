@@ -31,6 +31,25 @@ interface ResidualMaterialTabProps {
 type TabType = 'stock' | 'add' | 'use' | 'history'
 
 export default function ResidualMaterialTab({ user }: ResidualMaterialTabProps) {
+  const isAuthorized = ['02075', '02603', '04820', '04127'].includes(user.msnv || '')
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(239,68,68,0.1)' }}>
+          <AlertCircle size={32} className="text-red-500" />
+        </div>
+        <h2 className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>
+          Không có quyền truy cập
+        </h2>
+        <p className="text-sm" style={{ color: 'var(--text-3)' }}>
+          Chức năng này chỉ dành cho quản lý được cấp quyền.
+        </p>
+      </div>
+    )
+  }
+
   const [activeTab, setActiveTab] = useState<TabType>('stock')
   const [materials, setMaterials] = useState<ResidualMaterial[]>([])
   const [usageLogs, setUsageLogs] = useState<ResidualMaterialUsage[]>([])

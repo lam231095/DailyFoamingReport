@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Cpu, Factory, Save, Calendar, Info, 
-  RefreshCw, CheckCircle2, Sliders, ChevronDown 
+  RefreshCw, CheckCircle2, Sliders, ChevronDown, AlertCircle
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { SessionUser } from '@/types'
@@ -43,6 +43,25 @@ const TARGETS = {
 const SHIFTS = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca HC']
 
 export default function MachineInputTab({ user }: MachineInputTabProps) {
+  const isAuthorized = ['02075', '02603', '04820', '04127'].includes(user.msnv || '')
+
+  if (!isAuthorized) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+        <div className="w-16 h-16 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(239,68,68,0.1)' }}>
+          <AlertCircle size={32} className="text-red-500" />
+        </div>
+        <h2 className="text-lg font-bold" style={{ color: 'var(--text-1)' }}>
+          Không có quyền truy cập
+        </h2>
+        <p className="text-sm" style={{ color: 'var(--text-3)' }}>
+          Chức năng này chỉ dành cho quản lý được cấp quyền.
+        </p>
+      </div>
+    )
+  }
+
   const [selectedDate, setSelectedDate] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

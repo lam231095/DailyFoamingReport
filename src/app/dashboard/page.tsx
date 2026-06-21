@@ -100,9 +100,14 @@ export default function DashboardPage() {
   const activeTabData = TABS.find((t) => t.id === activeTab)!
   const isAdmin = user?.msnv === ADMIN_MSNV
   const isLinh = user?.msnv === '02075'
+  const isAuthorizedManager = ['02075', '02603', '04820', '04127'].includes(user?.msnv || '')
+
   const visibleTabs = TABS.filter(t => {
     if (t.id === 'excel-upload') {
       return isAdmin || isLinh
+    }
+    if (t.id === 'residual' || t.id === 'machine-input') {
+      return isAuthorizedManager
     }
     return !t.adminOnly || isAdmin
   })
