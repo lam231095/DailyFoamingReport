@@ -397,6 +397,7 @@ function calcManagerPerf(
   const isExactJune16th2026 = d === 16 && m === 6 && y === 2026
   const isExactJune17th2026 = d === 17 && m === 6 && y === 2026
   const isExactJune18th2026 = d === 18 && m === 6 && y === 2026
+  const isExactJune20th2026 = d === 20 && m === 6 && y === 2026
   const isExactMay25th2026 = d === 25 && m === 5 && y === 2026
   const isExactMay26th2026 = d === 26 && m === 5 && y === 2026
   const isExactMay27th2026 = d === 27 && m === 5 && y === 2026
@@ -509,6 +510,11 @@ function calcManagerPerf(
         targetPour = 214
       }
     }
+
+    if (isExactJune20th2026 && manager === 'Thảo') {
+      targetPour = 145 / 1.01
+    }
+
     compositeTarget += targetPour
   }
   if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
