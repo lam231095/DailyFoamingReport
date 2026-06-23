@@ -319,6 +319,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       note: item.note || '',
       report_date: item.report_date || new Date().toISOString().split('T')[0],
       is_compensation: item.is_compensation || false,
+      has_downtime: !!item.downtime_reason,
+      downtime_reason: item.downtime_reason || '',
+      downtime_start: item.downtime_start || '00:00',
+      downtime_end: item.downtime_end || '00:00',
     }
     if (activeStage === 'pour') {
       base.actual_bun_poured = item.actual_bun_poured || 0
@@ -361,13 +365,37 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       if (!payload.manager_name?.trim()) payload.manager_name = null
       if (!payload.operator_name?.trim()) payload.operator_name = null
 
+      // Calculate downtime duration if has_downtime is checked
+      if (payload.has_downtime && payload.downtime_reason?.trim()) {
+        payload.downtime_reason = payload.downtime_reason.trim()
+        payload.downtime_start = payload.downtime_start || '00:00'
+        payload.downtime_end = payload.downtime_end || '00:00'
+        const [sh, sm] = payload.downtime_start.split(':').map(Number)
+        const [eh, em] = payload.downtime_end.split(':').map(Number)
+        if (!isNaN(sh) && !isNaN(sm) && !isNaN(eh) && !isNaN(em)) {
+          const startTotal = sh * 60 + sm
+          const endTotal = eh * 60 + em
+          payload.downtime_duration = endTotal >= startTotal
+            ? endTotal - startTotal
+            : (24 * 60 - startTotal) + endTotal
+        } else {
+          payload.downtime_duration = null
+        }
+      } else {
+        payload.downtime_reason = null
+        payload.downtime_start = null
+        payload.downtime_end = null
+        payload.downtime_duration = null
+      }
+
       // Filter payload to only send fields belonging to the current stage table's database schema
       let cleanPayload: Record<string, any> = {}
       if (activeStage === 'pour') {
         const allowedKeys = [
           'shift', 'machine_id', 'manager_name', 'operator_name', 
           'actual_bun_poured', 'ng_bun_qty', 'error_type', 
-          'cleaning_agent_kg', 'waste_kg', 'note', 'is_compensation', 'report_date'
+          'cleaning_agent_kg', 'waste_kg', 'note', 'is_compensation', 'report_date',
+          'downtime_reason', 'downtime_start', 'downtime_end', 'downtime_duration'
         ]
         allowedKeys.forEach(k => {
           if (k in payload) cleanPayload[k] = payload[k]
@@ -377,7 +405,8 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
           'shift', 'machine_id', 'manager_name', 'operator_name',
           'bun_thickness_mm', 'sheet_thickness_mm', 'actual_bun_separated',
           'actual_sheet_received', 'ng_qty', 'ng_bun_qty', 'error_type',
-          'note', 'is_compensation', 'report_date'
+          'note', 'is_compensation', 'report_date',
+          'downtime_reason', 'downtime_start', 'downtime_end', 'downtime_duration'
         ]
         allowedKeys.forEach(k => {
           if (k in payload) cleanPayload[k] = payload[k]
@@ -1496,6 +1525,46 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     <input type="number" min="0" value={editForm.qty_delivered_sheet || 0}
                       onChange={e => setEditForm({ ...editForm, qty_delivered_sheet: Number(e.target.value) })}
                       className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all font-mono font-bold" />
+                  </div>
+                )}
+
+                {/* Sự cố dừng máy */}
+                {(activeStage === 'pour' || activeStage === 'separate') && (
+                  <div className="space-y-3 p-3 bg-red-500/5 rounded-xl border border-red-500/10">
+                    <div className="flex items-center gap-3">
+                      <input type="checkbox" id="edit_has_downtime" checked={editForm.has_downtime || false}
+                        onChange={e => setEditForm({ ...editForm, has_downtime: e.target.checked })}
+                        className="w-4 h-4 accent-red-500 cursor-pointer" />
+                      <label htmlFor="edit_has_downtime" className="text-xs font-bold text-red-700 dark:text-red-400 cursor-pointer select-none">
+                        Gặp sự cố thiết bị / Dừng máy
+                      </label>
+                    </div>
+
+                    {editForm.has_downtime && (
+                      <div className="space-y-2 pt-2 border-t border-red-500/10 animate-fadeIn">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Nguyên nhân dừng máy</label>
+                          <input type="text" required value={editForm.downtime_reason || ''}
+                            onChange={e => setEditForm({ ...editForm, downtime_reason: e.target.value })}
+                            placeholder="Nhập nguyên nhân..."
+                            className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-red-500 transition-all" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Dừng từ lúc</label>
+                            <input type="time" required value={editForm.downtime_start || '00:00'}
+                              onChange={e => setEditForm({ ...editForm, downtime_start: e.target.value })}
+                              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-red-500 transition-all font-mono" />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Dừng đến lúc</label>
+                            <input type="time" required value={editForm.downtime_end || '00:00'}
+                              onChange={e => setEditForm({ ...editForm, downtime_end: e.target.value })}
+                              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-red-500 transition-all font-mono" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
