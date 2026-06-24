@@ -323,7 +323,7 @@ function AddSeparateReportForm({ user, onSuccess }: { user: SessionUser; onSucce
       const { data } = await supabase
         .from('production_plan')
         .select('firm_plan, ten_san_pham, no_order, bun_code, sl_bun_can_tach')
-        .or(`firm_plan.ilike.%${rawTerm}%,no_order.ilike.%${rawTerm}%,firm_plan.ilike.%${cleanTerm}%,no_order.ilike.%${cleanTerm}%`)
+        .or(`firm_plan.ilike."%${rawTerm}%",no_order.ilike."%${rawTerm}%",firm_plan.ilike."%${cleanTerm}%",no_order.ilike."%${cleanTerm}%"`)
         .limit(8)
       setPlanResults(data || [])
     } finally {
@@ -546,7 +546,7 @@ function AddReportForm({ user, onSuccess }: { user: SessionUser; onSuccess: () =
       const { data } = await supabase
         .from('production_plan')
         .select('firm_plan, ten_san_pham, no_order, bun_code, sl_bun_can_do')
-        .or(`firm_plan.ilike.%${rawTerm}%,no_order.ilike.%${rawTerm}%,firm_plan.ilike.%${cleanTerm}%,no_order.ilike.%${cleanTerm}%`)
+        .or(`firm_plan.ilike."%${rawTerm}%",no_order.ilike."%${rawTerm}%",firm_plan.ilike."%${cleanTerm}%",no_order.ilike."%${cleanTerm}%"`)
         .limit(8)
       setPlanResults(data || [])
     } finally {

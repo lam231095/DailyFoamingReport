@@ -52,10 +52,10 @@ export default function FoamingHeader({ onPlanFound }: FoamingHeaderProps) {
       const conditions = codes.flatMap(code => {
         const cleanCode = code.replace(/\s+/g, '')
         return [
-          `firm_plan.ilike.%${code}%`,
-          `no_order.ilike.%${code}%`,
-          `firm_plan.ilike.%${cleanCode}%`,
-          `no_order.ilike.%${cleanCode}%`
+          `firm_plan.ilike."%${code}%"`,
+          `no_order.ilike."%${code}%"`,
+          `firm_plan.ilike."%${cleanCode}%"`,
+          `no_order.ilike."%${cleanCode}%"`
         ]
       }).join(',')
 

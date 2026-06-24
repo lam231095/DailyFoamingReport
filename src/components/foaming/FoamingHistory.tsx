@@ -42,6 +42,9 @@ const AUTHORIZED_REVERT_MSNVS = [
   '03108', // Nguyễn Thị Cẩm Nguyên
 ]
 
+const HOURS_24 = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+const MINUTES_60 = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
+
 function cleanProductName(name: string | null | undefined): string {
   if (!name) return '---'
   let clean = name.trim()
@@ -150,18 +153,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         if (filters.firmPlan.trim()) {
           const rawTerm = `%${filters.firmPlan.trim()}%`
           const cleanTerm = `%${filters.firmPlan.replace(/\s+/g, '')}%`
-          const { data: matchedPlans } = await supabase
-            .from('production_plan')
-            .select('firm_plan')
-            .or(`firm_plan.ilike.${rawTerm},no_order.ilike.${rawTerm},firm_plan.ilike.${cleanTerm},no_order.ilike.${cleanTerm}`)
-          
-          const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
-          if (matchedFirmPlans.length > 0) {
-            const orConditions = matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`).join(',')
-            query = query.or(orConditions)
-          } else {
-            query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
-          }
+          query = query.or(
+            `firm_plan.ilike."${rawTerm}",no_order.ilike."${rawTerm}",firm_plan.ilike."${cleanTerm}",no_order.ilike."${cleanTerm}"`,
+            { foreignTable: 'production_plan' }
+          )
         }
 
         // Lọc theo PU Code cho Giao hàng Đổ - Tách
@@ -172,18 +167,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
         // Lọc theo Bun Code cho Giao hàng Đổ - Tách
         if (filters.bunCode.trim()) {
           const term = `%${filters.bunCode.trim()}%`
-          const { data: matchedPlans } = await supabase
-            .from('production_plan')
-            .select('firm_plan')
-            .ilike('bun_code', term)
-          
-          const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
-          if (matchedFirmPlans.length > 0) {
-            const orConditions = matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`).join(',')
-            query = query.or(orConditions)
-          } else {
-            query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
-          }
+          query = query.ilike('production_plan.bun_code', term)
         }
 
         const { data: result, error: sbError } = await query.order('created_at', { ascending: false })
@@ -235,18 +219,10 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       if (filters.firmPlan.trim()) {
         const rawTerm = `%${filters.firmPlan.trim()}%`
         const cleanTerm = `%${filters.firmPlan.replace(/\s+/g, '')}%`
-        const { data: matchedPlans } = await supabase
-          .from('production_plan')
-          .select('firm_plan')
-          .or(`firm_plan.ilike.${rawTerm},no_order.ilike.${rawTerm},firm_plan.ilike.${cleanTerm},no_order.ilike.${cleanTerm}`)
-        
-        const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
-        if (matchedFirmPlans.length > 0) {
-          const orConditions = matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`).join(',')
-          query = query.or(orConditions)
-        } else {
-          query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
-        }
+        query = query.or(
+          `firm_plan.ilike."${rawTerm}",no_order.ilike."${rawTerm}",firm_plan.ilike."${cleanTerm}",no_order.ilike."${cleanTerm}"`,
+          { foreignTable: 'production_plan' }
+        )
       }
 
       // Lọc theo PU Code (Join Production Plan)
@@ -257,30 +233,25 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
       // Lọc theo Bun Code
       if (filters.bunCode.trim()) {
         const term = `%${filters.bunCode.trim()}%`
-        const { data: matchedPlans } = await supabase
-          .from('production_plan')
-          .select('firm_plan')
-          .ilike('bun_code', term)
-        
-        const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
-        
         if (activeStage === 'pour') {
-          if (matchedFirmPlans.length > 0) {
+          const { data: matchedPlans } = await supabase
+            .from('production_plan')
+            .select('firm_plan')
+            .ilike('bun_code', term)
+          const matchedFirmPlans = matchedPlans?.map(p => p.firm_plan).filter(Boolean) || []
+          const slicedPlans = matchedFirmPlans.slice(0, 100)
+          
+          if (slicedPlans.length > 0) {
             const orConditions = [
-              `bun_code.ilike.${term}`,
-              ...matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`)
+              `bun_code.ilike."${term}"`,
+              ...slicedPlans.map(fp => `firm_plan.ilike."${fp}"`)
             ].join(',')
             query = query.or(orConditions)
           } else {
             query = query.ilike('bun_code', term)
           }
         } else {
-          if (matchedFirmPlans.length > 0) {
-            const orConditions = matchedFirmPlans.map(fp => `firm_plan.ilike.%${fp}%`).join(',')
-            query = query.or(orConditions)
-          } else {
-            query = query.eq('firm_plan', 'NON_EXISTENT_PLAN')
-          }
+          query = query.ilike('production_plan.bun_code', term)
         }
       }
 
@@ -1552,15 +1523,53 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
                             <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Dừng từ lúc</label>
-                            <input type="time" required value={editForm.downtime_start || '00:00'}
-                              onChange={e => setEditForm({ ...editForm, downtime_start: e.target.value })}
-                              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-red-500 transition-all font-mono" />
+                            <div className="flex gap-1.5">
+                              <select 
+                                value={editForm.downtime_start?.split(':')[0] || '00'}
+                                onChange={e => {
+                                  const mins = editForm.downtime_start?.split(':')[1] || '00'
+                                  setEditForm({ ...editForm, downtime_start: `${e.target.value}:${mins}` })
+                                }}
+                                className="flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-2 py-2 text-sm font-bold focus:border-red-500 outline-none transition-all"
+                              >
+                                {HOURS_24.map(h => <option key={h} value={h}>{h} giờ</option>)}
+                              </select>
+                              <select 
+                                value={editForm.downtime_start?.split(':')[1] || '00'}
+                                onChange={e => {
+                                  const hrs = editForm.downtime_start?.split(':')[0] || '00'
+                                  setEditForm({ ...editForm, downtime_start: `${hrs}:${e.target.value}` })
+                                }}
+                                className="flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-2 py-2 text-sm font-bold focus:border-red-500 outline-none transition-all"
+                              >
+                                {MINUTES_60.map(m => <option key={m} value={m}>{m} phút</option>)}
+                              </select>
+                            </div>
                           </div>
                           <div className="space-y-1">
                             <label className="text-[10px] font-bold text-[var(--text-3)] uppercase">Dừng đến lúc</label>
-                            <input type="time" required value={editForm.downtime_end || '00:00'}
-                              onChange={e => setEditForm({ ...editForm, downtime_end: e.target.value })}
-                              className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-red-500 transition-all font-mono" />
+                            <div className="flex gap-1.5">
+                              <select 
+                                value={editForm.downtime_end?.split(':')[0] || '00'}
+                                onChange={e => {
+                                  const mins = editForm.downtime_end?.split(':')[1] || '00'
+                                  setEditForm({ ...editForm, downtime_end: `${e.target.value}:${mins}` })
+                                }}
+                                className="flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-2 py-2 text-sm font-bold focus:border-red-500 outline-none transition-all"
+                              >
+                                {HOURS_24.map(h => <option key={h} value={h}>{h} giờ</option>)}
+                              </select>
+                              <select 
+                                value={editForm.downtime_end?.split(':')[1] || '00'}
+                                onChange={e => {
+                                  const hrs = editForm.downtime_end?.split(':')[0] || '00'
+                                  setEditForm({ ...editForm, downtime_end: `${hrs}:${e.target.value}` })
+                                }}
+                                className="flex-1 bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-2 py-2 text-sm font-bold focus:border-red-500 outline-none transition-all"
+                              >
+                                {MINUTES_60.map(m => <option key={m} value={m}>{m} phút</option>)}
+                              </select>
+                            </div>
                           </div>
                         </div>
                       </div>
