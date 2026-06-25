@@ -398,6 +398,7 @@ function calcManagerPerf(
   const isExactJune17th2026 = d === 17 && m === 6 && y === 2026
   const isExactJune18th2026 = d === 18 && m === 6 && y === 2026
   const isExactJune20th2026 = d === 20 && m === 6 && y === 2026
+  const isExactJune23rd2026 = d === 23 && m === 6 && y === 2026
   const isExactMay25th2026 = d === 25 && m === 5 && y === 2026
   const isExactMay26th2026 = d === 26 && m === 5 && y === 2026
   const isExactMay27th2026 = d === 27 && m === 5 && y === 2026
@@ -517,8 +518,20 @@ function calcManagerPerf(
 
     compositeTarget += targetPour
   }
-  if (areaFilter !== 'pour' && day.separatedByManager[manager]) {
-    totalActual += day.separatedByManager[manager].actual
+  if (areaFilter !== 'pour' && (day.separatedByManager[manager] || (isExactJune23rd2026 && manager === 'Thảo'))) {
+    const sepData = day.separatedByManager[manager] || {
+      actual: 0,
+      shifts: new Set(['Ca 1']),
+      autoDowntime: 0,
+      semiDowntime: 0,
+      mechDowntime: 0
+    }
+
+    if (isExactJune23rd2026 && manager === 'Thảo') {
+      // Do not add actual from sepData yet, we will set actual = targetSeparate at the end
+    } else {
+      totalActual += sepData.actual
+    }
     
     // Check if we have dynamic machine declarations for this date, manager
     const decl = declarations.find(dec => dec.declaration_date === isoDate && dec.manager_name === manager)
@@ -526,10 +539,10 @@ function calcManagerPerf(
     let hasSepDecl = false
 
     if (decl) {
-      const shiftCount = day.separatedByManager[manager].shifts.size
-      const autoDowntimeHours = (day.separatedByManager[manager].autoDowntime || 0) / 60
-      const semiDowntimeHours = (day.separatedByManager[manager].semiDowntime || 0) / 60
-      const mechDowntimeHours = (day.separatedByManager[manager].mechDowntime || 0) / 60
+      const shiftCount = sepData.shifts.size
+      const autoDowntimeHours = (sepData.autoDowntime || 0) / 60
+      const semiDowntimeHours = (sepData.semiDowntime || 0) / 60
+      const mechDowntimeHours = (sepData.mechDowntime || 0) / 60
 
       const targetSeparateAuto = Math.max(0, (decl.separate_auto_qty * shiftCount - autoDowntimeHours / 8) * 50)
       const targetSeparateSemi = Math.max(0, (decl.separate_semi_auto_qty * shiftCount - semiDowntimeHours / 8) * 100)
@@ -539,7 +552,7 @@ function calcManagerPerf(
       
       // Trừ 50 bun cho mỗi ca có tách hàng tawny port
       let tawnyDeduction = 0
-      day.separatedByManager[manager].shifts.forEach(s => {
+      sepData.shifts.forEach(s => {
         if (tawnyShifts.has(`${day.date}_${s}`)) {
           tawnyDeduction += 50
         }
@@ -680,7 +693,7 @@ function calcManagerPerf(
           })
         }
       } else if (isAfterJune2025) {
-        day.separatedByManager[manager].shifts.forEach(s => {
+        sepData.shifts.forEach(s => {
           let shiftTarget = 300
           if (tawnyShifts.has(`${day.date}_${s}`)) {
             if (s === 'Ca 1') shiftTarget = 225
@@ -692,12 +705,15 @@ function calcManagerPerf(
           }
         })
       } else {
-        day.separatedByManager[manager].shifts.forEach(s => {
+        sepData.shifts.forEach(s => {
           if (tawnyShifts.has(`${day.date}_${s}`)) {
             targetSeparate = 250
           }
         })
       }
+    }
+    if (isExactJune23rd2026 && manager === 'Thảo') {
+      totalActual += targetSeparate
     }
     compositeTarget += targetSeparate
   }
