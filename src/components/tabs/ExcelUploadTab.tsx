@@ -102,16 +102,16 @@ const COL_CONFIGS: Record<FileType, ColConfig> = {
     filterFPRO: true,
   },
   bcn: {
-    COL_NO_ORDER: 1,   // col 2
-    COL_FIRM_PLAN: 2,  // col 3
-    COL_BUN_CODE: 3,   // col 4
-    COL_PU_CODE: 4,    // col 5
-    COL_TEN_SP: 5,     // col 6
-    COL_SL_SHEET: 6,   // col 7
-    COL_SL_TACH: 9,    // col 10
-    COL_SL_DO: 9,      // col 10 (dùng chung)
-    COL_COMPLETION: 11, // col 12
-    COL_DELIVERY: 12,   // col 13
+    COL_NO_ORDER: 1,   // col 2 (No. order.)
+    COL_FIRM_PLAN: 3,  // col 4 (Firm plan)
+    COL_BUN_CODE: 4,   // col 5 (BUN CODE)
+    COL_PU_CODE: 5,    // col 6 (PU CODE)
+    COL_TEN_SP: 6,     // col 7 (PU DESCRIPTION)
+    COL_SL_SHEET: 7,   // col 8 (QTY of Order)
+    COL_SL_TACH: 10,   // col 11 (Số Bun lãnh)
+    COL_SL_DO: 10,     // col 11 (Số Bun lãnh)
+    COL_COMPLETION: 12, // col 13 (Ngày tách =ETD Bun)
+    COL_DELIVERY: 13,   // col 14 (Ngày giao hàng (In trên đơn 1))
     DATA_START: 2,
     filterFPRO: true,
   },
@@ -171,8 +171,16 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
         throw new Error('File Excel không có sheet nào.')
       }
 
-      // -1 là sentinel: tự động chọn sheet cuối cùng (mới nhất)
-      const actualIdx = shIdx === -1 ? sheets.length - 1 : shIdx
+      // -1 là sentinel: tự động chọn sheet phù hợp
+      let actualIdx = shIdx
+      if (shIdx === -1) {
+        if (fType === 'bcn') {
+          const pcnIdx = sheets.findIndex((s: string) => s.toLowerCase().includes('pcn'))
+          actualIdx = pcnIdx !== -1 ? pcnIdx : sheets.length - 1
+        } else {
+          actualIdx = sheets.length - 1
+        }
+      }
       setSheetIndex(actualIdx)
       const targetSheet = sheets[actualIdx] ?? sheets[sheets.length - 1]
       const ws = workbook.Sheets[targetSheet]
@@ -350,6 +358,16 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
         </p>
       </div>
     )
+  }
+
+  const getHelpText = () => {
+    if (fileType === 'bcn') {
+      return 'File Excel cần có (sheet hàng PCN): Cột 2=No.Order, Cột 4=Firm Plan, Cột 5=Mã Bun, Cột 6=Mã PU, Cột 7=Tên SP, Cột 8=SL Sheet, Cột 11=Số Bun lãnh, Cột 13=Ngày tách (Completion), Cột 14=Ngày giao hàng (Delivery). Header ở row 2, data từ row 3.'
+    }
+    if (fileType === 'sample') {
+      return 'File Excel cần có: Cột 1=No.Order, Cột 2=Firm Plan, Cột 3=Mã Bun, Cột 4=Mã PU, Cột 5=Tên SP, Cột 6=SL Sheet, Cột 7=SL Tách, Cột 8=SL Đổ, Cột 14=Completion, Cột 15=Delivery. Header ở row 2, data từ row 3.'
+    }
+    return 'File Excel cần có: Cột 1=No.Order, Cột 2=Firm Plan, Cột 5=Mã Bun, Cột 6=Mã PU, Cột 7=Tên SP, Cột 8=SL Sheet, Cột 9=SL Tách, Cột 10=SL Đổ, Cột 17=Completion, Cột 18=Delivery. Header ở row 2, data từ row 3.'
   }
 
   const displayRows = showAllRows ? parsedRows : parsedRows.slice(0, 20)
@@ -563,8 +581,7 @@ export default function ExcelUploadTab({ user }: ExcelUploadTabProps) {
                 style={{ background: 'rgba(14,165,233,0.06)', color: 'var(--text-3)' }}
               >
                 <Info size={13} style={{ color: '#0ea5e9', flexShrink: 0 }} />
-                File Excel cần có: Cột 1=No.Order, Cột 2=Firm Plan, Cột 5=Mã Bun, Cột 6=Mã PU, Cột 7=Tên SP,
-                Cột 8=SL Sheet, Cột 9=SL Tách, Cột 10=SL Đổ, Cột 17=Completion, Cột 18=Delivery. Header ở row 2, data từ row 3.
+                {getHelpText()}
               </div>
             </div>
           </motion.div>
