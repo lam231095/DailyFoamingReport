@@ -801,7 +801,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                     ) : (
                       <>
                         <option value="Tất cả">Tất cả</option>
-                        <option value="Linh">Linh</option>
+                        <option value="Lâm">Lâm</option>
                         <option value="Thảo">Thảo</option>
                         <option value="Tuấn Anh">Tuấn Anh</option>
                       </>
@@ -1390,7 +1390,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         <select value={editForm.manager_name || ''} onChange={e => setEditForm({ ...editForm, manager_name: e.target.value })}
                           className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
                           <option value="">-- Chọn --</option>
-                          <option>Linh</option><option>Thảo</option><option>Tuấn Anh</option>
+                          <option>Lâm</option><option>Thảo</option><option>Tuấn Anh</option>
                         </select>
                       </div>
                       <div className="space-y-1">
@@ -1441,7 +1441,7 @@ export default function FoamingHistory({ user }: FoamingHistoryProps) {
                         <select value={editForm.manager_name || ''} onChange={e => setEditForm({ ...editForm, manager_name: e.target.value })}
                           className="w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-3 py-2 text-sm text-[var(--text-1)] outline-none focus:border-indigo-500 transition-all">
                           <option value="">-- Chọn --</option>
-                          <option>Linh</option><option>Thảo</option><option>Tuấn Anh</option>
+                          <option>Lâm</option><option>Thảo</option><option>Tuấn Anh</option>
                         </select>
                       </div>
                       <div className="space-y-1">

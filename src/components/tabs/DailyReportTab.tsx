@@ -27,10 +27,10 @@ function cleanProductName(name: string | null | undefined): string {
 
 const TARGET_POUR = 320
 const TARGET_SEPARATE = 300
-const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh']
+const MANAGERS = ['Lâm', 'Thảo', 'Tuấn Anh']
 const ALL_CHART_MANAGERS = [...MANAGERS, 'Khác']
 const MANAGER_COLORS: Record<string, string> = {
-  'Linh': '#3b82f6',
+  'Lâm': '#3b82f6',
   'Thảo': '#a855f7',
   'Tuấn Anh': '#10b981',
   'Khác': '#94a3b8'

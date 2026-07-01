@@ -264,7 +264,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
                 text-[var(--text-1)] font-medium focus:border-blue-500 outline-none transition-all"
             >
               <option value="">-- Chọn quản lý --</option>
-              <option value="Linh">Linh</option>
+              <option value="Lâm">Lâm</option>
               <option value="Thảo">Thảo</option>
               <option value="Tuấn Anh">Tuấn Anh</option>
             </select>

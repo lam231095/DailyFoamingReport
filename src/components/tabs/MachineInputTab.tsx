@@ -15,7 +15,7 @@ interface MachineInputTabProps {
   user: SessionUser
 }
 
-const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh'] as const
+const MANAGERS = ['Lâm', 'Thảo', 'Tuấn Anh'] as const
 type ManagerName = typeof MANAGERS[number]
 
 interface ManagerDeclaration {

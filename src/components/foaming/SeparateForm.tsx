@@ -528,7 +528,7 @@ export default function SeparateForm({ plan, user, onSuccess }: SeparateFormProp
             <select value={formData.manager_name} required onChange={e => setFormData({ ...formData, manager_name: e.target.value })}
               className={`w-full bg-[var(--bg-card)] border-2 border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-1)] font-medium ${focusClass} outline-none transition-all`}>
               <option value="">-- Chọn quản lý --</option>
-              <option value="Linh">Linh</option>
+              <option value="Lâm">Lâm</option>
               <option value="Thảo">Thảo</option>
               <option value="Tuấn Anh">Tuấn Anh</option>
             </select>

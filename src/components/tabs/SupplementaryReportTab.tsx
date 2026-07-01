@@ -44,7 +44,7 @@ interface PourReport {
 const SHIFTS = ['Ca 1', 'Ca 2', 'Ca 3', 'Ca HC']
 const MACHINES = ['Máy 1', 'Máy 2', 'Máy 3', 'Máy đổ tay']
 const SEPARATE_MACHINES = ['Máy tách tự động 1', 'Máy tách tự động 2', 'Máy tách tay']
-const MANAGERS = ['Linh', 'Thảo', 'Tuấn Anh']
+const MANAGERS = ['Lâm', 'Thảo', 'Tuấn Anh']
 
 // Interface báo cáo tách
 interface SeparateReport {
@@ -1066,7 +1066,7 @@ export default function SupplementaryReportTab({ user }: SupplementaryReportTabP
                 <div className="space-y-1.5">
                   <p className="text-[10px] font-bold text-[var(--text-3)] uppercase">Quản lý</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {['Tất cả', 'Linh', 'Thảo', 'Tuấn Anh', 'Khác'].map(m => (
+                    {['Tất cả', 'Lâm', 'Thảo', 'Tuấn Anh', 'Khác'].map(m => (
                       <button key={m} onClick={() => setManagerFilter(m)}
                         className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all ${managerFilter === m ? 'bg-indigo-500 text-white shadow-md' : 'bg-[var(--bg-2,#f3f4f6)] dark:bg-white/10 text-[var(--text-2)] hover:bg-indigo-500/10'}`}>
                         {m}
