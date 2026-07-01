@@ -70,7 +70,7 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
 
   // Declare state for all managers
   const [managerData, setManagerData] = useState<Record<ManagerName, ManagerDeclaration>>({
-    Linh: { ...DEFAULT_DECLARATION },
+    'Lâm': { ...DEFAULT_DECLARATION },
     'Thảo': { ...DEFAULT_DECLARATION },
     'Tuấn Anh': { ...DEFAULT_DECLARATION },
   })
@@ -93,7 +93,7 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
         .eq('declaration_date', date)
 
       const newManagerData = {
-        Linh: { ...DEFAULT_DECLARATION },
+        'Lâm': { ...DEFAULT_DECLARATION },
         'Thảo': { ...DEFAULT_DECLARATION },
         'Tuấn Anh': { ...DEFAULT_DECLARATION },
       }
@@ -159,7 +159,7 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
   // Check permission for a manager
   const hasPermissionForManager = useCallback((manager: ManagerName): boolean => {
     if (user.msnv === '04127') return true
-    if (manager === 'Linh' && user.msnv === '02075') return true
+    if (manager === 'Lâm' && user.msnv === '02075') return true
     if (manager === 'Thảo' && user.msnv === '02603') return true
     if (manager === 'Tuấn Anh' && user.msnv === '04820') return true
     return false
@@ -277,7 +277,7 @@ export default function MachineInputTab({ user }: MachineInputTabProps) {
                   
                   // Color codes matching manager visual themes
                   const colorTheme = 
-                    manager === 'Linh' ? { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/15', fill: '#3b82f6' } :
+                    manager === 'Lâm' ? { text: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/15', fill: '#3b82f6' } :
                     manager === 'Thảo' ? { text: 'text-purple-500', bg: 'bg-purple-500/10', border: 'border-purple-500/15', fill: '#a855f7' } :
                     { text: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/15', fill: '#10b981' }
 
