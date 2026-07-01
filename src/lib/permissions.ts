@@ -18,6 +18,8 @@ export const AUTHORIZED_PROCESS_CONTROL_MSNVS = [
   '02271', // Nguyễn Hoài Nam
   '02786', // Lê Huỳnh Hân
   '03514', // Giáp Thị Kiều
+  '02538', // Nguyễn Thị Bích Duyên
+  '02396', // Trương Hồng Gấm
 ]
 
 export function canDownloadReport(user: SessionUser | null | undefined): boolean {
