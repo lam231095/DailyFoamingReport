@@ -56,7 +56,7 @@ export default function PourForm({ plan, user, onSuccess }: PourFormProps) {
       const { data } = await supabase
         .from('users')
         .select('*')
-        .or('and(department.ilike.%FOAMING Rectangular%,position.in.("team leader","Operator","Team Leader","operator","Team leader")),msnv.in.("02126","04462")')
+        .or('and(department.ilike.%FOAMING Rectangular%,position.in.("team leader","Operator","Team Leader","operator","Team leader")),msnv.in.("02126","04462","02352","02920","03366","03376","03521")')
         .order('full_name')
       
       setOperators(data || [])
